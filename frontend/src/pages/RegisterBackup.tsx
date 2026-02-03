@@ -1,8 +1,7 @@
-import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+
 import api from "../api";
-import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
-import { useAuth } from "../AuthContext";
 
 function RegisterBackup() {
   const [username, setUsername] = useState("");
@@ -27,7 +26,7 @@ function RegisterBackup() {
       });
 
       console.log(res.data);
-      navigate("/login");
+      void navigate("/login");
     } catch (error) {
       alert(error.response?.data ? JSON.stringify(error.response.data) : error);
     } finally {

@@ -1,7 +1,42 @@
-// ChatService.js
 import api from "../api";
+import type { ChatMessage } from "../types";
 
-export async function createChatroom(projectId, chatroomData) {
+// ========================================
+// Chatroom Types
+// ========================================
+export interface Chatroom {
+  chatroom_id: string;
+  project_id: string;
+  name: string;
+  description: string;
+  created_at: string;
+}
+
+export interface ChatroomFormData {
+  name: string;
+  description?: string;
+}
+
+export interface MessageFormData {
+  content: string;
+  user_id?: number;
+}
+
+export interface MessagesResponse {
+  messages: ChatMessage[];
+  page: number;
+  per_page: number;
+  total_pages: number;
+  total_count: number;
+}
+
+// ========================================
+// API Functions
+// ========================================
+export async function createChatroom(
+  projectId: string,
+  chatroomData: ChatroomFormData,
+): Promise<Chatroom> {
   try {
     const response = await api.post(`/api/projects/${projectId}/chatrooms/`, chatroomData);
     return response.data;
@@ -11,7 +46,7 @@ export async function createChatroom(projectId, chatroomData) {
   }
 }
 
-export async function getChatrooms(projectId) {
+export async function getChatrooms(projectId: string): Promise<Chatroom[]> {
   try {
     const response = await api.get(`/api/projects/${projectId}/chatrooms/`);
     return response.data.chatrooms;
@@ -21,7 +56,7 @@ export async function getChatrooms(projectId) {
   }
 }
 
-export async function getChatroomById(chatroomId) {
+export async function getChatroomById(chatroomId: string): Promise<Chatroom> {
   try {
     const response = await api.get(`/api/chatrooms/${chatroomId}/`);
     return response.data;
@@ -31,7 +66,10 @@ export async function getChatroomById(chatroomId) {
   }
 }
 
-export async function updateChatroom(chatroomId, chatroomData) {
+export async function updateChatroom(
+  chatroomId: string,
+  chatroomData: Partial<ChatroomFormData>,
+): Promise<Chatroom> {
   try {
     const response = await api.put(`/api/chatrooms/${chatroomId}/`, chatroomData);
     return response.data;
@@ -41,10 +79,9 @@ export async function updateChatroom(chatroomId, chatroomData) {
   }
 }
 
-export async function deleteChatroom(chatroomId) {
+export async function deleteChatroom(chatroomId: string): Promise<void> {
   try {
-    const response = await api.delete(`/api/chatrooms/${chatroomId}/`);
-    return response.data;
+    await api.delete(`/api/chatrooms/${chatroomId}/`);
   } catch (error) {
     console.error("API Error:", error);
     throw error;
@@ -53,13 +90,13 @@ export async function deleteChatroom(chatroomId) {
 
 /**
  * Get messages from a chatroom with pagination
- * @param {string} projectId - The project ID
- * @param {string} chatroomId - The chatroom ID
- * @param {number} page - Page number (starts from 1)
- * @param {number} perPage - Number of messages per page
- * @returns {Promise<Object>} Messages data with pagination info
  */
-export async function getMessages(projectId, chatroomId, page = 1, perPage = 20) {
+export async function getMessages(
+  projectId: string,
+  chatroomId: string,
+  page = 1,
+  perPage = 20,
+): Promise<MessagesResponse> {
   try {
     const response = await api.get(`/api/projects/${projectId}/chatrooms/${chatroomId}/messages/`, {
       params: {
@@ -76,14 +113,12 @@ export async function getMessages(projectId, chatroomId, page = 1, perPage = 20)
 
 /**
  * Post a message to a chatroom
- * @param {string} projectId - The project ID
- * @param {string} chatroomId - The chatroom ID
- * @param {Object} messageData - Message data
- * @param {string} messageData.content - Message content
- * @param {string} [messageData.user_id] - Optional user ID (uses authenticated user if not provided)
- * @returns {Promise<Object>} Created message data
  */
-export async function postMessage(projectId, chatroomId, messageData) {
+export async function postMessage(
+  projectId: string,
+  chatroomId: string,
+  messageData: MessageFormData,
+): Promise<ChatMessage> {
   try {
     const response = await api.post(
       `/api/projects/${projectId}/chatrooms/${chatroomId}/messages/`,

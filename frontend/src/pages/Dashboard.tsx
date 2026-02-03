@@ -1,16 +1,14 @@
-import { useState, useEffect } from "react";
-import { useProject } from "../context/ProjectContext";
-import { getTasks } from "../services/TaskService";
-import { useAuth } from "../context/AuthContext";
-import { getEvents } from "../services/EventService";
-import { formatDateJP, formatUTC } from "../utils/dateUtils";
-import CreateMemoModal from "./CreateMemoModal";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCirclePlus } from "@fortawesome/free-solid-svg-icons";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+
 import ProjectRequired from "../components/ProjectRequired";
+import { useAuth } from "../context/AuthContext";
+import { useProject } from "../context/ProjectContext";
+import { getEvents } from "../services/EventService";
 import { createMemo, deleteMemo, getMemos, updateMemo } from "../services/MemoService";
+import { getTasks } from "../services/TaskService";
+import { formatDateJP, formatUTC } from "../utils/dateUtils";
 import { resolveImageUrl } from "../utils/resolveImageUrl";
+import CreateMemoModal from "./CreateMemoModal";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -21,7 +19,7 @@ const Dashboard = () => {
 
   const [tasks, setTasks] = useState([]);
 
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
 
   const [isMemoModalOpen, setIsMemoModalOpen] = useState(false);
 
@@ -131,7 +129,7 @@ const Dashboard = () => {
         const start = new Date(event.start_date);
         return start >= now && start < end;
       })
-      .sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+      .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
   };
 
   const fetchMemos = async () => {
@@ -190,7 +188,7 @@ const Dashboard = () => {
       await updateMemo(currentProject.project_id, memo_id, {
         is_pinned: !memo.is_pinned,
       });
-    } catch (err) {
+    } catch (_err) {
       // rollback on failure
       setProjectMemos((prev) =>
         prev.map((m) => (m.memo_id === memo_id ? { ...m, is_pinned: memo.is_pinned } : m)),
@@ -229,9 +227,9 @@ const Dashboard = () => {
 
     loadProgress();
     loadMemberCount();
-    fetchTasks();
-    fetchEvents();
-    fetchMemos();
+    void fetchTasks();
+    void fetchEvents();
+    void fetchMemos();
   }, [currentProject]);
 
   useEffect(() => {
@@ -240,7 +238,16 @@ const Dashboard = () => {
     loadClearedTasksCount();
   }, [tasks]);
 
-  const cards = [
+  const cards: {
+    key: string;
+    title: string;
+    label: string;
+    value: string | number;
+    hint: string;
+    gradient: string;
+    icon: string;
+    badge?: React.ReactNode;
+  }[] = [
     {
       key: "progress",
       title: "進捗率",
@@ -352,7 +359,7 @@ const Dashboard = () => {
                   if (a.is_pinned !== b.is_pinned) {
                     return b.is_pinned - a.is_pinned;
                   }
-                  return new Date(b.created_at) - new Date(a.created_at);
+                  return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
                 })
                 .map((memo) => (
                   <div

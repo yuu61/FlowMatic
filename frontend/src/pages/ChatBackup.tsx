@@ -1,11 +1,11 @@
 // Chat.jsx
-import { useState, useRef, useEffect } from "react";
 import EmojiPicker from "emoji-picker-react";
-import { CURRENT_PROJECT_ID } from "../constants";
-import { getChatrooms, getMessages } from "../services/ChatService";
+import { useEffect, useRef, useState } from "react";
+
 import api from "../api";
-import { useProject } from "../context/ProjectContext";
 import { useAuth } from "../context/AuthContext";
+import { useProject } from "../context/ProjectContext";
+import { getChatrooms, getMessages } from "../services/ChatService";
 import { resolveImageUrl } from "../utils/resolveImageUrl";
 
 const ChatBackup = () => {
@@ -20,10 +20,10 @@ const ChatBackup = () => {
   const [editingId, setEditingId] = useState(null);
   const [editingText, setEditingText] = useState("");
   const [replyTo, setReplyTo] = useState(null);
-  const [openMenuId, setOpenMenuId] = useState(null);
+  const [_openMenuId, setOpenMenuId] = useState(null);
   const [lastDeleted, setLastDeleted] = useState(null);
   const [isComposing, setIsComposing] = useState(false);
-  const [reactionTarget, setReactionTarget] = useState(null);
+  const [_reactionTarget, _setReactionTarget] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [reactionPickerMessageId, setReactionPickerMessageId] = useState(null);
@@ -74,7 +74,7 @@ const ChatBackup = () => {
       }
     };
 
-    loadChatrooms();
+    void loadChatrooms();
   }, [currentProjectId]);
 
   // 選択されたチャットルームのメッセージを読み込む + ポーリング
@@ -118,9 +118,9 @@ const ChatBackup = () => {
       }
     };
 
-    loadMessages();
+    void loadMessages();
 
-    const pollInterval = setInterval(loadMessages, 5000);
+    const pollInterval = setInterval(() => void loadMessages(), 5000);
 
     return () => clearInterval(pollInterval);
   }, [currentProjectId, selectedChat]);
@@ -241,9 +241,9 @@ const ChatBackup = () => {
   };
 
   // メッセージリンクコピー
-  const copyMessageLink = (msg) => {
+  const _copyMessageLink = (msg) => {
     const link = `${window.location.origin}${window.location.pathname}#chat-${selectedChat}-msg-${msg.id}`;
-    navigator.clipboard?.writeText(link);
+    void navigator.clipboard?.writeText(link);
     setOpenMenuId(null);
   };
 
@@ -311,7 +311,15 @@ const ChatBackup = () => {
   }
 
   return (
-    <div className="flex w-full bg-white mb-4" onClick={closeMenu}>
+    <div
+      className="flex w-full bg-white mb-4"
+      onClick={closeMenu}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") closeMenu();
+      }}
+      role="button"
+      tabIndex={0}
+    >
       {/* チャット画面 (Full Width) */}
       <div className="w-full h-full grid relative">
         <div className="p-4 border-b bg-gray-100">
@@ -452,7 +460,7 @@ const ChatBackup = () => {
 
                     {/* リアクション表示 */}
                     <div className="flex gap-2 text-sm mt-1">
-                      {Object.entries(msg.reactions || {}).map(([e, users]) => (
+                      {Object.entries(msg.reactions || {}).map(([e, users]: [string, string[]]) => (
                         <span key={e}>
                           {e} {users.length}
                         </span>
@@ -485,7 +493,13 @@ const ChatBackup = () => {
 
         {/* リアクションピッカー */}
         {showReactionPicker && reactionPickerMessageId && (
-          <div className="absolute bottom-20 left-4 z-50" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="absolute bottom-20 left-4 z-50"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            role="button"
+            tabIndex={0}
+          >
             <EmojiPicker
               onEmojiClick={(emoji) => {
                 setAllMessages((prev) => ({
@@ -537,7 +551,13 @@ const ChatBackup = () => {
           </button>
 
           {showEmojiPicker && (
-            <div className="absolute bottom-16 left-4 z-50" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="absolute bottom-16 left-4 z-50"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+              role="button"
+              tabIndex={0}
+            >
               <EmojiPicker
                 onEmojiClick={(emoji) => {
                   setMessageInput((prev) => prev + emoji.emoji);
@@ -558,7 +578,7 @@ const ChatBackup = () => {
               if (isComposing) return;
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
-                handleSendMessage();
+                void handleSendMessage();
               }
             }}
           />

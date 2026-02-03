@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+
+import { CURRENT_USER } from "../constants";
 import { useAuth } from "../context/AuthContext";
 import { changeUserPassword, updateUserProfile } from "../services/UserService";
-import { CURRENT_USER } from "../constants";
 
 const AccountSettings = () => {
   const { user, setUser } = useAuth();
@@ -10,11 +11,19 @@ const AccountSettings = () => {
 
   const [passwordLoading, setPasswordLoading] = useState(false);
 
-  const [userData, setUserData] = useState({
+  const [userData, setUserData] = useState<{
+    id: any;
+    username: string;
+    email: string;
+    profile_picture: any;
+    profile_preview: string | ArrayBuffer | null;
+    date_joined: any;
+  }>({
     id: null,
     username: "",
     email: "",
     profile_picture: null,
+    profile_preview: null,
     date_joined: null,
   });
 
@@ -42,6 +51,7 @@ const AccountSettings = () => {
       username: user.username,
       email: user.email,
       profile_picture: user.profile_picture,
+      profile_preview: null,
       date_joined: user.date_joined,
     });
   }, [user]);
@@ -92,8 +102,8 @@ const AccountSettings = () => {
 
       showNotification("ユーザー名が正常に更新されました！", "success");
       setEdit(false);
-    } catch (error) {
-      console.error(error);
+    } catch (_error) {
+      console.error(_error);
       showNotification("ユーザー名の更新に失敗しました", "error");
     }
   };
@@ -143,9 +153,9 @@ const AccountSettings = () => {
         new: false,
         confirm: false,
       });
-    } catch (error) {
-      console.error(error);
-      const data = error.response?.data;
+    } catch (_error) {
+      console.error(_error);
+      const data = (_error as any).response?.data;
 
       if (data?.current_password) {
         showNotification(data.current_password.join(", "), "error");
@@ -168,7 +178,7 @@ const AccountSettings = () => {
       const file = e.target.files[0];
 
       const reader = new FileReader();
-      reader.onload = async (event) => {
+      reader.onload = (event) => {
         // Update local state for preview
         setUserData((prev) => ({
           ...prev,
@@ -177,19 +187,21 @@ const AccountSettings = () => {
         }));
 
         // Upload immediately
-        try {
-          const updatedUser = await updateUserProfile({
-            username: userData.username, // keep current username
-            profile_picture: file,
-          });
+        void (async () => {
+          try {
+            const updatedUser = await updateUserProfile({
+              username: userData.username, // keep current username
+              profile_picture: file,
+            });
 
-          setUser(updatedUser);
-          localStorage.setItem(CURRENT_USER, JSON.stringify(updatedUser));
-          showNotification("プロフィール画像が更新されました！", "success");
-        } catch (error) {
-          console.error(error);
-          showNotification("プロフィール画像の更新に失敗しました", "error");
-        }
+            setUser(updatedUser);
+            localStorage.setItem(CURRENT_USER, JSON.stringify(updatedUser));
+            showNotification("プロフィール画像が更新されました！", "success");
+          } catch (_error) {
+            console.error(_error);
+            showNotification("プロフィール画像の更新に失敗しました", "error");
+          }
+        })();
       };
       reader.readAsDataURL(file);
     }
@@ -215,8 +227,8 @@ const AccountSettings = () => {
       setUser(updatedUser);
 
       showNotification("プロフィール画像が削除されました", "info");
-    } catch (error) {
-      console.error(error);
+    } catch (_error) {
+      console.error(_error);
       showNotification("画像削除に失敗しました", "error");
     }
   };
@@ -286,6 +298,7 @@ const AccountSettings = () => {
                         username: user.username,
                         email: user.email,
                         profile_picture: user.profile_picture,
+                        profile_preview: null,
                         date_joined: user.date_joined,
                       });
                       setEdit(false);
@@ -360,13 +373,14 @@ const AccountSettings = () => {
             {/* Profile Fields */}
             <div className="space-y-6">
               <div>
-                <label className="flex items-center gap-2 text-lg font-bold text-gray-700 mb-2">
+                <label htmlFor="username" className="flex items-center gap-2 text-lg font-bold text-gray-700 mb-2">
                   <i className="fas fa-user"></i>
                   ユーザー名
                 </label>
                 {edit ? (
                   <input
                     type="text"
+                    id="username"
                     name="username"
                     value={userData.username}
                     onChange={handleInputChange}
@@ -378,10 +392,10 @@ const AccountSettings = () => {
               </div>
 
               <div>
-                <label className="flex items-center gap-2 text-lg font-bold text-gray-700 mb-2">
+                <span className="flex items-center gap-2 text-lg font-bold text-gray-700 mb-2">
                   <i className="fas fa-envelope"></i>
                   メールアドレス
-                </label>
+                </span>
                 <p className="text-gray-900 text-xl px-4 py-2 bg-gray-50 rounded-lg">
                   {userData.email}
                 </p>
@@ -389,10 +403,10 @@ const AccountSettings = () => {
               </div>
 
               <div>
-                <label className="flex items-center gap-2 text-lg font-bold text-gray-700 mb-2">
+                <span className="flex items-center gap-2 text-lg font-bold text-gray-700 mb-2">
                   <i className="fas fa-calendar"></i>
                   登録日
-                </label>
+                </span>
                 <p className="text-gray-900 text-xl px-4 py-2">
                   {formatJoinedDateJP(userData.date_joined)}
                 </p>
@@ -409,12 +423,13 @@ const AccountSettings = () => {
 
             <div className="space-y-6">
               <div>
-                <label className="block text-lg font-bold text-gray-700 mb-2">
+                <label htmlFor="currentPassword" className="block text-lg font-bold text-gray-700 mb-2">
                   現在のパスワード
                 </label>
                 <div className="relative">
                   <input
                     type={showPassword.current ? "text" : "password"}
+                    id="currentPassword"
                     name="currentPassword"
                     value={passwordData.currentPassword}
                     onChange={handlePasswordChange}
@@ -438,12 +453,13 @@ const AccountSettings = () => {
               </div>
 
               <div>
-                <label className="block text-lg font-bold text-gray-700 mb-2">
+                <label htmlFor="newPassword" className="block text-lg font-bold text-gray-700 mb-2">
                   新しいパスワード（6文字以上）
                 </label>
                 <div className="relative">
                   <input
                     type={showPassword.new ? "text" : "password"}
+                    id="newPassword"
                     name="newPassword"
                     value={passwordData.newPassword}
                     onChange={handlePasswordChange}
@@ -467,12 +483,13 @@ const AccountSettings = () => {
               </div>
 
               <div>
-                <label className="block text-lg font-bold text-gray-700 mb-2">
+                <label htmlFor="confirmPassword" className="block text-lg font-bold text-gray-700 mb-2">
                   新しいパスワード（確認）
                 </label>
                 <div className="relative">
                   <input
                     type={showPassword.confirm ? "text" : "password"}
+                    id="confirmPassword"
                     name="confirmPassword"
                     value={passwordData.confirmPassword}
                     onChange={handlePasswordChange}

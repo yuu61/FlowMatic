@@ -1,15 +1,16 @@
-import { Outlet, NavLink } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
+import { NavLink, Outlet } from "react-router-dom";
+
 import { CURRENT_USER } from "../constants";
 import { useAuth } from "../context/AuthContext";
 import { useProject } from "../context/ProjectContext";
 
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [_dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
-  const { user, setIsAuthorized } = useAuth();
-  const [username, setUsername] = useState("");
+  const { user: _user, setIsAuthorized } = useAuth();
+  const [_username, setUsername] = useState("");
 
   const { projects, currentProject, handleProjectChange, loading } = useProject();
 
@@ -65,6 +66,13 @@ function Layout() {
         <div
           className="fixed inset-0 bg-black/40 z-30 md:hidden"
           onClick={() => setSidebarOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              setSidebarOpen(false);
+            }
+          }}
+          role="button"
+          tabIndex={0}
         ></div>
       )}
 

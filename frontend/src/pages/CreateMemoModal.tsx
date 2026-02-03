@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const CreateMemoModal = ({ isOpen, onClose, onSubmit, initialMemo = null }) => {
   const [content, setContent] = useState("");
@@ -66,10 +66,19 @@ const CreateMemoModal = ({ isOpen, onClose, onSubmit, initialMemo = null }) => {
     }
   };
 
+  const handleBackdropKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if ((e.key === "Enter" || e.key === " ") && !loading) {
+      onClose();
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
       onClick={handleBackdropClick}
+      onKeyDown={handleBackdropKeyDown}
+      role="button"
+      tabIndex={0}
     >
       <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-scaleIn">
         <button
@@ -86,9 +95,13 @@ const CreateMemoModal = ({ isOpen, onClose, onSubmit, initialMemo = null }) => {
           {initialMemo ? "✏️ メモを編集" : "📌 新しいメモ"}
         </h3>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
           {/* Content */}
+          <label htmlFor="memo-content" className="sr-only">
+            メモ内容
+          </label>
           <textarea
+            id="memo-content"
             ref={textareaRef}
             className="w-full border-2 border-gray-200 rounded-xl p-3 focus:outline-none focus:border-yellow-400"
             rows={4}
@@ -99,15 +112,20 @@ const CreateMemoModal = ({ isOpen, onClose, onSubmit, initialMemo = null }) => {
           />
 
           {/* Color */}
-          <div>
-            <p className="text-sm font-bold mb-2">色</p>
-            <div className="flex gap-3">
+          <fieldset>
+            <legend className="text-sm font-bold mb-2">色</legend>
+            <div className="flex gap-3" role="radiogroup" aria-label="メモの色を選択">
               {["blue", "yellow", "green"].map((c) => (
                 <button
                   type="button"
                   key={c}
                   onClick={() => setColor(c)}
                   disabled={loading}
+                  role="radio"
+                  aria-checked={color === c}
+                  aria-label={
+                    c === "yellow" ? "黄色" : c === "blue" ? "青色" : "緑色"
+                  }
                   className={`w-8 h-8 rounded-full border-2 transition
                     ${color === c ? "ring-3 ring-offset-2 ring-blue-600" : ""}
                     ${
@@ -121,7 +139,7 @@ const CreateMemoModal = ({ isOpen, onClose, onSubmit, initialMemo = null }) => {
                 />
               ))}
             </div>
-          </div>
+          </fieldset>
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-4">

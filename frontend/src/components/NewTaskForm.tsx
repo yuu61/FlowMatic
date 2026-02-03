@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { useProject } from "../context/ProjectContext";
-import { createTask, getTaskById, getTasks, updateTask } from "../services/TaskService";
 import { MobileDateTimePicker } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
-import { CURRENT_PROJECT_ID } from "../constants";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+
+import { useProject } from "../context/ProjectContext";
+import { createTask, getTaskById, getTasks, updateTask } from "../services/TaskService";
 
 export default function NewTaskForm() {
   const { currentProject } = useProject();
@@ -32,7 +32,7 @@ export default function NewTaskForm() {
   const navigate = useNavigate();
   const inputRef = useRef(null);
 
-  const sampleTasks = [
+  const _sampleTasks = [
     { id: "task_1", name: "要件定義" },
     { id: "task_2", name: "設計" },
     { id: "task_3", name: "開発" },
@@ -40,7 +40,7 @@ export default function NewTaskForm() {
     { id: "task_5", name: "リリース" },
   ];
 
-  const dependencyTypes = [
+  const _dependencyTypes = [
     { id: "FtS", label: "完了→開始 (FtS)" },
     { id: "FtF", label: "完了→完了 (FtF)" },
     { id: "StS", label: "開始→開始 (StS)" },
@@ -56,7 +56,8 @@ export default function NewTaskForm() {
   useEffect(() => {
     inputRef.current?.focus();
     // console.log(currentProject)
-    fetchTasks(currentProjectId);
+    void fetchTasks(currentProjectId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -85,7 +86,7 @@ export default function NewTaskForm() {
       );
     };
 
-    loadTask();
+    void loadTask();
   }, [isEditMode, taskId, currentProjectId]);
 
   useEffect(() => {
@@ -103,12 +104,12 @@ export default function NewTaskForm() {
     setAssignees((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
-  const handleAddDependency = () => setDependencies([...dependencies, { taskId: "", type: "FtS" }]);
+  const _handleAddDependency = () => setDependencies([...dependencies, { taskId: "", type: "FtS" }]);
 
-  const handleRemoveDependency = (index) =>
+  const _handleRemoveDependency = (index) =>
     setDependencies(dependencies.filter((_, i) => i !== index));
 
-  const handleDependencyChange = (index, field, value) => {
+  const _handleDependencyChange = (index, field, value) => {
     const updated = [...dependencies];
     updated[index][field] = value;
     setDependencies(updated);
@@ -149,8 +150,8 @@ export default function NewTaskForm() {
       }
 
       resetForm();
-      navigate("/task");
-    } catch (error) {
+      void navigate("/task");
+    } catch (_error) {
       showMessage("保存に失敗しました。", "error");
     }
   };
@@ -180,6 +181,9 @@ export default function NewTaskForm() {
         <button
           type="button"
           onClick={() => navigate(-1)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") void navigate(-1);
+          }}
           className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 hover:cursor-pointer
                     rounded-lg text-xl transition duration-200 shadow w-auto"
         >
@@ -195,8 +199,9 @@ export default function NewTaskForm() {
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Task Name */}
           <div>
-            <label className="block text-gray-700 text-lg font-semibold mb-2">タスク名</label>
+            <label htmlFor="taskName" className="block text-gray-700 text-lg font-semibold mb-2">タスク名</label>
             <input
+              id="taskName"
               type="text"
               value={taskName}
               onChange={(e) => setTaskName(e.target.value)}
@@ -208,11 +213,12 @@ export default function NewTaskForm() {
 
           {/* Description */}
           <div>
-            <label className="block text-gray-700 text-lg font-semibold mb-2">説明</label>
+            <label htmlFor="description" className="block text-gray-700 text-lg font-semibold mb-2">説明</label>
             <textarea
+              id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              rows="3"
+              rows={3}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg text-lg resize-y"
               placeholder="タスクの詳細を入力してください"
             />
@@ -221,7 +227,7 @@ export default function NewTaskForm() {
           {/* Due Date + Assignees */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label className="block text-gray-700 text-lg font-semibold mb-2">開始日</label>
+              <span id="startDateLabel" className="block text-gray-700 text-lg font-semibold mb-2">開始日</span>
 
               <MobileDateTimePicker
                 label="開始日を設定してください"
@@ -240,7 +246,7 @@ export default function NewTaskForm() {
             </div>
 
             <div>
-              <label className="block text-gray-700 text-lg font-semibold mb-2">期限日</label>
+              <span id="deadlineLabel" className="block text-gray-700 text-lg font-semibold mb-2">期限日</span>
 
               <MobileDateTimePicker
                 label="期限日を設定してください"
@@ -259,7 +265,7 @@ export default function NewTaskForm() {
             </div>
 
             <div>
-              <label className="block text-gray-700 text-lg font-semibold mb-2">担当者</label>
+              <span className="block text-gray-700 text-lg font-semibold mb-2">担当者</span>
               <div className="max-h-full overflow-y-auto border border-gray-300 rounded-lg p-2">
                 {groupMembers.map((member) => (
                   <label
@@ -284,8 +290,9 @@ export default function NewTaskForm() {
           {/* Priority + Status */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label className="block text-gray-700 text-lg font-semibold mb-2">優先度</label>
+              <label htmlFor="priority" className="block text-gray-700 text-lg font-semibold mb-2">優先度</label>
               <select
+                id="priority"
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg text-lg bg-white"
@@ -297,8 +304,9 @@ export default function NewTaskForm() {
             </div>
 
             <div>
-              <label className="block text-gray-700 text-lg font-semibold mb-2">ステータス</label>
+              <label htmlFor="status" className="block text-gray-700 text-lg font-semibold mb-2">ステータス</label>
               <select
+                id="status"
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg text-lg bg-white"

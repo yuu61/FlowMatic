@@ -1,11 +1,7 @@
-// services/MemoService.js
 import api from "../api";
+import type { Memo, MemoFormData } from "../types";
 
-/**
- * Create a new memo for a project
- * POST /projects/{project_id}/memos
- */
-export async function createMemo(projectId, memoData) {
+export async function createMemo(projectId: string, memoData: MemoFormData): Promise<Memo> {
   try {
     const response = await api.post(`/api/projects/${projectId}/memos/`, memoData);
     return response.data;
@@ -15,11 +11,7 @@ export async function createMemo(projectId, memoData) {
   }
 }
 
-/**
- * Get all memos for a project
- * GET /projects/{project_id}/memos
- */
-export async function getMemos(projectId) {
+export async function getMemos(projectId: string): Promise<Memo[]> {
   try {
     const response = await api.get(`/api/projects/${projectId}/memos/`);
     return response.data;
@@ -29,11 +21,11 @@ export async function getMemos(projectId) {
   }
 }
 
-/**
- * Update a memo (content / color / is_pinned)
- * PATCH /projects/{project_id}/memos/{memo_id}
- */
-export async function updateMemo(projectId, memoId, memoData) {
+export async function updateMemo(
+  projectId: string,
+  memoId: string,
+  memoData: Partial<MemoFormData>,
+): Promise<Memo> {
   try {
     const response = await api.patch(`/api/projects/${projectId}/memos/${memoId}/`, memoData);
     return response.data;
@@ -43,11 +35,7 @@ export async function updateMemo(projectId, memoId, memoData) {
   }
 }
 
-/**
- * Delete a memo
- * DELETE /projects/{project_id}/memos/{memo_id}
- */
-export async function deleteMemo(projectId, memoId) {
+export async function deleteMemo(projectId: string, memoId: string): Promise<void> {
   try {
     await api.delete(`/api/projects/${projectId}/memos/${memoId}/`);
   } catch (error) {

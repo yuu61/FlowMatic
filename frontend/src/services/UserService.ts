@@ -1,9 +1,20 @@
 import api from "../api";
+import type { User } from "../types";
 
-export async function getUsers() {
+export interface UserProfileUpdate {
+  username?: string;
+  profile_picture?: File | null;
+}
+
+export interface PasswordChangeData {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export async function getUsers(): Promise<User[] | undefined> {
   try {
     const result = await api.get("/api/users/");
-
     return result.data;
   } catch (error) {
     console.log("Error fetching user : " + error);
@@ -12,9 +23,8 @@ export async function getUsers() {
 
 /**
  * Update current user's profile (username + profile_picture)
- * @param {Object} userData - { username: string, profile_picture: File or null }
  */
-export async function updateUserProfile(userData) {
+export async function updateUserProfile(userData: UserProfileUpdate): Promise<User> {
   try {
     const formData = new FormData();
 
@@ -45,19 +55,20 @@ export async function updateUserProfile(userData) {
 
 /**
  * Change current user's password
- * @param {Object} passwordData - { currentPassword, newPassword, confirmPassword }
  */
-export async function changeUserPassword(passwordData) {
+export async function changeUserPassword(
+  passwordData: PasswordChangeData,
+): Promise<{ message: string }> {
   try {
     const result = await api.put("/api/users/me/password/", {
       current_password: passwordData.currentPassword,
       new_password: passwordData.newPassword,
-      confirm_password: passwordData.confirmPassword, // <-- add this
+      confirm_password: passwordData.confirmPassword,
     });
 
-    return result.data; // success message
+    return result.data;
   } catch (error) {
-    console.error("Error changing password:", error.response);
+    console.error("Error changing password:", error);
     throw error;
   }
 }

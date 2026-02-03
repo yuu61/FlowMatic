@@ -1,5 +1,6 @@
-import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+
 import api from "../api";
 
 function Register() {
@@ -106,7 +107,7 @@ function Register() {
 
   const handleCloseModal = () => {
     setShowSuccess(false);
-    navigate("/login");
+    void navigate("/login");
   };
 
   if (loading) {
@@ -126,15 +127,22 @@ function Register() {
             <form className="space-y-6" onSubmit={handleSubmit}>
               {/* Profile Picture Upload */}
               <div>
-                <label className="block text-md font-bold text-gray-700 mb-3">
+                <label htmlFor="profile-picture" className="block text-md font-bold text-gray-700 mb-3">
                   プロフィール画像
                 </label>
                 <div className="flex items-center space-x-4">
                   <div className="relative">
                     <div
-                      className="w-20 h-20 rounded-full bg-gray-200 border-2 border-gray-300 
+                      className="w-20 h-20 rounded-full bg-gray-200 border-2 border-gray-300
                                                         flex items-center justify-center overflow-hidden cursor-pointer"
                       onClick={() => fileInputRef.current?.click()}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          fileInputRef.current?.click();
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
                     >
                       {previewUrl ? (
                         <img
@@ -180,18 +188,19 @@ function Register() {
               </div>
 
               <div>
-                <label className="block text-md font-bold text-gray-700 mb-3">ユーザー名</label>
+                <label htmlFor="username" className="block text-md font-bold text-gray-700 mb-3">ユーザー名</label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-4">
                     <i className="fa-solid fa-user text-gray-400 text-lg"></i>
                   </span>
                   <input
                     type="text"
+                    id="username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     required
                     placeholder="電子太郎"
-                    className="pl-12 w-full px-4 py-2 rounded-lg 
+                    className="pl-12 w-full px-4 py-2 rounded-lg
                                         border border-gray-300"
                     ref={inputRef}
                   />
@@ -199,31 +208,33 @@ function Register() {
               </div>
 
               <div>
-                <label className="block text-md font-bold text-gray-700 mb-3">メールアドレス</label>
+                <label htmlFor="email" className="block text-md font-bold text-gray-700 mb-3">メールアドレス</label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-4">
                     <i className="fa-solid fa-envelope text-gray-400 text-lg"></i>
                   </span>
                   <input
                     type="email"
+                    id="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     placeholder="example@gmail.com"
-                    className="pl-12 w-full px-4 py-2 rounded-lg 
+                    className="pl-12 w-full px-4 py-2 rounded-lg
                                         border border-gray-300"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-md font-bold text-gray-700 mb-3">パスワード</label>
+                <label htmlFor="password" className="block text-md font-bold text-gray-700 mb-3">パスワード</label>
                 <div className="relative mb-3">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-4">
                     <i className="fa-solid fa-lock text-gray-400 text-lg"></i>
                   </span>
                   <input
                     type={passwordVisible ? "text" : "password"}
+                    id="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -235,7 +246,7 @@ function Register() {
                       type="button"
                       className="text-gray-400 hover:text-gray-500 
                                             cursor-pointer focus:outline-none"
-                      onClick={(e) => setPasswordVisible((prev) => !prev)}
+                      onClick={() => setPasswordVisible((prev) => !prev)}
                     >
                       {passwordVisible ? (
                         <i className="fa-solid fa-eye-slash text-lg"></i>
@@ -248,13 +259,14 @@ function Register() {
               </div>
 
               <div>
-                <label className="block text-md font-bold text-gray-700 mb-3">パスワード確認</label>
+                <label htmlFor="confirm-password" className="block text-md font-bold text-gray-700 mb-3">パスワード確認</label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-4">
                     <i className="fa-solid fa-lock text-gray-400 text-lg"></i>
                   </span>
                   <input
                     type={confirmPasswordVisible ? "text" : "password"}
+                    id="confirm-password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
@@ -266,7 +278,7 @@ function Register() {
                       type="button"
                       className="text-gray-400 hover:text-gray-500 
                                             cursor-pointer focus:outline-none"
-                      onClick={(e) => setConfirmPasswordVisible((prev) => !prev)}
+                      onClick={() => setConfirmPasswordVisible((prev) => !prev)}
                     >
                       {confirmPasswordVisible ? (
                         <i className="fa-solid fa-eye-slash text-lg"></i>
@@ -307,10 +319,19 @@ function Register() {
         <div
           className="fixed inset-0 bg-gray-100 bg-opacity-50 flex items-start justify-center"
           onClick={handleCloseModal}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              handleCloseModal();
+            }
+          }}
+          role="button"
+          tabIndex={0}
         >
+          {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
           <div
             className="bg-white rounded-xl shadow-lg p-4 max-w-sm w-full text-center mt-10"
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
           >
             <div
               className="flex items-center justify-between md:p-3 border-b rounded-t 

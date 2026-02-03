@@ -1,5 +1,6 @@
-import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+
 import api from "../api";
 import { ACCESS_TOKEN, CURRENT_USER, REFRESH_TOKEN } from "../constants";
 import { useAuth } from "../context/AuthContext";
@@ -39,7 +40,7 @@ function Login() {
       setIsAuthorized(true);
       setUser(res.data.user);
 
-      navigate("/");
+      void navigate("/");
     } catch (error) {
       alert(error.response?.data?.message || "メールアドレス、またはパスワードは正しくありません");
     } finally {
@@ -65,18 +66,19 @@ function Login() {
           <div className="p-10">
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div>
-                <label className="block text-md font-bold text-gray-700 mb-3">メールアドレス</label>
+                <label htmlFor="email" className="block text-md font-bold text-gray-700 mb-3">メールアドレス</label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-4">
                     <i className="fa-solid fa-envelope text-gray-400 text-lg"></i>
                   </span>
                   <input
+                    id="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     placeholder="example@gmail.com"
-                    className="pl-12 w-full px-4 py-2 rounded-lg 
+                    className="pl-12 w-full px-4 py-2 rounded-lg
                                         border border-gray-300"
                     ref={inputRef}
                   />
@@ -84,19 +86,20 @@ function Login() {
               </div>
 
               <div>
-                <label className="block text-md font-bold text-gray-700 mb-3">パスワード</label>
+                <label htmlFor="password" className="block text-md font-bold text-gray-700 mb-3">パスワード</label>
                 <div className="relative mb-3">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-4">
                     <svg className="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                       <path
                         fillRule="evenodd"
-                        d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 
+                        d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0
                                             01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
                         clipRule="evenodd"
                       ></path>
                     </svg>
                   </span>
                   <input
+                    id="password"
                     type={passwordVisible ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -109,7 +112,7 @@ function Login() {
                       type="button"
                       className="text-gray-400 hover:text-gray-500 
                                             cursor-pointer focus:outline-none"
-                      onClick={(e) => setPasswordVisible((prev) => !prev)}
+                      onClick={() => setPasswordVisible((prev) => !prev)}
                     >
                       {passwordVisible ? (
                         <i className="fa-solid fa-eye-slash text-lg"></i>
@@ -120,7 +123,7 @@ function Login() {
                   </div>
                 </div>
 
-                <Link to="#" class="text-md font-bold text-blue-600 hover:underline">
+                <Link to="#" className="text-md font-bold text-blue-600 hover:underline">
                   パスワードを忘れた？
                 </Link>
               </div>
@@ -139,7 +142,7 @@ function Login() {
               アカウントをお持ちではありませんか？
               <Link
                 to="/register"
-                class="ml-2 font-semibold text-blue-600 
+                className="ml-2 font-semibold text-blue-600
                             underline hover:text-primary-500"
               >
                 新規登録へ

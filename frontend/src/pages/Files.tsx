@@ -1,20 +1,22 @@
-import { useEffect, useState } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faList,
-  faTh,
-  faUpload,
-  faFilePdf,
-  faFileImage,
-  faFileWord,
-  faFileExcel,
-  faFile,
   faDownload,
-  faTrash,
-  faSortUp,
+  faFile,
+  faFileExcel,
+  faFileImage,
+  faFilePdf,
+  faFileWord,
+  faList,
   faSortDown,
-  faCirclePlus,
+  faSortUp,
+  faTh,
+  faTrash,
+  faUpload,
 } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useEffect, useState } from "react";
+
+import ProjectRequired from "../components/ProjectRequired";
+import { useAuth } from "../context/AuthContext";
 import { useProject } from "../context/ProjectContext";
 import {
   deleteProjectFile,
@@ -23,9 +25,6 @@ import {
   uploadProjectFile,
 } from "../services/FileService";
 import { resolveImageUrl } from "../utils/resolveImageUrl";
-import { useAuth } from "../context/AuthContext";
-import { Link } from "react-router-dom";
-import ProjectRequired from "../components/ProjectRequired";
 
 const Files = () => {
   const { user } = useAuth();
@@ -39,8 +38,8 @@ const Files = () => {
   const { projects, currentProject } = useProject();
 
   const [files, setFiles] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
+  const [_loading, _setLoading] = useState(true);
+  const [_uploading, _setUploading] = useState(false);
 
   const loadFiles = async () => {
     const files = await getProjectFiles(currentProject.project_id);
@@ -51,7 +50,7 @@ const Files = () => {
 
   useEffect(() => {
     if (!currentProject) return;
-    loadFiles();
+    void loadFiles();
   }, [currentProject]);
 
   const handleUpload = async (e) => {
@@ -61,7 +60,7 @@ const Files = () => {
     await uploadProjectFile(currentProject.project_id, { file });
 
     // then refresh file list
-    loadFiles();
+    void loadFiles();
   };
 
   const handleDownload = async (file) => {
@@ -280,7 +279,14 @@ const Files = () => {
                             className={`${fileIconData.color} text-xl lg:text-2xl`}
                           />
                           <span
-                            onClick={() => handleDownload(file)}
+                            onClick={() => void handleDownload(file)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                void handleDownload(file);
+                              }
+                            }}
+                            role="button"
+                            tabIndex={0}
                             className="font-bold text-blue-800 underline cursor-pointer text-base lg:text-xl"
                           >
                             {file.name}
@@ -313,7 +319,7 @@ const Files = () => {
                       <td className="p-4">
                         <div className="flex justify-center gap-2">
                           <button
-                            onClick={() => handleDownload(file)}
+                            onClick={() => void handleDownload(file)}
                             className="px-2 lg:px-3 py-1.5 text-blue-600 hover:text-blue-800 underline rounded-md transition-colors flex items-center gap-1.5 text-base lg:text-xl font-bold cursor-pointer"
                             title="ダウンロード"
                           >
@@ -322,7 +328,7 @@ const Files = () => {
                           </button>
                           {file.uploader?.id === user.id && (
                             <button
-                              onClick={() => handleDelete(file)}
+                              onClick={() => void handleDelete(file)}
                               className="px-2 lg:px-3 py-1.5 text-red-600 hover:text-red-700 rounded-md transition-colors flex items-center gap-1.5 text-base lg:text-xl font-bold cursor-pointer"
                               title="削除"
                             >
@@ -338,7 +344,7 @@ const Files = () => {
 
                 {files.length === 0 && (
                   <tr>
-                    <td colSpan="5" className="p-6 text-center text-gray-500">
+                    <td colSpan={5} className="p-6 text-center text-gray-500">
                       ファイルがありません
                     </td>
                   </tr>
@@ -373,8 +379,9 @@ const Files = () => {
                         className="w-full h-full object-cover rounded border border-gray-200"
                         onError={(e) => {
                           // Fallback to icon if image fails to load
-                          e.target.style.display = "none";
-                          e.target.nextSibling.style.display = "flex";
+                          const target = e.target as HTMLElement;
+                          target.style.display = "none";
+                          (target.nextSibling as HTMLElement).style.display = "flex";
                         }}
                       />
                     ) : (
@@ -387,12 +394,19 @@ const Files = () => {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p
-                      onClick={() => handleDownload(file)}
-                      className="font-bold text-base sm:text-xl text-blue-800 underline cursor-pointer break-words"
+                    <span
+                      onClick={() => void handleDownload(file)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          void handleDownload(file);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      className="font-bold text-base sm:text-xl text-blue-800 underline cursor-pointer break-words block"
                     >
                       {file.name}
-                    </p>
+                    </span>
                     <p className="text-sm sm:text-lg text-gray-500">{file.size}</p>
                   </div>
                 </div>
@@ -420,7 +434,7 @@ const Files = () => {
                 {/* Bottom: Actions */}
                 <div className="flex justify-end gap-2 mt-auto">
                   <button
-                    onClick={() => handleDownload(file)}
+                    onClick={() => void handleDownload(file)}
                     className="flex-1 sm:flex-none px-3 py-2 sm:py-1.5 text-blue-600 hover:text-blue-800 bg-blue-50 sm:bg-transparent underline cursor-pointer rounded-lg sm:rounded-md transition-colors flex items-center justify-center gap-1.5 text-sm sm:text-xl font-bold"
                     title="ダウンロード"
                   >
@@ -429,7 +443,7 @@ const Files = () => {
                   </button>
                   {file.uploader?.id === user.id && (
                     <button
-                      onClick={() => handleDelete(file)}
+                      onClick={() => void handleDelete(file)}
                       className="flex-1 sm:flex-none px-3 py-2 sm:py-1.5 text-red-600 hover:text-red-700 bg-red-50 sm:bg-transparent cursor-pointer rounded-lg sm:rounded-md transition-colors flex items-center justify-center gap-1.5 text-sm sm:text-xl font-bold"
                       title="削除"
                     >

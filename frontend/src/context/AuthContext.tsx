@@ -1,28 +1,50 @@
-import { createContext, useContext, useState, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
-import { ACCESS_TOKEN, CURRENT_USER, REFRESH_TOKEN } from "../constants";
+import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
+
 import api from "../api";
+import { ACCESS_TOKEN, CURRENT_USER, REFRESH_TOKEN } from "../constants";
+import type { JwtPayload, User } from "../types";
 
-const AuthContext = createContext();
+// ========================================
+// Context Types
+// ========================================
+interface AuthContextValue {
+  isAuthorized: boolean | null;
+  setIsAuthorized: React.Dispatch<React.SetStateAction<boolean | null>>;
+  user: User | null;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
+  auth: () => Promise<void>;
+  refreshToken: () => Promise<void>;
+}
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [isAuthorized, setIsAuthorized] = useState(null);
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+// ========================================
+// Context
+// ========================================
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+export const AuthProvider = ({ children }: AuthProviderProps) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
   useEffect(() => {
-    auth().catch(() => setIsAuthorized(false));
+    void auth().catch(() => setIsAuthorized(false));
 
-    if (localStorage.getItem(CURRENT_USER)) {
-      setUser(JSON.parse(localStorage.getItem(CURRENT_USER)));
+    const storedUser = localStorage.getItem(CURRENT_USER);
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
     }
   }, []);
 
   const refreshToken = async () => {
-    const refreshToken = localStorage.getItem(REFRESH_TOKEN);
+    const storedRefreshToken = localStorage.getItem(REFRESH_TOKEN);
 
     try {
       const res = await api.post("/api/token/refresh/", {
-        refresh: refreshToken,
+        refresh: storedRefreshToken,
       });
 
       if (res.status === 200) {
@@ -48,7 +70,7 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
-    const decoded = jwtDecode(token);
+    const decoded = jwtDecode<JwtPayload>(token);
     const now = Date.now() / 1000;
 
     // If the access token expired
@@ -76,4 +98,11 @@ export const AuthProvider = ({ children }) => {
 };
 
 // Custom hook to use auth context
-export const useAuth = () => useContext(AuthContext);
+// eslint-disable-next-line react-refresh/only-export-components
+export const useAuth = (): AuthContextValue => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};

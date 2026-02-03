@@ -1,5 +1,6 @@
-import { Gantt, Willow } from "@svar-ui/react-gantt";
 import "@svar-ui/react-gantt/all.css";
+
+import { Gantt, Willow } from "@svar-ui/react-gantt";
 
 const GanttChartBackup = () => {
   const tasks = [
@@ -61,8 +62,8 @@ const GanttChartBackup = () => {
           tasks={tasks}
           links={links}
           scales={scales}
-          columnWidth={30} // width per time unit in px (default may be 60)
-          barHeight={24}
+          cellWidth={30}
+          cellHeight={24}
         />
       </Willow>
     </div>

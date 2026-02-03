@@ -1,30 +1,52 @@
-import { useState, useEffect, useRef, useMemo } from "react";
-import { FrappeGantt } from "frappe-gantt-react";
 import "frappe-gantt-react/node_modules/frappe-gantt/src/gantt.scss";
 import "../styles/gantt-custom.css";
-import { CURRENT_PROJECT_ID } from "../constants";
-import { getTasks, updateTask } from "../services/TaskService";
-import { useProject } from "../context/ProjectContext";
-import { useAuth } from "../context/AuthContext";
-import { Link } from "react-router-dom";
+
+import { faPlusCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCirclePlus, faPlusCircle } from "@fortawesome/free-solid-svg-icons";
+import { FrappeGantt, ViewMode } from "frappe-gantt-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+
 import ProjectRequired from "../components/ProjectRequired";
+import { CURRENT_PROJECT_ID } from "../constants";
+import { useAuth } from "../context/AuthContext";
+import { useProject } from "../context/ProjectContext";
+import { getTasks, updateTask } from "../services/TaskService";
+import type { Task as ApiTask, TaskStatus, TaskUser } from "../types";
+
+// Extended Gantt task type with additional properties for this component
+interface GanttTask {
+  id: string;
+  name: string;
+  start: string;
+  end: string;
+  progress: number;
+  custom_class?: string;
+  dependencies?: string;
+  draggable: boolean;
+  originalTask: ApiTask;
+}
+
+// API response type for tasks endpoint
+interface TasksApiResponse {
+  tasks?: ApiTask[];
+  task_id?: string;
+}
 
 export default function GanttChart() {
   const { user } = useAuth();
   const { projects, currentProject } = useProject();
   const currentProjectId = localStorage.getItem(CURRENT_PROJECT_ID);
-  const [viewMode, setViewMode] = useState("Day");
-  const [tasks, setTasks] = useState([]);
+  const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Day);
+  const [tasks, setTasks] = useState<GanttTask[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [animate, setAnimate] = useState(false);
-  const ganttContainerRef = useRef(null);
+  const [_animate, setAnimate] = useState(false);
+  const ganttContainerRef = useRef<HTMLDivElement>(null);
 
-  // Calculate the earliest start date from tasks
-  const chartStartDate = useMemo(() => {
+  // Calculate the earliest start date from tasks (kept for potential future use)
+  const _chartStartDate = useMemo(() => {
     if (tasks.length === 0) {
       // Default to today if no tasks
       return new Date().toISOString().split("T")[0];
@@ -43,7 +65,7 @@ export default function GanttChart() {
   }, [tasks]);
 
   // Calculate the latest end date from tasks
-  const chartEndDate = useMemo(() => {
+  const _chartEndDate = useMemo(() => {
     if (tasks.length === 0) {
       // Default to 30 days from today if no tasks
       const futureDate = new Date();
@@ -65,7 +87,7 @@ export default function GanttChart() {
 
   useEffect(() => {
     if (!currentProject || !user) return;
-    fetchTasks();
+    void fetchTasks();
   }, [currentProject, user]);
 
   useEffect(() => {
@@ -86,7 +108,7 @@ export default function GanttChart() {
     const bars = ganttElement.querySelectorAll(".bar-wrapper");
 
     bars.forEach((barWrapper, index) => {
-      const bar = barWrapper.querySelector(".bar");
+      const bar = barWrapper.querySelector(".bar") as HTMLElement | null;
       if (!bar) {
         console.log(`Bar not found for wrapper ${index}`);
         return;
@@ -102,30 +124,34 @@ export default function GanttChart() {
 
       console.log(`Task ${taskId} (${task.name}): draggable=${task.draggable}`);
 
+      const barWrapperEl = barWrapper as HTMLElement;
+
       if (!task.draggable) {
         bar.style.pointerEvents = "none";
         bar.style.cursor = "default";
 
         const handles = barWrapper.querySelectorAll(".bar-handle");
         handles.forEach((handle) => {
-          handle.style.pointerEvents = "none";
-          handle.style.cursor = "default";
-          handle.style.display = "none";
+          const handleEl = handle as HTMLElement;
+          handleEl.style.pointerEvents = "none";
+          handleEl.style.cursor = "default";
+          handleEl.style.display = "none";
         });
 
-        barWrapper.style.pointerEvents = "none";
+        barWrapperEl.style.pointerEvents = "none";
       } else {
         bar.style.pointerEvents = "auto";
         bar.style.cursor = "move";
 
         const handles = barWrapper.querySelectorAll(".bar-handle");
         handles.forEach((handle) => {
-          handle.style.pointerEvents = "auto";
-          handle.style.cursor = "ew-resize";
-          handle.style.display = "block";
+          const handleEl = handle as HTMLElement;
+          handleEl.style.pointerEvents = "auto";
+          handleEl.style.cursor = "ew-resize";
+          handleEl.style.display = "block";
         });
 
-        barWrapper.style.pointerEvents = "auto";
+        barWrapperEl.style.pointerEvents = "auto";
       }
     });
   };
@@ -136,14 +162,14 @@ export default function GanttChart() {
       setError(null);
       setAnimate(false);
 
-      const response = await getTasks(currentProjectId);
+      const response = (await getTasks(currentProjectId)) as ApiTask[] | TasksApiResponse;
       console.log("API Response:", response);
 
       // Handle different response formats
-      let tasksData = response;
+      let tasksData: ApiTask[] = [];
 
       // If response is an object with a 'tasks' property
-      if (response && typeof response === "object" && !Array.isArray(response) && response.tasks) {
+      if (response && typeof response === "object" && !Array.isArray(response) && "tasks" in response && response.tasks) {
         tasksData = response.tasks;
         console.log("Extracted tasks from response.tasks");
       }
@@ -152,13 +178,15 @@ export default function GanttChart() {
         response &&
         typeof response === "object" &&
         !Array.isArray(response) &&
+        "task_id" in response &&
         response.task_id
       ) {
-        tasksData = [response]; // Wrap single task in array
+        tasksData = [response as unknown as ApiTask]; // Wrap single task in array
         console.log("Wrapped single task in array");
       }
       // If response is already an array
       else if (Array.isArray(response)) {
+        tasksData = response;
         console.log("Response is already an array");
       }
 
@@ -167,7 +195,7 @@ export default function GanttChart() {
       const transformedTasks = transformTasksForGantt(tasksData);
       setTasks(transformedTasks);
     } catch (err) {
-      setError(err.message);
+      setError((err as Error).message);
       console.error("Error fetching tasks:", err);
     } finally {
       setLoading(false);
@@ -175,7 +203,7 @@ export default function GanttChart() {
     }
   };
 
-  const transformTasksForGantt = (tasksData) => {
+  const transformTasksForGantt = (tasksData: ApiTask[]): GanttTask[] => {
     // Ensure we always work with an array
     const taskArray = Array.isArray(tasksData) ? tasksData : [];
 
@@ -191,13 +219,13 @@ export default function GanttChart() {
     });
 
     return taskArray
-      .map((task) => {
+      .map((task): GanttTask | null => {
         if (!task || !task.task_id) {
           console.warn("Invalid task data:", task);
           return null;
         }
 
-        const progressMap = {
+        const _progressMap: Record<string, number> = {
           done: 100,
           testing: 75,
           in_review: 60,
@@ -206,12 +234,12 @@ export default function GanttChart() {
           todo: 0,
         };
 
-        let startDate, endDate;
+        let startDate: Date, endDate: Date;
         try {
           endDate = new Date(task.deadline);
           startDate = new Date(task.start_date);
-        } catch (error) {
-          console.error("Error parsing dates for task:", task.task_id, error);
+        } catch (_error) {
+          console.error("Error parsing dates for task:", task.task_id, _error);
           // Use fallback dates
           endDate = new Date();
           startDate = new Date();
@@ -220,18 +248,18 @@ export default function GanttChart() {
 
         // Check if user exists and if this task is assigned to the current user
         // Handle different possible structures for users
-        let users = [];
+        let users: TaskUser[] = [];
 
         if (task.users && Array.isArray(task.users)) {
           users = task.users;
-        } else if (task.assigned_users && Array.isArray(task.assigned_users)) {
-          users = task.assigned_users;
-        } else if (task.assigned_user_ids && Array.isArray(task.assigned_user_ids)) {
+        } else if ((task as unknown as { assigned_users?: TaskUser[] }).assigned_users && Array.isArray((task as unknown as { assigned_users?: TaskUser[] }).assigned_users)) {
+          users = (task as unknown as { assigned_users: TaskUser[] }).assigned_users;
+        } else if ((task as unknown as { assigned_user_ids?: number[] }).assigned_user_ids && Array.isArray((task as unknown as { assigned_user_ids?: number[] }).assigned_user_ids)) {
           // If it's just an array of IDs, convert to objects
-          users = task.assigned_user_ids.map((id) => ({ user_id: id }));
+          users = (task as unknown as { assigned_user_ids: number[] }).assigned_user_ids.map((id) => ({ user_id: id } as TaskUser));
         }
 
-        const assignedUserIds = users.map((u) => u?.user_id).filter((id) => id != null);
+        const assignedUserIds = users.map((u) => u?.user_id).filter((id): id is number => id != null);
 
         const isAssignedToMe = user?.id ? assignedUserIds.includes(user.id) : false;
 
@@ -254,22 +282,22 @@ export default function GanttChart() {
           custom_class: isAssignedToMe ? "assigned-to-me" : "not-assigned",
           originalTask: task,
           draggable: isAssignedToMe,
-        };
+        } as GanttTask;
       })
-      .filter((task) => task != null); // Filter out any null tasks
+      .filter((task): task is GanttTask => task != null); // Filter out any null tasks
   };
 
-  const formatDateForAPI = (dateString) => {
+  const formatDateForAPI = (dateString: string): string => {
     const date = new Date(dateString);
     return date.toISOString();
   };
 
-  const formatDateForGantt = (isoDateString) => {
+  const formatDateForGantt = (isoDateString: string): string => {
     const date = new Date(isoDateString);
     return date.toISOString().split("T")[0];
   };
 
-  const handleDateChange = async (task, start, end) => {
+  const handleDateChange = async (task: GanttTask, start: string, end: string) => {
     if (!task.draggable) {
       console.warn("Attempted to drag non-assigned task:", task.id);
       alert("このタスクは担当者ではないため変更できません");
@@ -305,7 +333,7 @@ export default function GanttChart() {
       await updateTask(currentProjectId, task.id, updateData);
 
       setTasks((prevTasks) =>
-        prevTasks.map((t) =>
+        prevTasks.map((t): GanttTask =>
           t.id === task.id
             ? {
                 ...t,
@@ -326,7 +354,7 @@ export default function GanttChart() {
       console.error("Error updating task:", err);
 
       setTasks((prevTasks) =>
-        prevTasks.map((t) =>
+        prevTasks.map((t): GanttTask =>
           t.id === task.id
             ? {
                 ...t,
@@ -339,13 +367,13 @@ export default function GanttChart() {
         ),
       );
 
-      alert("❌ タスクの更新に失敗しました\n" + (err.message || "サーバーエラーが発生しました"));
+      alert("❌ タスクの更新に失敗しました\n" + ((err as Error).message || "サーバーエラーが発生しました"));
     } finally {
       setIsUpdating(false);
     }
   };
 
-  const handleProgressChange = async (task, progress) => {
+  const handleProgressChange = async (task: GanttTask, progress: number) => {
     if (!task.draggable) {
       console.warn("Attempted to change progress of non-assigned task:", task.id);
       alert("このタスクは担当者ではないため変更できません");
@@ -386,14 +414,14 @@ export default function GanttChart() {
       await updateTask(currentProjectId, task.id, updateData);
 
       setTasks((prevTasks) =>
-        prevTasks.map((t) =>
+        prevTasks.map((t): GanttTask =>
           t.id === task.id
             ? {
                 ...t,
                 progress: progress,
                 originalTask: {
                   ...t.originalTask,
-                  status: status,
+                  status: status as TaskStatus,
                 },
               }
             : t,
@@ -405,7 +433,7 @@ export default function GanttChart() {
       console.error("Error updating progress:", err);
 
       const originalStatus = task.originalTask?.status || "todo";
-      const progressMap = {
+      const progressMap: Record<string, number> = {
         done: 100,
         testing: 75,
         in_review: 60,
@@ -415,7 +443,7 @@ export default function GanttChart() {
       };
 
       setTasks((prevTasks) =>
-        prevTasks.map((t) =>
+        prevTasks.map((t): GanttTask =>
           t.id === task.id
             ? {
                 ...t,
@@ -425,14 +453,14 @@ export default function GanttChart() {
         ),
       );
 
-      alert("❌ 進捗の更新に失敗しました\n" + (err.message || "サーバーエラーが発生しました"));
+      alert("❌ 進捗の更新に失敗しました\n" + ((err as Error).message || "サーバーエラーが発生しました"));
     } finally {
       setIsUpdating(false);
     }
   };
 
   const handleRefresh = () => {
-    fetchTasks();
+    void fetchTasks();
   };
 
   /* console.log("Chart start date:", chartStartDate);
@@ -478,15 +506,16 @@ export default function GanttChart() {
 
       <div className="bg-white w-xs p-6 rounded-lg shadow-md">
         <div className="flex items-center justify-between">
-          <label className="font-bold text-xl">表示モード：</label>
+          <label htmlFor="viewMode" className="font-bold text-xl">表示モード：</label>
           <select
+            id="viewMode"
             className="border rounded px-3 py-2 text-lg"
-            onChange={(e) => setViewMode(e.target.value)}
+            onChange={(e) => setViewMode(e.target.value as ViewMode)}
             value={viewMode}
           >
-            <option value="Day">日単位</option>
-            <option value="Week">週単位</option>
-            <option value="Month">月単位</option>
+            <option value={ViewMode.Day}>日単位</option>
+            <option value={ViewMode.Week}>週単位</option>
+            <option value={ViewMode.Month}>月単位</option>
           </select>
         </div>
       </div>
@@ -519,18 +548,18 @@ export default function GanttChart() {
         ) : tasks.length > 0 ? (
           <>
             <FrappeGantt
-              tasks={tasks}
+              tasks={tasks as unknown as import("frappe-gantt-react").Task[]}
               viewMode={viewMode}
-              start={chartStartDate}
               onClick={(task) => {
-                const isMine = task.draggable;
+                const ganttTask = task as unknown as GanttTask;
+                const isMine = ganttTask.draggable;
                 console.log(
                   "クリック:",
                   task,
                   `担当者: ${isMine ? "自分" : "他人"}`,
                   `User ID: ${user?.id}`,
                   `Assigned Users: ${
-                    task.originalTask?.users?.map((u) => `${u.name} (${u.user_id})`).join(", ") ||
+                    ganttTask.originalTask?.users?.map((u) => `${u.name} (${u.user_id})`).join(", ") ||
                     "None"
                   }`,
                 );
@@ -538,8 +567,8 @@ export default function GanttChart() {
                   alert("このタスクは担当者ではないため変更できません");
                 }
               }}
-              onDateChange={handleDateChange}
-              onProgressChange={handleProgressChange}
+              onDateChange={(task, start, end) => handleDateChange(task as unknown as GanttTask, String(start), String(end))}
+              onProgressChange={(task, progress) => handleProgressChange(task as unknown as GanttTask, progress)}
               onTasksChange={(newTasks) => console.log("変更:", newTasks)}
             />
             <div className="mt-4 text-sm font-semibold text-gray-500 text-center">

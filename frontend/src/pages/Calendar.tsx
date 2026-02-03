@@ -1,23 +1,24 @@
-import React, { useState, useRef, useEffect } from "react";
-import FullCalendar from "@fullcalendar/react";
+import {
+  faCheckCircle,
+  faExclamationCircle,
+  faListUl,
+  faPlayCircle,
+} from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faListUl,
-  faPlayCircle,
-  faCheckCircle,
-  faExclamationCircle,
-} from "@fortawesome/free-solid-svg-icons";
-import { getTasks } from "../services/TaskService";
-import { useProject } from "../context/ProjectContext";
+import FullCalendar from "@fullcalendar/react";
 import { MobileDateTimePicker } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
-import { createEvent, updateEvent as updateEventApi, getEvents } from "../services/EventService";
-import { formatDateJP, formatUTC } from "../utils/dateUtils";
 import utc from "dayjs/plugin/utc";
+import { useEffect, useRef, useState } from "react";
+
 import ProjectRequired from "../components/ProjectRequired";
+import { useProject } from "../context/ProjectContext";
+import { createEvent, getEvents, updateEvent as updateEventApi } from "../services/EventService";
+import { getTasks } from "../services/TaskService";
+import { formatDateJP, formatUTC } from "../utils/dateUtils";
 dayjs.extend(utc);
 
 // ========== Constants ==========
@@ -80,7 +81,7 @@ const isDeadlineNear = (dueDate) => {
   if (!dueDate) return false;
   const now = new Date();
   const due = new Date(dueDate);
-  const diffDays = (due - now) / (1000 * 60 * 60 * 24);
+  const diffDays = (due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
   return diffDays >= 0 && diffDays <= 7;
 };
 
@@ -144,7 +145,7 @@ const Calendar = () => {
 
   // Sort functions
   const sortFunctions = {
-    dueDate: (a, b) => new Date(a.dueDate || a.start) - new Date(b.dueDate || b.start),
+    dueDate: (a, b) => new Date(a.dueDate || a.start).getTime() - new Date(b.dueDate || b.start).getTime(),
     priority: (a, b) =>
       (({ high: 1, medium: 2, low: 3 })[a.priority] || 2) -
       ({ high: 1, medium: 2, low: 3 }[b.priority] || 2),
@@ -156,8 +157,8 @@ const Calendar = () => {
   }, []);
 
   useEffect(() => {
-    fetchTasks();
-    fetchEvents();
+    void fetchTasks();
+    void fetchEvents();
   }, [currentProject?.project_id]);
 
   useEffect(() => {
@@ -523,6 +524,14 @@ const Calendar = () => {
               key={e.id}
               className="p-2 rounded-md cursor-pointer flex items-center justify-between hover:bg-gray-100 transition"
               onClick={() => openTaskDetail(e)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  openTaskDetail(e);
+                }
+              }}
+              role="button"
+              tabIndex={0}
             >
               <div className="flex items-center gap-2">
                 <span
@@ -657,12 +666,20 @@ const Calendar = () => {
             modalReady ? "show" : ""
           }`}
           onClick={closeModal}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") closeModal();
+          }}
+          role="button"
+          tabIndex={0}
         >
+          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
           <div
             className={`modal-content bg-white rounded-xl p-6 w-[420px] shadow-lg max-h-[85vh] overflow-y-auto ${
               modalReady ? "show" : ""
             }`}
             onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
           >
             <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
               {modal.event?.source === "task"
@@ -697,8 +714,9 @@ const Calendar = () => {
             )}
 
             <div className="mb-4">
-              <label className="text-sm text-gray-600 block mb-1">タイトル</label>
+              <label htmlFor="eventTitle" className="text-sm text-gray-600 block mb-1">タイトル</label>
               <input
+                id="eventTitle"
                 type="text"
                 className="w-full p-2 border rounded"
                 value={modal.event.title}
@@ -709,7 +727,7 @@ const Calendar = () => {
 
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="text-sm text-gray-600 block mb-1">開始日</label>
+                <span id="startDateLabel" className="text-sm text-gray-600 block mb-1">開始日</span>
                 <MobileDateTimePicker
                   value={modal.event.start ? dayjs.utc(modal.event.start) : null}
                   onChange={(newValue) =>
@@ -721,12 +739,12 @@ const Calendar = () => {
                   }
                   maxDate={modal.event.end ? dayjs.utc(modal.event.end) : undefined}
                   disabled={modal.event?.source === "task"} // FIX: Disable for tasks
-                  slotProps={{ textField: { fullWidth: true, size: "small" } }}
+                  slotProps={{ textField: { fullWidth: true, size: "small", "aria-labelledby": "startDateLabel" } }}
                 />
               </div>
 
               <div>
-                <label className="text-sm text-gray-600 block mb-1">終了日</label>
+                <span id="endDateLabel" className="text-sm text-gray-600 block mb-1">終了日</span>
                 <MobileDateTimePicker
                   value={modal.event.end ? dayjs.utc(modal.event.end) : null}
                   onChange={(newValue) =>
@@ -738,7 +756,7 @@ const Calendar = () => {
                   }
                   minDate={modal.event.start ? dayjs(modal.event.start) : undefined}
                   disabled={modal.event?.source === "task"} // FIX: Disable for tasks
-                  slotProps={{ textField: { fullWidth: true, size: "small" } }}
+                  slotProps={{ textField: { fullWidth: true, size: "small", "aria-labelledby": "endDateLabel" } }}
                 />
               </div>
             </div>
@@ -772,8 +790,9 @@ const Calendar = () => {
             </div>
 
             <div className="mb-4">
-              <label className="text-sm text-gray-600 block mb-1">ステータス</label>
+              <label htmlFor="eventStatus" className="text-sm text-gray-600 block mb-1">ステータス</label>
               <select
+                id="eventStatus"
                 className="w-full p-2 border rounded"
                 value={modal.event.status || "active"}
                 onChange={(e) => updateEvent("status", e.target.value)}
@@ -795,8 +814,9 @@ const Calendar = () => {
               {showDetail && (
                 <div className="mt-3 space-y-3">
                   <div>
-                    <label className="text-sm text-gray-600 block mb-1">優先度</label>
+                    <label htmlFor="eventPriority" className="text-sm text-gray-600 block mb-1">優先度</label>
                     <select
+                      id="eventPriority"
                       className="w-full p-2 border rounded"
                       value={modal.event.priority || "medium"}
                       onChange={(e) => updateEvent("priority", e.target.value)}
@@ -809,8 +829,8 @@ const Calendar = () => {
                   </div>
 
                   <div>
-                    <label className="text-sm text-gray-600 block mb-1">色</label>
-                    <div className="flex gap-2">
+                    <span id="colorLabel" className="text-sm text-gray-600 block mb-1">色</span>
+                    <div className="flex gap-2" role="group" aria-labelledby="colorLabel">
                       {["#3b82f6", "#22c55e", "#f59e0b", "#ef4444"].map((color) => (
                         <button
                           key={color}
@@ -822,14 +842,16 @@ const Calendar = () => {
                           style={{ backgroundColor: color }}
                           onClick={() => updateEvent("color", color)}
                           disabled={modal.event?.source === "task"}
+                          aria-label={`色 ${color}`}
                         />
                       ))}
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-sm text-gray-600 block mb-1">コメント</label>
+                    <label htmlFor="eventComment" className="text-sm text-gray-600 block mb-1">コメント</label>
                     <textarea
+                      id="eventComment"
                       className="w-full p-2 border rounded"
                       rows={3}
                       value={modal.event.comment || ""}
@@ -840,7 +862,7 @@ const Calendar = () => {
 
                   {modal.event?.source === "task" && modal.event.description && (
                     <div>
-                      <label className="text-sm text-gray-600 block mb-1">タスク詳細</label>
+                      <span className="text-sm text-gray-600 block mb-1">タスク詳細</span>
                       <div className="w-full p-2 border rounded bg-gray-50 text-sm text-gray-700">
                         {modal.event.description}
                       </div>

@@ -1,18 +1,41 @@
-// ProjectContext.js
-import { createContext, useContext, useEffect, useState } from "react";
-import { getProjects } from "../services/ProjectService";
+import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
+
 import { CURRENT_PROJECT_ID } from "../constants";
+import { getProjects } from "../services/ProjectService";
+import type { Project } from "../types";
 import { useAuth } from "./AuthContext";
 
-const ProjectContext = createContext();
+// ========================================
+// Context Types
+// ========================================
+interface ProjectContextValue {
+  projects: Project[];
+  setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
+  currentProject: Project | null;
+  setCurrentProject: React.Dispatch<React.SetStateAction<Project | null>>;
+  updateProjectInContext: (updatedProject: Project) => void;
+  handleProjectChange: (projectId: string) => void;
+  refreshProjects: () => Promise<void>;
+  loading: boolean;
+  error: Error | null;
+}
 
-export const ProjectProvider = ({ children }) => {
+interface ProjectProviderProps {
+  children: ReactNode;
+}
+
+// ========================================
+// Context
+// ========================================
+const ProjectContext = createContext<ProjectContextValue | null>(null);
+
+export const ProjectProvider = ({ children }: ProjectProviderProps) => {
   const { isAuthorized } = useAuth();
 
-  const [projects, setProjects] = useState([]);
-  const [currentProject, setCurrentProject] = useState(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     if (isAuthorized === null) return;
@@ -21,7 +44,7 @@ export const ProjectProvider = ({ children }) => {
       return;
     }
 
-    fetchProjects();
+    void fetchProjects();
   }, [isAuthorized]);
 
   const fetchProjects = async () => {
@@ -33,7 +56,7 @@ export const ProjectProvider = ({ children }) => {
 
       // Try to restore previously selected project
       if (savedProjectId) {
-        const restored = fetchedProjects.find((p) => p.project_id === savedProjectId);
+        const restored = fetchedProjects.find((p: Project) => p.project_id === savedProjectId);
 
         if (restored) {
           setCurrentProject(restored);
@@ -50,7 +73,7 @@ export const ProjectProvider = ({ children }) => {
 
       setLoading(false);
     } catch (err) {
-      setError(err);
+      setError(err as Error);
       setLoading(false);
     }
   };
@@ -63,7 +86,7 @@ export const ProjectProvider = ({ children }) => {
       // Update current project if it exists in the refreshed list
       if (currentProject) {
         const updatedCurrentProject = fetchedProjects.find(
-          (p) => p.project_id === currentProject.project_id,
+          (p: Project) => p.project_id === currentProject.project_id,
         );
 
         if (updatedCurrentProject) {
@@ -72,11 +95,11 @@ export const ProjectProvider = ({ children }) => {
       }
     } catch (err) {
       console.error("Failed to refresh projects:", err);
-      setError(err);
+      setError(err as Error);
     }
   };
 
-  const updateProjectInContext = (updatedProject) => {
+  const updateProjectInContext = (updatedProject: Project) => {
     setProjects((prevProjects) =>
       prevProjects.map((p) => (p.project_id === updatedProject.project_id ? updatedProject : p)),
     );
@@ -86,7 +109,7 @@ export const ProjectProvider = ({ children }) => {
     );
   };
 
-  const handleProjectChange = (projectId) => {
+  const handleProjectChange = (projectId: string) => {
     const selected = projects.find((p) => p.project_id === projectId);
 
     if (selected) {
@@ -104,7 +127,7 @@ export const ProjectProvider = ({ children }) => {
         setCurrentProject,
         updateProjectInContext,
         handleProjectChange,
-        refreshProjects, // ✅ Expose refreshProjects
+        refreshProjects,
         loading,
         error,
       }}
@@ -114,4 +137,11 @@ export const ProjectProvider = ({ children }) => {
   );
 };
 
-export const useProject = () => useContext(ProjectContext);
+// eslint-disable-next-line react-refresh/only-export-components
+export const useProject = (): ProjectContextValue => {
+  const context = useContext(ProjectContext);
+  if (!context) {
+    throw new Error("useProject must be used within a ProjectProvider");
+  }
+  return context;
+};

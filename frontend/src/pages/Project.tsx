@@ -1,26 +1,22 @@
-import { useEffect, useState } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
+  faCalendar,
+  faChartLine,
   faCheckCircle,
   faCirclePlus,
-  faCommentDots,
+  faClipboardCheck,
   faExclamationCircle,
   faListUl,
-  faPen,
-  faPlayCircle,
-  faPlusCircle,
-  faTrash,
-  faEye,
-  faPenToSquare,
-  faUsers,
-  faCalendar,
-  faTasks,
-  faChartLine,
   faPause,
-  faClipboardCheck,
+  faPenToSquare,
+  faPlayCircle,
+  faTasks,
+  faTrash,
+  faUsers,
   faVial,
 } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Link } from "react-router-dom";
+
 import { useProject } from "../context/ProjectContext";
 import { formatUTC } from "../utils/dateUtils";
 
@@ -131,10 +127,7 @@ const Project = () => {
               <div>
                 <p className="text-gray-500 font-bold text-2xl mb-1">進行中</p>
                 <h2 className="text-5xl font-bold text-blue-700 mt-2">
-                  {
-                    projects.filter((p) => p.status === "in_progress" || p.status === "進行中")
-                      .length
-                  }
+                  {projects.filter((p) => p.status === "in_progress").length}
                 </h2>
               </div>
               <div className="bg-blue-50 p-4 rounded-xl group-hover:bg-blue-100 transition-colors">
@@ -148,7 +141,7 @@ const Project = () => {
               <div>
                 <p className="text-gray-500 font-bold text-2xl mb-1">完了済み</p>
                 <h2 className="text-5xl font-bold text-green-600 mt-2">
-                  {projects.filter((p) => p.status === "completed" || p.status === "完了").length}
+                  {projects.filter((p) => p.status === "completed").length}
                 </h2>
               </div>
               <div className="bg-green-50 p-4 rounded-xl group-hover:bg-green-100 transition-colors">

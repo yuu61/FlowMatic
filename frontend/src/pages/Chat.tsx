@@ -1,33 +1,28 @@
 // Chat.jsx
-import { useState, useRef, useEffect } from "react";
-import EmojiPicker from "emoji-picker-react";
-import { ACCESS_TOKEN, CURRENT_PROJECT_ID } from "../constants";
-import { getChatrooms, getMessages } from "../services/ChatService";
-import api from "../api";
-import { useProject } from "../context/ProjectContext";
-import { useAuth } from "../context/AuthContext";
-import { resolveImageUrl } from "../utils/resolveImageUrl";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
+  faChevronUp,
+  faClock,
+  faEdit,
+  faMessage,
   faPaperPlane,
-  faSmile,
-  faEllipsisVertical,
   faPenToSquare,
   faReply,
+  faRotateLeft,
+  faSmile,
   faTrash,
   faXmark,
-  faClock,
-  faChevronUp,
-  faRotateLeft,
-  faPaperclip,
-  faImage,
-  faEdit,
-  faTrashAlt,
-  faReplyAll,
-  faSmileBeam,
-  faMessage,
 } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import EmojiPicker from "emoji-picker-react";
+import { useEffect, useRef, useState } from "react";
+
+import api from "../api";
 import ProjectRequired from "../components/ProjectRequired";
+import { ACCESS_TOKEN } from "../constants";
+import { useAuth } from "../context/AuthContext";
+import { useProject } from "../context/ProjectContext";
+import { getChatrooms, getMessages } from "../services/ChatService";
+import { resolveImageUrl } from "../utils/resolveImageUrl";
 
 const Chat = () => {
   const { user } = useAuth();
@@ -43,7 +38,7 @@ const Chat = () => {
   const [editingId, setEditingId] = useState(null);
   const [editingText, setEditingText] = useState("");
   const [replyTo, setReplyTo] = useState(null);
-  const [openMenuId, setOpenMenuId] = useState(null);
+  const [_openMenuId, setOpenMenuId] = useState(null);
   const [lastDeleted, setLastDeleted] = useState(null);
   const [isComposing, setIsComposing] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -102,7 +97,7 @@ const Chat = () => {
       }
     };
 
-    loadChatrooms();
+    void loadChatrooms();
   }, [currentProjectId]);
 
   // 選択されたチャットルームのメッセージを読み込む + ポーリング
@@ -137,7 +132,7 @@ const Chat = () => {
       }
     };
 
-    loadInitialMessages();
+    void loadInitialMessages();
   }, [currentProjectId, selectedChat]);
 
   useEffect(() => {
@@ -291,9 +286,9 @@ const Chat = () => {
   };
 
   // メッセージリンクコピー
-  const copyMessageLink = (msg) => {
+  const _copyMessageLink = (msg) => {
     const link = `${window.location.origin}${window.location.pathname}#chat-${selectedChat}-msg-${msg.id}`;
-    navigator.clipboard?.writeText(link);
+    void navigator.clipboard?.writeText(link);
     setOpenMenuId(null);
   };
 
@@ -372,6 +367,11 @@ const Chat = () => {
     <div
       className="flex w-full bg-white rounded-xl shadow-lg overflow-hidden"
       onClick={closeMenu}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") closeMenu();
+      }}
+      role="button"
+      tabIndex={0}
       style={{ height: "calc(100vh - 100px)" }} // 親コンテナの高さを設定
     >
       {/* チャット画面 (Full Width) */}
@@ -543,6 +543,7 @@ const Chat = () => {
                                 onChange={(e) => setEditingText(e.target.value)}
                                 className="w-full border-2 border-gray-200 p-3 rounded-xl resize-none focus:outline-none focus:border-blue-400 transition-colors"
                                 rows={3}
+                                // eslint-disable-next-line jsx-a11y/no-autofocus
                                 autoFocus
                               />
                               <div className="flex justify-end gap-2">
@@ -599,7 +600,7 @@ const Chat = () => {
                           {/* Reactions */}
                           {Object.keys(msg.reactions || {}).length > 0 && (
                             <div className="flex gap-2 mt-2 flex-wrap">
-                              {Object.entries(msg.reactions || {}).map(([emoji, users]) => (
+                              {Object.entries(msg.reactions || {}).map(([emoji, users]: [string, number[]]) => (
                                 <span
                                   key={emoji}
                                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-full text-sm shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 cursor-pointer"
@@ -648,6 +649,9 @@ const Chat = () => {
           <div
             className="absolute bottom-24 right-6 z-50 shadow-2xl rounded-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            role="button"
+            tabIndex={0}
           >
             <EmojiPicker
               width={350}
@@ -708,6 +712,9 @@ const Chat = () => {
               <div
                 className="absolute bottom-16 left-4 z-50 shadow-2xl rounded-2xl overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
+                role="button"
+                tabIndex={0}
               >
                 <EmojiPicker
                   width={350}

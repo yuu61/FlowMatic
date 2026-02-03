@@ -3,14 +3,15 @@ import { faCircleXmark, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { MobileDateTimePicker } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getUsers } from "../services/UserService";
-import { createProject, getProjectById } from "../services/ProjectService";
-import { createChatroom } from "../services/ChatService"; // Add this import
+
+import { CURRENT_PROJECT_ID } from "../constants";
 import { useAuth } from "../context/AuthContext";
 import { useProject } from "../context/ProjectContext";
-import { CURRENT_PROJECT_ID } from "../constants";
+import { createChatroom } from "../services/ChatService"; // Add this import
+import { createProject } from "../services/ProjectService";
+import { getUsers } from "../services/UserService";
 
 export default function NewProjectForm() {
   const navigate = useNavigate();
@@ -65,7 +66,7 @@ export default function NewProjectForm() {
       }
     };
 
-    fetchUsers();
+    void fetchUsers();
   }, []);
 
   const handleInputChange = (e) => {
@@ -121,7 +122,7 @@ export default function NewProjectForm() {
       localStorage.setItem(CURRENT_PROJECT_ID, newProject.project_id);
 
       alert(newProject.title + "は正常に作成されました");
-      navigate("/project");
+      void navigate("/project");
     } catch (error) {
       console.error("Error creating project:", error);
       alert("プロジェクトの作成に失敗しました");
@@ -251,12 +252,13 @@ export default function NewProjectForm() {
 
           {/* メンバー選択 */}
           <div>
-            <label className="block text-xl font-bold mb-3">メンバー</label>
+            <label htmlFor="member-search" className="block text-xl font-bold mb-3">メンバー</label>
 
             {/* Search box */}
             <div className="mb-4">
               <input
                 type="text"
+                id="member-search"
                 placeholder="メンバー名で検索して追加..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -278,6 +280,8 @@ export default function NewProjectForm() {
                     .map((member) => (
                       <div
                         key={member.id}
+                        role="button"
+                        tabIndex={0}
                         className="flex items-center justify-between p-4 border-b border-gray-100 last:border-b-0 hover:bg-blue-50 cursor-pointer transition-colors"
                         onClick={() => {
                           setFormData((prev) => ({
@@ -285,6 +289,16 @@ export default function NewProjectForm() {
                             members: [...prev.members, member.id],
                           }));
                           setSearchQuery("");
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setFormData((prev) => ({
+                              ...prev,
+                              members: [...prev.members, member.id],
+                            }));
+                            setSearchQuery("");
+                          }
                         }}
                       >
                         <div className="flex items-center justify-center">

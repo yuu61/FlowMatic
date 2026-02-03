@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
 import { NavLink, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+
 import NewTaskForm from "../components/NewTaskForm";
+import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
+import { useAuth } from "../context/AuthContext";
 
 function Home() {
   const { setIsAuthorized, user } = useAuth();
@@ -12,17 +13,17 @@ function Home() {
   // -------------------------------
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const handleLogout = () => {
+  const _handleLogout = () => {
     localStorage.clear();
     setIsAuthorized(false);
-    navigate("/login");
+    void navigate("/login");
   };
 
   useEffect(() => {
     console.log(user);
     console.log(localStorage.getItem(ACCESS_TOKEN));
     console.log(localStorage.getItem(REFRESH_TOKEN));
-  }, []);
+  }, [user]);
 
   return (
     <div className="font-sans bg-gray-100 min-h-screen flex">
@@ -54,6 +55,7 @@ function Home() {
             },
           ].map((item) => (
             <NavLink
+              key={item.href}
               to={item.href}
               className={({ isActive }) =>
                 `flex items-center gap-2 p-2 rounded-lg hover:bg-gray-700 text-lg font-extrabold ${

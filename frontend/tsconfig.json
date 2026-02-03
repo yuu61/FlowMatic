@@ -14,9 +14,18 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Linting - 初期は緩く設定 */
+    /* Linting - 段階的に締める
+     *
+     * 移行フェーズ:
+     * Phase 1 (現在): 基本設定、型定義追加完了
+     * Phase 2: noUnusedLocals, noUnusedParameters を有効化
+     * Phase 3: noImplicitAny を有効化
+     * Phase 4: strictNullChecks を有効化
+     * Phase 5: strict を有効化（全オプション有効）
+     */
     "strict": false,
     "noImplicitAny": false,
+    "strictNullChecks": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
@@ -28,5 +37,5 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "vite.config.ts"]
 }

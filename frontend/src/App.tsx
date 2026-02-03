@@ -1,22 +1,22 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import ProtectedRoutes from "./components/ProtectedRoutes";
-import Home from "./pages/Home";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import MemberInvitationModal from "./pages/MemberInvitationModal";
-import AccountSettings from "./pages/AccountSettings";
-import Project from "./pages/Project";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+
 import Layout from "./components/Layout";
-import Dashboard from "./pages/Dashboard";
-import Task from "./pages/Task";
+import NewProjectForm from "./components/NewProjectForm";
+import NewTaskForm from "./components/NewTaskForm";
+import ProtectedRoutes from "./components/ProtectedRoutes";
+import { ProjectProvider } from "./context/ProjectContext";
+import AccountSettings from "./pages/AccountSettings";
 import Calendar from "./pages/Calendar";
 import Chat from "./pages/Chat";
+import Dashboard from "./pages/Dashboard";
 import Files from "./pages/Files";
-import { ProjectProvider } from "./context/ProjectContext";
-import NewTaskForm from "./components/NewTaskForm";
-import NewProjectForm from "./components/NewProjectForm";
 import GanttChart from "./pages/GanttChart";
+import Login from "./pages/Login";
+import MemberInvitationModal from "./pages/MemberInvitationModal";
+import Project from "./pages/Project";
 import ProjectDetail from "./pages/ProjectDetail";
+import Register from "./pages/Register";
+import Task from "./pages/Task";
 
 function App() {
   return (

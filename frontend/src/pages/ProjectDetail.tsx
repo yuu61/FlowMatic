@@ -1,31 +1,26 @@
-import { useState, useRef, useEffect } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faArrowLeft,
   faCalendar,
-  faUsers,
-  faUserPlus,
-  faTrash,
-  faSave,
-  faTimes,
   faCheckCircle,
-  faPlayCircle,
-  faListUl,
-  faPause,
-  faClipboardCheck,
-  faVial,
-  faEnvelope,
   faCrown,
-  faUser,
+  faEnvelope,
+  faListUl,
+  faPlayCircle,
+  faSave,
+  faTrash,
+  faUserPlus,
+  faUsers,
 } from "@fortawesome/free-solid-svg-icons";
-import MemberInvitationModal from "./MemberInvitationModal";
-import { useNavigate, useParams } from "react-router-dom";
-import { useProject } from "../context/ProjectContext";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { MobileDateTimePicker } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+
+import { useProject } from "../context/ProjectContext";
 import { updateProject } from "../services/ProjectService";
 import { resolveImageUrl } from "../utils/resolveImageUrl";
+import MemberInvitationModal from "./MemberInvitationModal";
 dayjs.extend(utc);
 
 const ProjectDetail = () => {
@@ -107,7 +102,7 @@ const ProjectDetail = () => {
 
       alert("プロジェクトを更新しました！");
 
-      navigate("/project");
+      void navigate("/project");
     } catch (error) {
       console.error(error);
       alert("保存に失敗しました");
@@ -156,7 +151,7 @@ const ProjectDetail = () => {
             <p className="text-xl text-gray-600 mt-1">プロジェクトの詳細とメンバーを管理</p>
           </div>
           <button
-            onClick={handleSave}
+            onClick={() => void handleSave()}
             className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-xl font-bold rounded-xl shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-blue-800 transition-all flex items-center gap-2"
           >
             <FontAwesomeIcon icon={faSave} />
@@ -168,8 +163,9 @@ const ProjectDetail = () => {
         <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 space-y-6">
           {/* Project Title */}
           <div>
-            <label className="block text-lg font-semibold text-gray-700 mb-2">プロジェクト名</label>
+            <label htmlFor="project-title" className="block text-lg font-semibold text-gray-700 mb-2">プロジェクト名</label>
             <input
+              id="project-title"
               type="text"
               value={projectData.title || ""}
               onChange={(e) => handleInputChange("title", e.target.value)}
@@ -180,11 +176,12 @@ const ProjectDetail = () => {
 
           {/* Description */}
           <div>
-            <label className="block text-lg font-semibold text-gray-700 mb-2">説明</label>
+            <label htmlFor="project-description" className="block text-lg font-semibold text-gray-700 mb-2">説明</label>
             <textarea
+              id="project-description"
               value={projectData.description || ""}
               onChange={(e) => handleInputChange("description", e.target.value)}
-              rows="4"
+              rows={4}
               className="w-full px-4 py-3 text-lg border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none"
               placeholder="プロジェクトの説明を入力"
             />
@@ -192,8 +189,9 @@ const ProjectDetail = () => {
 
           {/* Status */}
           <div>
-            <label className="block text-lg font-semibold text-gray-700 mb-2">ステータス</label>
+            <label htmlFor="project-status" className="block text-lg font-semibold text-gray-700 mb-2">ステータス</label>
             <select
+              id="project-status"
               value={projectData.status || "planning"}
               onChange={(e) => handleInputChange("status", e.target.value)}
               className="w-full px-4 py-3 text-lg border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
@@ -210,7 +208,7 @@ const ProjectDetail = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Start Date */}
             <div>
-              <label className="block text-lg font-semibold text-gray-700 mb-2 flex items-center gap-2">
+              <label htmlFor="project-start-date" className="block text-lg font-semibold text-gray-700 mb-2 flex items-center gap-2">
                 <FontAwesomeIcon icon={faCalendar} className="text-gray-400" />
                 開始日
               </label>
@@ -226,6 +224,7 @@ const ProjectDetail = () => {
                 }}
                 slotProps={{
                   textField: {
+                    id: "project-start-date",
                     fullWidth: true,
                     required: true,
                     className:
@@ -237,7 +236,7 @@ const ProjectDetail = () => {
 
             {/* Deadline */}
             <div>
-              <label className="block text-lg font-semibold text-gray-700 mb-2 flex items-center gap-2">
+              <label htmlFor="project-deadline" className="block text-lg font-semibold text-gray-700 mb-2 flex items-center gap-2">
                 <FontAwesomeIcon icon={faCalendar} className="text-gray-400" />
                 期限
               </label>
@@ -253,6 +252,7 @@ const ProjectDetail = () => {
                 }}
                 slotProps={{
                   textField: {
+                    id: "project-deadline",
                     fullWidth: true,
                     required: true,
                     className:

@@ -1,6 +1,3 @@
-import { Link } from "react-router-dom";
-import { useState, useEffect, useMemo } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCheckCircle,
   faCommentDots,
@@ -11,16 +8,18 @@ import {
   faPlayCircle,
   faPlusCircle,
   faTrash,
-  faUser,
   faUserCheck,
 } from "@fortawesome/free-solid-svg-icons";
-import { useProject } from "../context/ProjectContext";
-import { getTasks, updateTask } from "../services/TaskService";
-import { CURRENT_PROJECT_ID } from "../constants";
-import { useAuth } from "../context/AuthContext";
-import { createComment } from "../services/CommentService";
-import { resolveImageUrl } from "../utils/resolveImageUrl";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+
 import ProjectRequired from "../components/ProjectRequired";
+import { useAuth } from "../context/AuthContext";
+import { useProject } from "../context/ProjectContext";
+import { createComment } from "../services/CommentService";
+import { getTasks, updateTask } from "../services/TaskService";
+import { resolveImageUrl } from "../utils/resolveImageUrl";
 
 const Task = () => {
   const { user } = useAuth();
@@ -40,7 +39,7 @@ const Task = () => {
   const [openCommentsTaskId, setOpenCommentsTaskId] = useState(null);
 
   // loading state for updating tasks
-  const [updatingTasks, setUpdatingTasks] = useState({});
+  const [updatingTasks, _setUpdatingTasks] = useState({});
 
   const addComment = async (projectId, taskId) => {
     const commentText = newComments[taskId] || "";
@@ -136,7 +135,7 @@ const Task = () => {
       }
     };
 
-    loadTasks();
+    void loadTasks();
   }, [currentProjectId]);
 
   const isDeadlineNear = (dueDate) => {
@@ -145,7 +144,7 @@ const Task = () => {
     const now = new Date();
     const due = new Date(dueDate);
 
-    const diffDays = (due - now) / (1000 * 60 * 60 * 24);
+    const diffDays = (due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
     return diffDays >= 0 && diffDays <= 7; // ⬅ consistent rule
   };
 
@@ -494,6 +493,7 @@ const Task = () => {
                               {user.profile_picture ? (
                                 <img
                                   src={resolveImageUrl(user.profile_picture)}
+                                  alt={user.name}
                                   className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center"
                                 />
                               ) : (
@@ -555,6 +555,7 @@ const Task = () => {
                                   {comment.profile_picture ? (
                                     <img
                                       src={resolveImageUrl(comment.profile_picture)}
+                                      alt={comment.name}
                                       className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center"
                                     />
                                   ) : (

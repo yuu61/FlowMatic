@@ -1,10 +1,12 @@
-// FileService.js
 import api from "../api";
+import type { ProjectFile } from "../types";
 
-/**
- * Get all files in a project
- */
-export async function getProjectFiles(projectId) {
+export interface FileUploadData {
+  file: File;
+  name?: string;
+}
+
+export async function getProjectFiles(projectId: string): Promise<ProjectFile[]> {
   try {
     const res = await api.get(`/api/projects/${projectId}/files/`);
     return res.data;
@@ -14,16 +16,14 @@ export async function getProjectFiles(projectId) {
   }
 }
 
-/**
- * Upload a file
- * data = { file: File, name?: string }
- */
-export async function uploadProjectFile(projectId, data) {
+export async function uploadProjectFile(
+  projectId: string,
+  data: FileUploadData,
+): Promise<ProjectFile> {
   try {
     const formData = new FormData();
     formData.append("file", data.file);
 
-    // optional → backend will fallback to file.name
     if (data.name) formData.append("name", data.name);
 
     const res = await api.post(`/api/projects/${projectId}/files/`, formData, {
@@ -37,10 +37,7 @@ export async function uploadProjectFile(projectId, data) {
   }
 }
 
-/**
- * Delete a file
- */
-export async function deleteProjectFile(projectId, fileId) {
+export async function deleteProjectFile(projectId: string, fileId: string): Promise<void> {
   try {
     await api.delete(`/api/projects/${projectId}/files/${fileId}/`);
   } catch (err) {
@@ -49,22 +46,15 @@ export async function deleteProjectFile(projectId, fileId) {
   }
 }
 
-/**
- * Download a file
- */
-export async function downloadProjectFile(fileUrl, fileName) {
+export async function downloadProjectFile(fileUrl: string, fileName: string): Promise<void> {
   try {
-    // Get the base URL from your api instance or define it
-    const baseURL = "http://localhost:8000"; // Adjust based on your setup
-
-    // If fileUrl doesn't start with http, prepend the base URL
+    const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
     const fullUrl = fileUrl.startsWith("http") ? fileUrl : `${baseURL}/${fileUrl}`;
 
     const response = await api.get(fullUrl, {
       responseType: "blob",
     });
 
-    // Create a blob with proper content type
     const blob = new Blob([response.data], {
       type: response.headers["content-type"] || "application/octet-stream",
     });
@@ -76,7 +66,6 @@ export async function downloadProjectFile(fileUrl, fileName) {
     document.body.appendChild(link);
     link.click();
 
-    // Cleanup
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
   } catch (err) {

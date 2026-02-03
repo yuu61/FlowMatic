@@ -1,8 +1,20 @@
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
-import api from "../api";
-import { getUsers } from "../services/UserService";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 
-const MemberInvitationModal = forwardRef(
+import { getUsers } from "../services/UserService";
+import type { ProjectMember, User } from "../types";
+
+interface MemberInvitationModalProps {
+  projectId?: string;
+  existingMembers?: ProjectMember[];
+  onInvitationSuccess?: (users: User[], role: string) => void;
+}
+
+export interface MemberInvitationModalRef {
+  openModal: () => void;
+  closeModal: () => void;
+}
+
+const MemberInvitationModal = forwardRef<MemberInvitationModalRef, MemberInvitationModalProps>(
   ({ projectId, existingMembers = [], onInvitationSuccess }, ref) => {
     // 状態管理
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -41,7 +53,7 @@ const MemberInvitationModal = forwardRef(
     }));
 
     useEffect(() => {
-      fetchUsers();
+      void fetchUsers();
     }, []);
 
     const fetchUsers = async () => {
@@ -188,11 +200,12 @@ const MemberInvitationModal = forwardRef(
               <div className="p-6 space-y-4">
                 {/* ユーザー名検索 */}
                 <div>
-                  <label className="block text-md font-semibold text-gray-700 mb-2">
+                  <label htmlFor="user-search-input" className="block text-md font-semibold text-gray-700 mb-2">
                     ユーザー名またはメールで検索
                   </label>
                   <div className="relative">
                     <input
+                      id="user-search-input"
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
@@ -209,12 +222,20 @@ const MemberInvitationModal = forwardRef(
                 {/* 検索結果 */}
                 {searchResults.length > 0 && (
                   <div>
-                    <h4 className="text-md font-semibold text-gray-700 mb-2">一致するユーザー</h4>
+                    <h4 id="search-results-label" className="text-md font-semibold text-gray-700 mb-2">一致するユーザー</h4>
                     <div className="border border-gray-200 rounded-lg divide-y divide-gray-100 max-h-60 overflow-y-auto">
                       {searchResults.map((user) => (
                         <div
                           key={user.id}
                           onClick={() => selectUser(user)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              selectUser(user);
+                            }
+                          }}
+                          role="button"
+                          tabIndex={0}
                           className="p-3 hover:bg-gray-50 cursor-pointer transition-colors"
                         >
                           <div className="flex items-center">
@@ -242,7 +263,7 @@ const MemberInvitationModal = forwardRef(
                 {/* 選択されたユーザー */}
                 {selectedUsers.length > 0 && (
                   <div>
-                    <h4 className="text-md font-semibold text-gray-700 mb-2">選択されたユーザー</h4>
+                    <h4 id="selected-users-label" className="text-md font-semibold text-gray-700 mb-2">選択されたユーザー</h4>
                     <div className="flex flex-wrap gap-2 p-2 border border-gray-200 rounded-lg min-h-12">
                       {selectedUsers.map((user) => (
                         <div

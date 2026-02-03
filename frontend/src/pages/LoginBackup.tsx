@@ -1,8 +1,9 @@
-import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+
 import api from "../api";
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
-import { useAuth } from "../AuthContext";
+import { useAuth } from "../context/AuthContext";
 
 function LoginBackup() {
   const { setIsAuthorized } = useAuth();
@@ -25,7 +26,7 @@ function LoginBackup() {
       localStorage.setItem(REFRESH_TOKEN, res.data.refresh);
 
       setIsAuthorized(true);
-      navigate("/");
+      void navigate("/");
     } catch (error) {
       alert(error.response?.data ? JSON.stringify(error.response.data) : error);
     } finally {
@@ -88,7 +89,7 @@ function LoginBackup() {
             </button>
           </div>
           <p className="text-center text-gray-600 text-sm mt-6">
-            Don't have an account?
+            Don&apos;t have an account?
             <Link to="/register" className="ml-2 text-blue-600 hover:underline font-medium">
               Register here
             </Link>
