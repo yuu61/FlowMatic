@@ -15,6 +15,7 @@ class CreateUserView(generics.CreateAPIView):
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
 
+
 class EmailLoginView(generics.GenericAPIView):
     serializer_class = EmailLoginSerializer
     permission_classes = [AllowAny]
@@ -28,11 +29,15 @@ class EmailLoginView(generics.GenericAPIView):
 
         user_data = UserSerializer(user, context={"request": request}).data
 
-        return Response({
-            "refresh": str(refresh),
-            "access": str(refresh.access_token),
-            "user": user_data
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+                "user": user_data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
 
 class UserListView(generics.ListAPIView):
     serializer_class = UserSerializer
@@ -41,12 +46,14 @@ class UserListView(generics.ListAPIView):
     def get_queryset(self):
         current_user = self.request.user
 
-        return User.objects.exclude(id = current_user.id)
+        return User.objects.exclude(id=current_user.id)
+
 
 class UserUpdateView(generics.UpdateAPIView):
     """
     Update the current user's username and profile picture.
     """
+
     serializer_class = UserUpdateSerializer
     permission_classes = [IsAuthenticated]
 
@@ -63,13 +70,13 @@ class UserUpdateView(generics.UpdateAPIView):
         user_data = UserReadSerializer(request.user, context={"request": request}).data
         return Response(user_data)
 
+
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
 
     def put(self, request):
         serializer = ChangePasswordSerializer(
-            data=request.data,
-            context={"request": request}
+            data=request.data, context={"request": request}
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()

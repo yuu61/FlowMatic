@@ -3,12 +3,21 @@ from rest_framework import serializers
 
 User = get_user_model()
 
+
 class UserSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
-        fields = ["id", "username", "email", "password", "confirm_password", "profile_picture", "date_joined"]
+        fields = [
+            "id",
+            "username",
+            "email",
+            "password",
+            "confirm_password",
+            "profile_picture",
+            "date_joined",
+        ]
         extra_kwargs = {
             "password": {"write_only": True},
             "email": {"required": True},
@@ -23,7 +32,9 @@ class UserSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         if data["password"] != data["confirm_password"]:
-            raise serializers.ValidationError({"confirm_password": "Passwords do not match."})
+            raise serializers.ValidationError(
+                {"confirm_password": "Passwords do not match."}
+            )
         return data
 
     def create(self, validated_data):
@@ -36,6 +47,7 @@ class UserSerializer(serializers.ModelSerializer):
         )
         return user
 
+
 class UserReadSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -46,6 +58,7 @@ class UserReadSerializer(serializers.ModelSerializer):
             "profile_picture",
             "date_joined",
         ]
+
 
 class UserUpdateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -77,6 +90,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
+
 class ChangePasswordSerializer(serializers.Serializer):
     current_password = serializers.CharField()
     new_password = serializers.CharField()
@@ -91,9 +105,9 @@ class ChangePasswordSerializer(serializers.Serializer):
     def validate(self, attrs):
         # Check if new password matches confirmation
         if attrs["new_password"] != attrs["confirm_password"]:
-            raise serializers.ValidationError({
-                "confirm_password": "新しいパスワードが一致しません。"
-            })
+            raise serializers.ValidationError(
+                {"confirm_password": "新しいパスワードが一致しません。"}
+            )
 
         # Validate new password using Django's built-in validators
         user = self.context["request"].user
@@ -110,6 +124,7 @@ class ChangePasswordSerializer(serializers.Serializer):
         user.save()
         return user
 
+
 class EmailLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
@@ -121,14 +136,12 @@ class EmailLoginSerializer(serializers.Serializer):
         user = authenticate(username=email, password=password)
 
         if user is None:
-            raise serializers.ValidationError({
-                "message": "メールアドレス、またはパスワードは正しくありません"
-            })
+            raise serializers.ValidationError(
+                {"message": "メールアドレス、またはパスワードは正しくありません"}
+            )
 
         if not user.is_active:
-            raise serializers.ValidationError({
-                "message": "User account is disabled."
-            })
+            raise serializers.ValidationError({"message": "User account is disabled."})
 
         data["user"] = user
         return data

@@ -1,4 +1,3 @@
-
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from .context import clear_current_user, set_current_user

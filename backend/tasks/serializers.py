@@ -234,7 +234,9 @@ class TaskUpdateSerializer(serializers.ModelSerializer):
             seen.add(uid)
             unique_user_ids.append(uid)
 
-        users = list(User.objects.filter(pk__in=unique_user_ids)) if unique_user_ids else []
+        users = (
+            list(User.objects.filter(pk__in=unique_user_ids)) if unique_user_ids else []
+        )
         if len(users) != len(unique_user_ids):
             raise serializers.ValidationError(
                 {"assigned_user_ids": "Some assigned_user_ids are invalid."}
@@ -243,11 +245,15 @@ class TaskUpdateSerializer(serializers.ModelSerializer):
         # Ensure assigned users are all in the project
         if users:
             assigned_user_pks = set(
-                project.members.filter(pk__in=unique_user_ids).values_list("pk", flat=True)
+                project.members.filter(pk__in=unique_user_ids).values_list(
+                    "pk", flat=True
+                )
             )
             if assigned_user_pks != set(unique_user_ids):
                 raise serializers.ValidationError(
-                    {"assigned_user_ids": "All assigned users must be assigned to the project."}
+                    {
+                        "assigned_user_ids": "All assigned users must be assigned to the project."
+                    }
                 )
 
         attrs["member_objects"] = users

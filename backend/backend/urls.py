@@ -8,19 +8,14 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from api.views import *
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-
+    path("admin/", admin.site.urls),
     # App-level routes
     path("api/", include("api.urls")),
-
     path("api/", include("event.urls")),
-
     path("api/", include("files.urls")),
-
     # JWT authentication
     path("api/token/", EmailLoginView.as_view(), name="get_token"),
     path("api/token/refresh/", TokenRefreshView.as_view(), name="refresh"),
-
     path("api-auth/", include("rest_framework.urls")),
 ]
 

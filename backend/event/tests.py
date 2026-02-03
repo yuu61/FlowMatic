@@ -1,4 +1,3 @@
-
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
@@ -280,7 +279,7 @@ class EventAPITest(APITestCase):
             "is_all_day": True,
             "start_date": "2024-01-01T00:00:00Z",
             "end_date": "2024-01-02T00:00:00Z",
-            "color": "blue"
+            "color": "blue",
         }
         response = self.client.put(url, update_data, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -307,7 +306,7 @@ class EventAPITest(APITestCase):
             "is_all_day": False,
             "start_date": "2024-01-01T09:00:00Z",
             "end_date": "2024-01-01T10:00:00Z",
-            "color": "purple"
+            "color": "purple",
         }
         response = self.client.put(url, invalid_data, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -318,7 +317,7 @@ class EventAPITest(APITestCase):
             "is_all_day": False,
             "start_date": "2024-01-01T11:00:00Z",
             "end_date": "2024-01-01T10:00:00Z",
-            "color": "red"
+            "color": "red",
         }
         response = self.client.put(url, invalid_date_data, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -329,7 +328,7 @@ class EventAPITest(APITestCase):
             "is_all_day": False,
             "start_date": "2024-01-01T09:00:00Z",
             "end_date": "2024-01-01T10:00:00Z",
-            "color": "red"
+            "color": "red",
         }
         response = self.client.put(url, empty_title_data, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

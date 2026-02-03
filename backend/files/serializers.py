@@ -6,29 +6,29 @@ from .models import ProjectFile
 
 User = get_user_model()
 
+
 class PublicUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["id", "username", "profile_picture"]
 
+
 class ProjectFileSerializer(serializers.ModelSerializer):
-    id = serializers.UUIDField(source='file_id', read_only=True)
+    id = serializers.UUIDField(source="file_id", read_only=True)
     uploader = PublicUserSerializer(read_only=True)
     date = serializers.SerializerMethodField()
     size = serializers.SerializerMethodField()
-    url = serializers.FileField(source='file', read_only=True)
+    url = serializers.FileField(source="file", read_only=True)
     # Make sure name is not required (will default from filename)
     name = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = ProjectFile
-        fields = ['id', 'name', 'uploader', 'date', 'size', 'url', 'file']
-        extra_kwargs = {
-            'file': {'write_only': True, 'required': True}
-        }
+        fields = ["id", "name", "uploader", "date", "size", "url", "file"]
+        extra_kwargs = {"file": {"write_only": True, "required": True}}
 
     def get_date(self, obj):
-        return obj.uploaded_at.strftime('%Y-%m-%d')
+        return obj.uploaded_at.strftime("%Y-%m-%d")
 
     def get_size(self, obj):
         try:

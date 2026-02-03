@@ -7,14 +7,13 @@ from projects.models import Project
 
 
 class ProjectMemo(models.Model):
-
     class Color(models.TextChoices):
-        YELLOW = 'yellow', 'Yellow'
-        BLUE = 'blue', 'Blue'
-        GREEN = 'green', 'Green'
+        YELLOW = "yellow", "Yellow"
+        BLUE = "blue", "Blue"
+        GREEN = "green", "Green"
 
     memo_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='memos')
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="memos")
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     content = models.TextField()
@@ -25,8 +24,7 @@ class ProjectMemo(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-
-        ordering = ['-is_pinned', '-created_at']
+        ordering = ["-is_pinned", "-created_at"]
 
     def __str__(self):
         return f"Memo({self.memo_id}) - {self.content[:20]}"

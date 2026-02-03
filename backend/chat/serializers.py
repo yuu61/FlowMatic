@@ -161,10 +161,11 @@ class MessageCreateSerializer(serializers.ModelSerializer):
         message = Message.objects.create(**validated_data)
         return message
 
+
 class MessageUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
-        fields = ["content"] # 編集できるのはメッセージ内容のみ
+        fields = ["content"]  # 編集できるのはメッセージ内容のみ
 
     def validate_content(self, value):
         if not value.strip():

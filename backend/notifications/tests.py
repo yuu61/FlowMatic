@@ -392,7 +392,6 @@ class NotificationUtilsTest(TestCase):
 
         import uuid
 
-
         self.event = Event.objects.create(
             event_id=uuid.uuid4(),
             project=self.project,
