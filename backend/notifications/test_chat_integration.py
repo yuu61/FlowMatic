@@ -1,12 +1,12 @@
-from django.test import TestCase
 from django.contrib.auth import get_user_model
-from rest_framework.test import APITestCase
 from rest_framework import status
+from rest_framework.test import APITestCase
+
 from rest_framework_simplejwt.tokens import AccessToken
 
-from projects.models import Project
-from chat.models import ChatRoom, Message
+from chat.models import ChatRoom
 from notifications.models import Notification
+from projects.models import Project
 
 User = get_user_model()
 
@@ -36,8 +36,9 @@ class ChatNotificationIntegrationTest(APITestCase):
         )
 
         # テストプロジェクト作成
-        from django.utils import timezone
         from datetime import timedelta
+
+        from django.utils import timezone
 
         self.project = Project.objects.create(
             title="テストプロジェクト",

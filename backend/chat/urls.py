@@ -2,11 +2,10 @@ from django.urls import path
 
 from .views import (
     ChatRoomDeleteView,
+    ChatRoomMessageDetailView,
     ChatRoomMessageListCreateView,
     ProjectChatRoomListCreateView,
-    ChatRoomMessageDetailView,
 )
-
 
 urlpatterns = [
     path('projects/<uuid:project_id>/chatrooms/', ProjectChatRoomListCreateView.as_view(), name='chatroom-list-create'),

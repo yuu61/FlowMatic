@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from projects.models import Project
+
 from .models import ChatRoom, Message
 from .serializers import (
     ChatRoomCreateSerializer,

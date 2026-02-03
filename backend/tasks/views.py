@@ -1,20 +1,21 @@
 from django.shortcuts import get_object_or_404
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from projects.models import Project
+
+from .models import Task
 from .serializers import (
-    TaskCreateSerializer,
-    TaskUpdateSerializer,
-    TaskResponseSerializer,
     TaskCommentCreateSerializer,
-    TaskCommentResponseSerializer,
     TaskCommentListSerializer,
+    TaskCommentResponseSerializer,
+    TaskCreateSerializer,
+    TaskResponseSerializer,
+    TaskUpdateSerializer,
 )
-from .models import Task, TaskComment
 
 
 class TaskListCreateView(APIView):

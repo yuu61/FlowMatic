@@ -1,4 +1,4 @@
-from django.contrib.auth import get_user_model, authenticate, password_validation
+from django.contrib.auth import authenticate, get_user_model, password_validation
 from rest_framework import serializers
 
 User = get_user_model()
@@ -35,7 +35,7 @@ class UserSerializer(serializers.ModelSerializer):
             profile_picture=validated_data.get("profile_picture"),  # handles optional
         )
         return user
-    
+
 class UserReadSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -46,7 +46,7 @@ class UserReadSerializer(serializers.ModelSerializer):
             "profile_picture",
             "date_joined",
         ]
-    
+
 class UserUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -60,7 +60,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         # Only update fields that are actually in validated_data
         if "username" in validated_data:
             instance.username = validated_data["username"]
-        
+
         if "profile_picture" in validated_data:
             profile_picture = validated_data["profile_picture"]
             if profile_picture is None:
@@ -73,10 +73,10 @@ class UserUpdateSerializer(serializers.ModelSerializer):
                 if instance.profile_picture:
                     instance.profile_picture.delete(save=False)
                 instance.profile_picture = profile_picture
-        
+
         instance.save()
         return instance
-    
+
 class ChangePasswordSerializer(serializers.Serializer):
     current_password = serializers.CharField()
     new_password = serializers.CharField()
@@ -109,7 +109,7 @@ class ChangePasswordSerializer(serializers.Serializer):
         user.set_password(self.validated_data["new_password"])
         user.save()
         return user
-    
+
 class EmailLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)

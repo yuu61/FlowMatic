@@ -1,9 +1,10 @@
-from django.urls import reverse
-from rest_framework.test import APITestCase
-from rest_framework import status
 from django.contrib.auth import get_user_model
-from django.db import utils as django_db
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.test import APITestCase
+
 from tasks.models import Task, TaskStatus
+
 from .models import Project
 
 User = get_user_model()

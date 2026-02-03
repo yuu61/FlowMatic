@@ -1,15 +1,18 @@
-from django.test import TestCase
-from django.contrib.auth import get_user_model
-from django.utils import timezone
-from rest_framework.test import APITestCase
-from rest_framework import status
 from datetime import timedelta
-from .models import Notification
-from .serializers import NotificationSerializer
-from projects.models import Project
-from tasks.models import Task, TaskComment
+
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+from django.utils import timezone
+from rest_framework import status
+from rest_framework.test import APITestCase
+
 from chat.models import ChatRoom, Message
 from event.models import Event
+from projects.models import Project
+from tasks.models import Task
+
+from .models import Notification
+from .serializers import NotificationSerializer
 
 User = get_user_model()
 
@@ -380,7 +383,6 @@ class NotificationUtilsTest(TestCase):
 
         # タスクとイベントは通常のmodels.pyからimportできないので、
         # 必要に応じて作成（APIテストとして実装）
-        from tasks.models import Task
 
         self.task = Task.objects.create(
             name="テストタスク",
@@ -388,8 +390,8 @@ class NotificationUtilsTest(TestCase):
             deadline=timezone.now() + timedelta(days=7),
         )
 
-        from event.models import Event
         import uuid
+
 
         self.event = Event.objects.create(
             event_id=uuid.uuid4(),
@@ -402,7 +404,6 @@ class NotificationUtilsTest(TestCase):
         )
 
         # チャット関連オブジェクト
-        from chat.models import ChatRoom, Message
 
         self.chatroom = ChatRoom.objects.create(project=self.project)
         self.chatroom.members.add(self.user)
@@ -653,9 +654,9 @@ class NotificationUtilsTest(TestCase):
     def test_utility_functions_japanese_language_support(self):
         """ユーティリティ関数の日本語サポートテスト"""
         from .utils import (
-            create_task_notification,
-            create_project_notification,
             create_event_notification,
+            create_project_notification,
+            create_task_notification,
         )
 
         # タスク通知の日本語
@@ -679,12 +680,12 @@ class NotificationUtilsTest(TestCase):
     def test_utility_functions_notification_types(self):
         """ユーティリティ関数の通知タイプテスト"""
         from .utils import (
-            create_notification,
-            create_task_notification,
-            create_project_notification,
             create_chat_notification,
-            create_event_notification,
             create_chatroom_notification,
+            create_event_notification,
+            create_notification,
+            create_project_notification,
+            create_task_notification,
         )
 
         # 各関数の通知タイプ確認
@@ -704,8 +705,8 @@ class NotificationUtilsTest(TestCase):
 
     def test_utility_functions_return_notification_objects(self):
         """ユーティリティ関数がNotificationオブジェクトを返すテスト"""
-        from .utils import create_notification
         from .models import Notification
+        from .utils import create_notification
 
         notification = create_notification(
             recipient=self.user,

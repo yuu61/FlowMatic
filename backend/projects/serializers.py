@@ -1,6 +1,7 @@
 # projects/serializers.py
-from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from rest_framework import serializers
+
 from .models import Project
 
 TASK_STATUS_DONE = "done"

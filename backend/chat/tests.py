@@ -1,16 +1,16 @@
-from django.test import TestCase
-from django.contrib.auth import get_user_model
-from django.utils import timezone
-from rest_framework.test import APITestCase
-from rest_framework import status
 from channels.testing import WebsocketCommunicator
-from channels.layers import get_channel_layer
-from django.contrib.sessions.backends.db import SessionStore
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+from django.utils import timezone
+from rest_framework import status
+from rest_framework.test import APITestCase
+
 from rest_framework_simplejwt.tokens import AccessToken
 
-from projects.models import Project
-from .models import ChatRoom, ChatRoomUser, Message
 from backend.asgi import application
+from projects.models import Project
+
+from .models import ChatRoom, ChatRoomUser, Message
 
 User = get_user_model()
 
@@ -99,7 +99,7 @@ class ChatWebSocketTests(TestCase):
         token = AccessToken.for_user(self.user)
         communicator = WebsocketCommunicator(
             application,
-            f"/ws/chat/{self.project.project_id}/{self.chatroom.chatroom_id}/?token={str(token)}",
+            f"/ws/chat/{self.project.project_id}/{self.chatroom.chatroom_id}/?token={token!s}",
         )
         connected, subprotocol = await communicator.connect()
         self.assertTrue(connected)
@@ -115,7 +115,7 @@ class ChatWebSocketTests(TestCase):
         token = AccessToken.for_user(self.user)
         communicator = WebsocketCommunicator(
             application,
-            f"/ws/chat/{self.project.project_id}/{self.chatroom.chatroom_id}/?token={str(token)}",
+            f"/ws/chat/{self.project.project_id}/{self.chatroom.chatroom_id}/?token={token!s}",
         )
         connected, subprotocol = await communicator.connect()
         self.assertTrue(connected)
@@ -140,11 +140,11 @@ class ChatWebSocketTests(TestCase):
         token2 = AccessToken.for_user(self.user2)
         communicator1 = WebsocketCommunicator(
             application,
-            f"/ws/chat/{self.project.project_id}/{self.chatroom.chatroom_id}/?token={str(token1)}",
+            f"/ws/chat/{self.project.project_id}/{self.chatroom.chatroom_id}/?token={token1!s}",
         )
         communicator2 = WebsocketCommunicator(
             application,
-            f"/ws/chat/{self.project.project_id}/{self.chatroom.chatroom_id}/?token={str(token2)}",
+            f"/ws/chat/{self.project.project_id}/{self.chatroom.chatroom_id}/?token={token2!s}",
         )
 
         connected1, _ = await communicator1.connect()
@@ -210,12 +210,11 @@ class ChatWebSocketTests(TestCase):
 
     async def test_invalid_chatroom_id_message_fails(self):
         """無効なチャットルームIDでのメッセージ送信失敗テスト"""
-        import uuid
 
         token = AccessToken.for_user(self.user)
         communicator = WebsocketCommunicator(
             application,
-            f"/ws/chat/{self.project.project_id}/{self.chatroom.chatroom_id}/?token={str(token)}",
+            f"/ws/chat/{self.project.project_id}/{self.chatroom.chatroom_id}/?token={token!s}",
         )
         connected, _ = await communicator.connect()
         self.assertTrue(connected)
@@ -236,7 +235,7 @@ class ChatWebSocketTests(TestCase):
         token = AccessToken.for_user(self.user3)
         communicator = WebsocketCommunicator(
             application,
-            f"/ws/chat/{self.project.project_id}/{self.chatroom.chatroom_id}/?token={str(token)}",
+            f"/ws/chat/{self.project.project_id}/{self.chatroom.chatroom_id}/?token={token!s}",
         )
         connected, _ = await communicator.connect()
 
@@ -253,11 +252,11 @@ class ChatWebSocketTests(TestCase):
         token2 = AccessToken.for_user(self.user2)
         communicator1 = WebsocketCommunicator(
             application,
-            f"/ws/chat/{self.project.project_id}/{self.chatroom.chatroom_id}/?token={str(token1)}",
+            f"/ws/chat/{self.project.project_id}/{self.chatroom.chatroom_id}/?token={token1!s}",
         )
         communicator2 = WebsocketCommunicator(
             application,
-            f"/ws/chat/{self.project.project_id}/{self.chatroom.chatroom_id}/?token={str(token2)}",
+            f"/ws/chat/{self.project.project_id}/{self.chatroom.chatroom_id}/?token={token2!s}",
         )
 
         connected1, _ = await communicator1.connect()
@@ -295,7 +294,7 @@ class ChatWebSocketTests(TestCase):
         token = AccessToken.for_user(self.user)
         communicator = WebsocketCommunicator(
             application,
-            f"/ws/chat/{self.project.project_id}/{self.chatroom.chatroom_id}/?token={str(token)}",
+            f"/ws/chat/{self.project.project_id}/{self.chatroom.chatroom_id}/?token={token!s}",
         )
         connected, _ = await communicator.connect()
         self.assertTrue(connected)
@@ -324,11 +323,11 @@ class ChatWebSocketTests(TestCase):
         token = AccessToken.for_user(self.user)
         communicator1 = WebsocketCommunicator(
             application,
-            f"/ws/chat/{self.project.project_id}/{self.chatroom.chatroom_id}/?token={str(token)}",
+            f"/ws/chat/{self.project.project_id}/{self.chatroom.chatroom_id}/?token={token!s}",
         )
         communicator2 = WebsocketCommunicator(
             application,
-            f"/ws/chat/{self.project.project_id}/{self.chatroom.chatroom_id}/?token={str(token)}",
+            f"/ws/chat/{self.project.project_id}/{self.chatroom.chatroom_id}/?token={token!s}",
         )
 
         await communicator1.connect()
@@ -356,7 +355,7 @@ class ChatWebSocketTests(TestCase):
         token = AccessToken.for_user(self.user)
         communicator = WebsocketCommunicator(
             application,
-            f"/ws/chat/{self.project.project_id}/{self.chatroom.chatroom_id}/?token={str(token)}",
+            f"/ws/chat/{self.project.project_id}/{self.chatroom.chatroom_id}/?token={token!s}",
         )
         connected, _ = await communicator.connect()
         self.assertTrue(connected)

@@ -1,11 +1,13 @@
-from django.shortcuts import render
-from .models import *
-from rest_framework.views import APIView
-from rest_framework import status, generics
+from rest_framework import generics, status
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from rest_framework_simplejwt.tokens import RefreshToken
+
+from .models import *
 from .serializers import *
-from rest_framework.permissions import IsAuthenticated, AllowAny
+
 
 # Create your views here.
 class CreateUserView(generics.CreateAPIView):
@@ -16,7 +18,7 @@ class CreateUserView(generics.CreateAPIView):
 class EmailLoginView(generics.GenericAPIView):
     serializer_class = EmailLoginSerializer
     permission_classes = [AllowAny]
-    
+
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -31,16 +33,16 @@ class EmailLoginView(generics.GenericAPIView):
             "access": str(refresh.access_token),
             "user": user_data
         }, status=status.HTTP_200_OK)
-    
+
 class UserListView(generics.ListAPIView):
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]  # Only authenticated users can access
 
     def get_queryset(self):
         current_user = self.request.user
-        
+
         return User.objects.exclude(id = current_user.id)
-    
+
 class UserUpdateView(generics.UpdateAPIView):
     """
     Update the current user's username and profile picture.
@@ -60,7 +62,7 @@ class UserUpdateView(generics.UpdateAPIView):
         response = super().patch(request, *args, **kwargs)
         user_data = UserReadSerializer(request.user, context={"request": request}).data
         return Response(user_data)
-    
+
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
 

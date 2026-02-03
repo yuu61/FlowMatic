@@ -1,9 +1,10 @@
 import json
-from channels.generic.websocket import AsyncWebsocketConsumer
+
 from channels.db import database_sync_to_async
+from channels.generic.websocket import AsyncWebsocketConsumer
 from django.contrib.auth import get_user_model
 
-from .models import ChatRoom, ChatRoomUser, Message
+from .models import ChatRoom, Message
 
 User = get_user_model()
 

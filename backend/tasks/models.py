@@ -1,7 +1,8 @@
 import uuid
-from django.db import models
+
 from django.conf import settings
-from django.db.models import Q, CheckConstraint
+from django.db import models
+from django.db.models import CheckConstraint, Q
 from django.utils import timezone
 
 

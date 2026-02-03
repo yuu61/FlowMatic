@@ -1,6 +1,7 @@
-from .context import set_current_user, clear_current_user
+
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from django.contrib.auth.models import AnonymousUser
+
+from .context import clear_current_user, set_current_user
 
 
 class NotificationMiddleware:

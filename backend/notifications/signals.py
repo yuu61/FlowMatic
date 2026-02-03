@@ -1,13 +1,13 @@
-from django.db.models.signals import post_save, m2m_changed
+from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from .context import get_current_user
 from .utils import (
-    create_notification,
-    create_task_notification,
-    create_project_notification,
     create_chat_notification,
     create_event_notification,
+    create_notification,
+    create_project_notification,
+    create_task_notification,
 )
 
 

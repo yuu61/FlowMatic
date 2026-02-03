@@ -1,7 +1,9 @@
+from channels.layers import get_channel_layer
+
+from asgiref.sync import async_to_sync
+
 from .models import Notification
 from .serializers import NotificationSerializer
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
 
 
 def create_notification(
@@ -155,7 +157,7 @@ def create_chatroom_notification(recipient, chatroom, action="created"):
         action: Action performed ('created')
     """
     action_messages = {
-        "created": f"新しいチャットルームが作成されました",
+        "created": "新しいチャットルームが作成されました",
     }
 
     return create_notification(

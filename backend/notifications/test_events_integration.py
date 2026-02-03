@@ -1,14 +1,15 @@
-from django.test import TestCase
-from django.contrib.auth import get_user_model
-from django.utils import timezone
-from rest_framework.test import APITestCase
-from rest_framework import status
-from rest_framework_simplejwt.tokens import AccessToken
 from datetime import timedelta
 
-from projects.models import Project
+from django.contrib.auth import get_user_model
+from django.utils import timezone
+from rest_framework import status
+from rest_framework.test import APITestCase
+
+from rest_framework_simplejwt.tokens import AccessToken
+
 from event.models import Event
 from notifications.models import Notification
+from projects.models import Project
 
 User = get_user_model()
 
