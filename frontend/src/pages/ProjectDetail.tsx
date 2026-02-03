@@ -19,9 +19,27 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import { useProject } from "../context/ProjectContext";
 import { updateProject } from "../services/ProjectService";
+import type { Project, ProjectMember, ProjectStatus, User } from "../types";
 import { resolveImageUrl } from "../utils/resolveImageUrl";
-import MemberInvitationModal from "./MemberInvitationModal";
+import MemberInvitationModal, { type MemberInvitationModalRef } from "./MemberInvitationModal";
 dayjs.extend(utc);
+
+// Extended member type for UI state
+interface ProjectMemberExtended extends ProjectMember {
+  role?: "owner" | "admin" | "member";
+  pending?: boolean;
+}
+
+// Project data type for local state
+interface ProjectData {
+  title: string;
+  description: string;
+  start_date: string;
+  deadline: string;
+  status: ProjectStatus;
+  members: ProjectMemberExtended[];
+  project_id: string;
+}
 
 const ProjectDetail = () => {
   const { projects, updateProjectInContext } = useProject();
@@ -29,7 +47,7 @@ const ProjectDetail = () => {
   const { projectId } = useParams();
 
   // Initialize with proper default values
-  const [projectData, setProjectData] = useState({
+  const [projectData, setProjectData] = useState<ProjectData>({
     title: "",
     description: "",
     start_date: "",
@@ -39,9 +57,9 @@ const ProjectDetail = () => {
     project_id: "",
   });
 
-  const normalizeProject = (project) => ({
+  const normalizeProject = (project: Project): ProjectData => ({
     ...project,
-    members: (project.members || []).map((m) => ({
+    members: (project.members || []).map((m: ProjectMember) => ({
       ...m,
       user_id: Number(m.user_id),
       profile_picture: resolveImageUrl(m.profile_picture),
@@ -55,14 +73,16 @@ const ProjectDetail = () => {
     if (filteredProjects.length > 0) {
       const project = filteredProjects[0];
 
-      console.log(project);
+      if (project) {
+        console.log(project);
 
-      // todo: update project context as well
-      setProjectData(normalizeProject(project));
+        // todo: update project context as well
+        setProjectData(normalizeProject(project));
+      }
     }
   }, [projects, projectId]);
 
-  const invitationModalRef = useRef(null);
+  const invitationModalRef = useRef<MemberInvitationModalRef | null>(null);
 
   const statusOptions = [
     { value: "planning", label: "計画中", icon: faListUl, color: "amber" },
@@ -75,11 +95,11 @@ const ProjectDetail = () => {
     { value: "completed", label: "完了", icon: faCheckCircle, color: "green" },
   ];
 
-  const handleInputChange = (field, value) => {
+  const handleInputChange = (field: keyof ProjectData, value: string) => {
     setProjectData({ ...projectData, [field]: value });
   };
 
-  const handleRemoveMember = (memberId) => {
+  const handleRemoveMember = (memberId: number) => {
     setProjectData({
       ...projectData,
       members: projectData.members.filter((m) => m.user_id !== memberId),
@@ -98,7 +118,7 @@ const ProjectDetail = () => {
       setProjectData(normalized);
 
       // ✅ update ProjectContext state
-      updateProjectInContext(normalized);
+      updateProjectInContext(normalized as unknown as Project);
 
       alert("プロジェクトを更新しました！");
 
@@ -109,13 +129,13 @@ const ProjectDetail = () => {
     }
   };
 
-  const buildUpdatePayload = (projectData) => ({
-    title: projectData.title,
-    description: projectData.description,
-    start_date: projectData.start_date || null,
-    deadline: projectData.deadline || null,
-    status: projectData.status,
-    members: projectData.members.map((m) => m.user_id), // ✅ only IDs
+  const buildUpdatePayload = (data: ProjectData) => ({
+    title: data.title,
+    description: data.description,
+    start_date: data.start_date || undefined,
+    deadline: data.deadline || undefined,
+    status: data.status,
+    members: data.members.map((m: ProjectMemberExtended) => m.user_id), // ✅ only IDs
   });
 
   const openInvitationModal = () => {
@@ -163,7 +183,12 @@ const ProjectDetail = () => {
         <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 space-y-6">
           {/* Project Title */}
           <div>
-            <label htmlFor="project-title" className="block text-lg font-semibold text-gray-700 mb-2">プロジェクト名</label>
+            <label
+              htmlFor="project-title"
+              className="block text-lg font-semibold text-gray-700 mb-2"
+            >
+              プロジェクト名
+            </label>
             <input
               id="project-title"
               type="text"
@@ -176,7 +201,12 @@ const ProjectDetail = () => {
 
           {/* Description */}
           <div>
-            <label htmlFor="project-description" className="block text-lg font-semibold text-gray-700 mb-2">説明</label>
+            <label
+              htmlFor="project-description"
+              className="block text-lg font-semibold text-gray-700 mb-2"
+            >
+              説明
+            </label>
             <textarea
               id="project-description"
               value={projectData.description || ""}
@@ -189,7 +219,12 @@ const ProjectDetail = () => {
 
           {/* Status */}
           <div>
-            <label htmlFor="project-status" className="block text-lg font-semibold text-gray-700 mb-2">ステータス</label>
+            <label
+              htmlFor="project-status"
+              className="block text-lg font-semibold text-gray-700 mb-2"
+            >
+              ステータス
+            </label>
             <select
               id="project-status"
               value={projectData.status || "planning"}
@@ -208,7 +243,10 @@ const ProjectDetail = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Start Date */}
             <div>
-              <label htmlFor="project-start-date" className="block text-lg font-semibold text-gray-700 mb-2 flex items-center gap-2">
+              <label
+                htmlFor="project-start-date"
+                className="block text-lg font-semibold text-gray-700 mb-2 flex items-center gap-2"
+              >
                 <FontAwesomeIcon icon={faCalendar} className="text-gray-400" />
                 開始日
               </label>
@@ -236,7 +274,10 @@ const ProjectDetail = () => {
 
             {/* Deadline */}
             <div>
-              <label htmlFor="project-deadline" className="block text-lg font-semibold text-gray-700 mb-2 flex items-center gap-2">
+              <label
+                htmlFor="project-deadline"
+                className="block text-lg font-semibold text-gray-700 mb-2 flex items-center gap-2"
+              >
                 <FontAwesomeIcon icon={faCalendar} className="text-gray-400" />
                 期限
               </label>
@@ -353,9 +394,9 @@ const ProjectDetail = () => {
         ref={invitationModalRef}
         projectId={projectData.project_id}
         existingMembers={projectData.members}
-        onInvitationSuccess={(users, role) => {
+        onInvitationSuccess={(users: User[], role: "owner" | "admin" | "member") => {
           // Update members list when invitation succeeds
-          const newMembers = users.map((user) => ({
+          const newMembers: ProjectMemberExtended[] = users.map((user: User) => ({
             user_id: user.id,
             name: user.username,
             email: user.email,

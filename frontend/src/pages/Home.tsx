@@ -1,23 +1,16 @@
 import { useEffect, useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 
 import NewTaskForm from "../components/NewTaskForm";
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
 import { useAuth } from "../context/AuthContext";
 
 function Home() {
-  const { setIsAuthorized, user } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
 
   // サイドバー開閉
   // -------------------------------
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const _handleLogout = () => {
-    localStorage.clear();
-    setIsAuthorized(false);
-    void navigate("/login");
-  };
 
   useEffect(() => {
     console.log(user);

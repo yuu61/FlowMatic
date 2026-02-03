@@ -8,16 +8,16 @@ function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [profilePicture, setProfilePicture] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(null);
+  const [profilePicture, setProfilePicture] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
 
-  const inputRef = useRef(null);
-  const fileInputRef = useRef(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   const route = "/api/user/register/";
@@ -37,8 +37,8 @@ function Register() {
     };
   }, [previewUrl]);
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (file) {
       // Check file type and size
       if (!file.type.startsWith("image/")) {
@@ -68,7 +68,7 @@ function Register() {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
@@ -98,8 +98,9 @@ function Register() {
 
       console.log(res.data);
       setShowSuccess(true);
-    } catch (error) {
-      alert(error.response?.data ? JSON.stringify(error.response.data) : error);
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: unknown } };
+      alert(axiosError.response?.data ? JSON.stringify(axiosError.response.data) : String(error));
     } finally {
       setLoading(false);
     }
@@ -127,7 +128,10 @@ function Register() {
             <form className="space-y-6" onSubmit={handleSubmit}>
               {/* Profile Picture Upload */}
               <div>
-                <label htmlFor="profile-picture" className="block text-md font-bold text-gray-700 mb-3">
+                <label
+                  htmlFor="profile-picture"
+                  className="block text-md font-bold text-gray-700 mb-3"
+                >
                   プロフィール画像
                 </label>
                 <div className="flex items-center space-x-4">
@@ -188,7 +192,9 @@ function Register() {
               </div>
 
               <div>
-                <label htmlFor="username" className="block text-md font-bold text-gray-700 mb-3">ユーザー名</label>
+                <label htmlFor="username" className="block text-md font-bold text-gray-700 mb-3">
+                  ユーザー名
+                </label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-4">
                     <i className="fa-solid fa-user text-gray-400 text-lg"></i>
@@ -208,7 +214,9 @@ function Register() {
               </div>
 
               <div>
-                <label htmlFor="email" className="block text-md font-bold text-gray-700 mb-3">メールアドレス</label>
+                <label htmlFor="email" className="block text-md font-bold text-gray-700 mb-3">
+                  メールアドレス
+                </label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-4">
                     <i className="fa-solid fa-envelope text-gray-400 text-lg"></i>
@@ -227,7 +235,9 @@ function Register() {
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-md font-bold text-gray-700 mb-3">パスワード</label>
+                <label htmlFor="password" className="block text-md font-bold text-gray-700 mb-3">
+                  パスワード
+                </label>
                 <div className="relative mb-3">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-4">
                     <i className="fa-solid fa-lock text-gray-400 text-lg"></i>
@@ -259,7 +269,12 @@ function Register() {
               </div>
 
               <div>
-                <label htmlFor="confirm-password" className="block text-md font-bold text-gray-700 mb-3">パスワード確認</label>
+                <label
+                  htmlFor="confirm-password"
+                  className="block text-md font-bold text-gray-700 mb-3"
+                >
+                  パスワード確認
+                </label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-4">
                     <i className="fa-solid fa-lock text-gray-400 text-lg"></i>

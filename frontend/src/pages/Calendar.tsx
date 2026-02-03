@@ -18,19 +18,81 @@ import ProjectRequired from "../components/ProjectRequired";
 import { useProject } from "../context/ProjectContext";
 import { createEvent, getEvents, updateEvent as updateEventApi } from "../services/EventService";
 import { getTasks } from "../services/TaskService";
+import type { EventColor, Task, TaskPriority, TaskStatus } from "../types";
 import { formatDateJP, formatUTC } from "../utils/dateUtils";
 dayjs.extend(utc);
+
+// ========== Type Definitions ==========
+type CalendarStatus = "active" | "completed" | "urgent";
+type FilterColor = "blue" | "yellow" | "green" | "red";
+type HexColor = "#ef4444" | "#3b82f6" | "#22c55e" | "#f59e0b";
+type SortType = "dueDate" | "priority";
+
+interface FilterItem {
+  type: string;
+  label: string;
+  icon: typeof import("@fortawesome/free-solid-svg-icons").faListUl;
+  color: FilterColor;
+}
+
+interface CalendarTask {
+  id: string;
+  title: string;
+  dueDate: string | null;
+  status: CalendarStatus;
+  priority: TaskPriority;
+  description: string;
+  startDate: string | null;
+  assignedUsers: number[];
+  parentTasks: { task_id: string; relation_type: string }[];
+}
+
+interface CalendarEventItem {
+  id: string;
+  title: string;
+  start: string;
+  end: string;
+  allDay: boolean;
+  status?: CalendarStatus;
+  priority?: TaskPriority;
+  color: string;
+  source: "task" | "user";
+  description?: string;
+  dueDate?: string | null;
+  startDate?: string | null;
+  comment?: string;
+}
+
+interface NotificationItem {
+  id: number;
+  text: string;
+}
+
+interface EventDropInfo {
+  event: {
+    id: string;
+    startStr: string;
+    endStr: string;
+  };
+  revert: () => void;
+}
+
+interface ModalState {
+  open: boolean;
+  event: CalendarEventItem | null;
+  isNew: boolean;
+}
 
 // ========== Constants ==========
 const STORAGE_KEY = "calendar_events";
 
-const STATUS_COLOR_MAP = {
+const STATUS_COLOR_MAP: Record<CalendarStatus, string> = {
   active: "#f59e0b",
   completed: "#22c55e",
   urgent: "#ef4444",
 };
 
-const FILTERS = [
+const FILTERS: FilterItem[] = [
   { type: "all", label: "すべて", icon: faListUl, color: "blue" },
   { type: "active", label: "進行中", icon: faPlayCircle, color: "yellow" },
   { type: "completed", label: "完了", icon: faCheckCircle, color: "green" },
@@ -42,7 +104,7 @@ const FILTERS = [
   },
 ];
 
-const formatToISO = (dateStr, isAllDay) => {
+const formatToISO = (dateStr: string, isAllDay: boolean): string => {
   if (isAllDay) {
     return `${dateStr}T00:00:00Z`;
   } else {
@@ -53,8 +115,8 @@ const formatToISO = (dateStr, isAllDay) => {
   }
 };
 
-const mapStatusToCalendar = (apiStatus) => {
-  const statusMap = {
+const mapStatusToCalendar = (apiStatus: TaskStatus): CalendarStatus => {
+  const statusMap: Record<TaskStatus, CalendarStatus> = {
     done: "completed",
     testing: "completed",
     in_review: "active",
@@ -65,7 +127,7 @@ const mapStatusToCalendar = (apiStatus) => {
   return statusMap[apiStatus] || "active";
 };
 
-const mapTaskToCalendarFormat = (apiTask) => ({
+const mapTaskToCalendarFormat = (apiTask: Task): CalendarTask => ({
   id: apiTask.task_id,
   title: apiTask.name,
   dueDate: apiTask.deadline,
@@ -73,11 +135,11 @@ const mapTaskToCalendarFormat = (apiTask) => ({
   priority: apiTask.priority,
   description: apiTask.description,
   startDate: apiTask.start_date,
-  assignedUsers: apiTask.assigned_user_ids,
-  parentTasks: apiTask.parent_tasks,
+  assignedUsers: apiTask.users?.map((u) => u.user_id) || [],
+  parentTasks: apiTask.parent_tasks || [],
 });
 
-const isDeadlineNear = (dueDate) => {
+const isDeadlineNear = (dueDate: string | null | undefined): boolean => {
   if (!dueDate) return false;
   const now = new Date();
   const due = new Date(dueDate);
@@ -85,8 +147,8 @@ const isDeadlineNear = (dueDate) => {
   return diffDays >= 0 && diffDays <= 7;
 };
 
-const getFilterColorClasses = (color, isActive) => {
-  const colorMap = {
+const getFilterColorClasses = (color: FilterColor, isActive: boolean): string => {
+  const colorMap: Record<FilterColor, string> = {
     blue: isActive
       ? "bg-blue-600 text-white"
       : "bg-white border border-blue-300 text-blue-600 hover:bg-blue-50",
@@ -103,18 +165,18 @@ const getFilterColorClasses = (color, isActive) => {
   return colorMap[color];
 };
 
-const mapColorToApi = (hexColor) => {
-  const colorMap = {
+const mapColorToApi = (hexColor: string): EventColor => {
+  const colorMap: Record<HexColor, EventColor> = {
     "#ef4444": "red",
     "#3b82f6": "blue",
     "#22c55e": "green",
     "#f59e0b": "orange",
   };
-  return colorMap[hexColor] || "blue";
+  return colorMap[hexColor as HexColor] || "blue";
 };
 
-const mapApiColorToHex = (apiColor) => {
-  const colorMap = {
+const mapApiColorToHex = (apiColor: EventColor): HexColor => {
+  const colorMap: Record<EventColor, HexColor> = {
     red: "#ef4444",
     blue: "#3b82f6",
     green: "#22c55e",
@@ -125,30 +187,31 @@ const mapApiColorToHex = (apiColor) => {
 
 // ========== Main Component ==========
 const Calendar = () => {
-  const calendarRef = useRef(null);
+  const calendarRef = useRef<FullCalendar | null>(null);
   const { projects, currentProject } = useProject();
 
   // State
-  const [events, setEvents] = useState([]);
-  const [tasks, setTasks] = useState([]);
+  const [events, setEvents] = useState<CalendarEventItem[]>([]);
+  const [tasks, setTasks] = useState<CalendarTask[]>([]);
   const [loading, setLoading] = useState(true);
-  const [modal, setModal] = useState({
+  const [modal, setModal] = useState<ModalState>({
     open: false,
     event: null,
     isNew: false,
   });
   const [modalReady, setModalReady] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const [filter, setFilter] = useState("all");
-  const [sortType, setSortType] = useState("dueDate");
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [filter, setFilter] = useState<string>("all");
+  const [sortType, setSortType] = useState<SortType>("dueDate");
   const [showDetail, setShowDetail] = useState(false);
 
   // Sort functions
-  const sortFunctions = {
-    dueDate: (a, b) => new Date(a.dueDate || a.start).getTime() - new Date(b.dueDate || b.start).getTime(),
-    priority: (a, b) =>
-      (({ high: 1, medium: 2, low: 3 })[a.priority] || 2) -
-      ({ high: 1, medium: 2, low: 3 }[b.priority] || 2),
+  const priorityOrder: Record<TaskPriority, number> = { high: 1, medium: 2, low: 3 };
+  const sortFunctions: Record<SortType, (a: CalendarTask, b: CalendarTask) => number> = {
+    dueDate: (a: CalendarTask, b: CalendarTask) =>
+      new Date(a.dueDate || "").getTime() - new Date(b.dueDate || "").getTime(),
+    priority: (a: CalendarTask, b: CalendarTask) =>
+      (priorityOrder[a.priority] || 2) - (priorityOrder[b.priority] || 2),
   };
 
   // ========== Effects ==========
@@ -162,10 +225,11 @@ const Calendar = () => {
   }, [currentProject?.project_id]);
 
   useEffect(() => {
-    const storedEvents = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-    const userEvents = storedEvents.filter((e) => e.source !== "task");
+    const storedEvents: CalendarEventItem[] =
+      JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]") || [];
+    const userEvents = storedEvents.filter((e: CalendarEventItem) => e.source !== "task");
 
-    const taskEvents = tasks.map((task) => {
+    const taskEvents: CalendarEventItem[] = tasks.map((task) => {
       // FIX: Keep original ISO format dates from API, don't reformat
       const startDate = task.startDate || task.dueDate;
       const endDate = task.dueDate;
@@ -179,7 +243,7 @@ const Calendar = () => {
         status: task.status,
         priority: task.priority,
         color: STATUS_COLOR_MAP[task.status] || "#3b82f6",
-        source: "task",
+        source: "task" as const,
         description: task.description,
         dueDate: task.dueDate, // FIX: Keep dueDate for sidebar display
         startDate: task.startDate, // Keep original startDate
@@ -239,20 +303,25 @@ const Calendar = () => {
     }
   };
 
-  const addNotification = (text) => {
+  const addNotification = (text: string): void => {
     const id = Date.now();
     setNotifications((prev) => [...prev, { id, text }]);
     setTimeout(() => setNotifications((prev) => prev.filter((n) => n.id !== id)), 3000);
   };
 
-  const saveEvents = (newEvents, msg) => {
-    const userEvents = newEvents.filter((e) => e.source !== "task");
+  const saveEvents = (newEvents: CalendarEventItem[], msg: string): void => {
+    const userEvents = newEvents.filter((e: CalendarEventItem) => e.source !== "task");
     localStorage.setItem(STORAGE_KEY, JSON.stringify(userEvents));
     setEvents(newEvents);
     addNotification(msg);
   };
 
   const handleSave = async () => {
+    // Early return if event is null
+    if (!modal.event) {
+      return;
+    }
+
     if (!modal.event.title.trim()) {
       alert("タイトルは必須です");
       return;
@@ -273,12 +342,20 @@ const Calendar = () => {
       return;
     }
 
+    // Early return if currentProject is null
+    if (!currentProject) {
+      addNotification("プロジェクトが選択されていません");
+      return;
+    }
+
     const evt = { ...modal.event };
 
     // Normalize dates based on allDay flag
+    const evtStart = evt.start ?? "";
+    const evtEnd = evt.end ?? "";
     if (evt.allDay) {
-      evt.start = evt.start.split("T")[0];
-      evt.end = evt.end.split("T")[0];
+      evt.start = evtStart.split("T")[0] ?? "";
+      evt.end = evtEnd.split("T")[0] ?? "";
     }
 
     try {
@@ -286,14 +363,14 @@ const Calendar = () => {
         const requestData = {
           title: evt.title,
           is_all_day: evt.allDay,
-          start_date: formatToISO(evt.start, evt.allDay),
-          end_date: formatToISO(evt.end, evt.allDay),
+          start_date: formatToISO(evt.start ?? "", evt.allDay),
+          end_date: formatToISO(evt.end ?? "", evt.allDay),
           color: mapColorToApi(evt.color),
         };
 
         const apiResponse = await createEvent(currentProject.project_id, requestData);
 
-        const newEvent = {
+        const newEvent: CalendarEventItem = {
           id: apiResponse.event_id,
           title: apiResponse.title,
           start: apiResponse.start_date,
@@ -303,52 +380,70 @@ const Calendar = () => {
           status: evt.status || "active",
           priority: evt.priority || "medium",
           comment: evt.comment || "",
-          source: "user",
+          source: "user" as const,
         };
 
-        const updatedEvents = [...events, newEvent];
+        const updatedEvents: CalendarEventItem[] = [...events, newEvent];
         saveEvents(updatedEvents, "イベントを追加しました 📅");
       } else {
         const requestData = {
           title: evt.title,
           is_all_day: evt.allDay,
-          start_date: formatToISO(evt.start, evt.allDay),
-          end_date: formatToISO(evt.end, evt.allDay),
+          start_date: formatToISO(evt.start ?? "", evt.allDay),
+          end_date: formatToISO(evt.end ?? "", evt.allDay),
           color: mapColorToApi(evt.color),
         };
 
         await updateEventApi(currentProject.project_id, evt.id, requestData);
 
         // FIX: Simplified color handling
-        const updatedEvent = {
-          ...evt,
+        const updatedEvent: CalendarEventItem = {
+          id: evt.id,
+          title: evt.title,
+          start: evt.start ?? "",
+          end: evt.end ?? "",
+          allDay: evt.allDay,
           color: evt.color, // Already in hex format
-          source: "user",
+          status: evt.status,
+          priority: evt.priority,
+          comment: evt.comment,
+          source: "user" as const,
         };
 
-        const updatedEvents = events.map((e) => (e.id === updatedEvent.id ? updatedEvent : e));
+        const updatedEvents: CalendarEventItem[] = events.map((e) =>
+          e.id === updatedEvent.id ? updatedEvent : e,
+        );
         saveEvents(updatedEvents, "イベントを保存しました 💾");
       }
 
       closeModal();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Failed to save event:", error);
-      console.error("Error details:", error.response?.data);
+      if (error instanceof Error && "response" in error) {
+        const axiosError = error as { response?: { data?: unknown } };
+        console.error("Error details:", axiosError.response?.data);
+      }
       addNotification("イベントの保存に失敗しました ⚠️");
     }
   };
 
   const handleDelete = async () => {
+    // Early return if event is null
+    if (!modal.event) {
+      return;
+    }
+
     // FIX: Prevent deleting task events
     if (modal.event.source === "task") {
       addNotification("タスクイベントは削除できません ⚠️");
       return;
     }
 
+    const eventId = modal.event.id;
     if (window.confirm("本当に削除しますか?")) {
       try {
         saveEvents(
-          events.filter((e) => e.id !== modal.event.id),
+          events.filter((e) => e.id !== eventId),
           "イベントが削除されました 🗑️",
         );
         closeModal();
@@ -359,7 +454,7 @@ const Calendar = () => {
     }
   };
 
-  const openModal = (event = null, isNew = false) => {
+  const openModal = (event: CalendarEventItem | null = null, isNew = false): void => {
     // FIX: Convert task event to proper format for modal
     let modalEvent = event;
     if (event && event.source === "task") {
@@ -375,7 +470,7 @@ const Calendar = () => {
   };
 
   // FIX: Separate function for opening task details (read-only view)
-  const openTaskDetail = (task) => {
+  const openTaskDetail = (task: CalendarTask): void => {
     const taskEvent = events.find((e) => e.id === `task-${task.id}`);
     if (taskEvent) {
       // Task dates are already in ISO format from API, no need to reformat
@@ -389,18 +484,31 @@ const Calendar = () => {
     setTimeout(() => setShowDetail(false), 300);
   };
 
-  const updateEvent = (field, value) => {
-    setModal((p) => ({ ...p, event: { ...p.event, [field]: value } }));
+  const updateEvent = (field: keyof CalendarEventItem, value: string | boolean): void => {
+    setModal((p) => ({ ...p, event: p.event ? { ...p.event, [field]: value } : null }));
   };
 
   // FIX: Handle event drag-and-drop with API persistence
-  const handleEventDrop = async (info) => {
+  const handleEventDrop = async (info: EventDropInfo): Promise<void> => {
     const droppedEvent = events.find((e) => e.id === info.event.id);
 
+    // Early return if event not found
+    if (!droppedEvent) {
+      info.revert();
+      return;
+    }
+
     // Prevent dragging task events
-    if (droppedEvent?.source === "task") {
+    if (droppedEvent.source === "task") {
       info.revert();
       addNotification("タスクイベントは移動できません ⚠️");
+      return;
+    }
+
+    // Early return if currentProject is null
+    if (!currentProject) {
+      info.revert();
+      addNotification("プロジェクトが選択されていません");
       return;
     }
 
@@ -497,7 +605,7 @@ const Calendar = () => {
         <select
           className="w-full border rounded p-2 mb-3"
           value={sortType}
-          onChange={(e) => setSortType(e.target.value)}
+          onChange={(e) => setSortType(e.target.value as SortType)}
         >
           <option value="dueDate">期限が早い順</option>
           <option value="priority">優先度順(高 → 低)</option>
@@ -604,7 +712,7 @@ const Calendar = () => {
           eventContent={(arg) => (
             <div
               className={`whitespace-normal text-sm font-semibold ${
-                arg.event.extendedProps?.status === "completed" ? "line-through" : ""
+                arg.event.extendedProps?.["status"] === "completed" ? "line-through" : ""
               }`}
               style={{
                 backgroundColor: arg.event.backgroundColor,
@@ -714,12 +822,14 @@ const Calendar = () => {
             )}
 
             <div className="mb-4">
-              <label htmlFor="eventTitle" className="text-sm text-gray-600 block mb-1">タイトル</label>
+              <label htmlFor="eventTitle" className="text-sm text-gray-600 block mb-1">
+                タイトル
+              </label>
               <input
                 id="eventTitle"
                 type="text"
                 className="w-full p-2 border rounded"
-                value={modal.event.title}
+                value={modal.event?.title ?? ""}
                 onChange={(e) => updateEvent("title", e.target.value)}
                 disabled={modal.event?.source === "task"} // FIX: Disable for tasks
               />
@@ -727,36 +837,52 @@ const Calendar = () => {
 
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
-                <span id="startDateLabel" className="text-sm text-gray-600 block mb-1">開始日</span>
+                <span id="startDateLabel" className="text-sm text-gray-600 block mb-1">
+                  開始日
+                </span>
                 <MobileDateTimePicker
-                  value={modal.event.start ? dayjs.utc(modal.event.start) : null}
+                  value={modal.event?.start ? dayjs.utc(modal.event.start) : null}
                   onChange={(newValue) =>
                     newValue &&
                     updateEvent(
                       "start",
-                      newValue.format(modal.event.allDay ? "YYYY-MM-DD" : "YYYY-MM-DDTHH:mm"),
+                      newValue.format(modal.event?.allDay ? "YYYY-MM-DD" : "YYYY-MM-DDTHH:mm"),
                     )
                   }
-                  maxDate={modal.event.end ? dayjs.utc(modal.event.end) : undefined}
+                  maxDate={modal.event?.end ? dayjs.utc(modal.event.end) : undefined}
                   disabled={modal.event?.source === "task"} // FIX: Disable for tasks
-                  slotProps={{ textField: { fullWidth: true, size: "small", "aria-labelledby": "startDateLabel" } }}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      size: "small",
+                      "aria-labelledby": "startDateLabel",
+                    },
+                  }}
                 />
               </div>
 
               <div>
-                <span id="endDateLabel" className="text-sm text-gray-600 block mb-1">終了日</span>
+                <span id="endDateLabel" className="text-sm text-gray-600 block mb-1">
+                  終了日
+                </span>
                 <MobileDateTimePicker
-                  value={modal.event.end ? dayjs.utc(modal.event.end) : null}
+                  value={modal.event?.end ? dayjs.utc(modal.event.end) : null}
                   onChange={(newValue) =>
                     newValue &&
                     updateEvent(
                       "end",
-                      newValue.format(modal.event.allDay ? "YYYY-MM-DD" : "YYYY-MM-DDTHH:mm"),
+                      newValue.format(modal.event?.allDay ? "YYYY-MM-DD" : "YYYY-MM-DDTHH:mm"),
                     )
                   }
-                  minDate={modal.event.start ? dayjs(modal.event.start) : undefined}
+                  minDate={modal.event?.start ? dayjs(modal.event.start) : undefined}
                   disabled={modal.event?.source === "task"} // FIX: Disable for tasks
-                  slotProps={{ textField: { fullWidth: true, size: "small", "aria-labelledby": "endDateLabel" } }}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      size: "small",
+                      "aria-labelledby": "endDateLabel",
+                    },
+                  }}
                 />
               </div>
             </div>
@@ -765,23 +891,28 @@ const Calendar = () => {
               <input
                 id="allDayCheckbox"
                 type="checkbox"
-                checked={modal.event.allDay || false}
+                checked={modal.event?.allDay ?? false}
                 disabled={modal.event?.source === "task"} // FIX: Disable for tasks
                 onChange={(e) => {
                   const isAllDay = e.target.checked;
-                  setModal((p) => ({
-                    ...p,
-                    event: {
-                      ...p.event,
-                      allDay: isAllDay,
-                      start: isAllDay
-                        ? p.event.start.split("T")[0]
-                        : formatDateJP(new Date(p.event.start)) + "T09:00",
-                      end: isAllDay
-                        ? p.event.end.split("T")[0]
-                        : formatDateJP(new Date(p.event.end)) + "T10:00",
-                    },
-                  }));
+                  setModal((p) => {
+                    if (!p.event) return p;
+                    const eventStart = p.event.start ?? "";
+                    const eventEnd = p.event.end ?? "";
+                    return {
+                      ...p,
+                      event: {
+                        ...p.event,
+                        allDay: isAllDay,
+                        start: isAllDay
+                          ? (eventStart.split("T")[0] ?? "")
+                          : formatDateJP(new Date(eventStart)) + "T09:00",
+                        end: isAllDay
+                          ? (eventEnd.split("T")[0] ?? "")
+                          : formatDateJP(new Date(eventEnd)) + "T10:00",
+                      },
+                    };
+                  });
                 }}
               />
               <label htmlFor="allDayCheckbox" className="text-sm text-gray-700 cursor-pointer">
@@ -790,11 +921,13 @@ const Calendar = () => {
             </div>
 
             <div className="mb-4">
-              <label htmlFor="eventStatus" className="text-sm text-gray-600 block mb-1">ステータス</label>
+              <label htmlFor="eventStatus" className="text-sm text-gray-600 block mb-1">
+                ステータス
+              </label>
               <select
                 id="eventStatus"
                 className="w-full p-2 border rounded"
-                value={modal.event.status || "active"}
+                value={modal.event?.status ?? "active"}
                 onChange={(e) => updateEvent("status", e.target.value)}
                 disabled={modal.event?.source === "task"}
               >
@@ -814,11 +947,13 @@ const Calendar = () => {
               {showDetail && (
                 <div className="mt-3 space-y-3">
                   <div>
-                    <label htmlFor="eventPriority" className="text-sm text-gray-600 block mb-1">優先度</label>
+                    <label htmlFor="eventPriority" className="text-sm text-gray-600 block mb-1">
+                      優先度
+                    </label>
                     <select
                       id="eventPriority"
                       className="w-full p-2 border rounded"
-                      value={modal.event.priority || "medium"}
+                      value={modal.event?.priority ?? "medium"}
                       onChange={(e) => updateEvent("priority", e.target.value)}
                       disabled={modal.event?.source === "task"}
                     >
@@ -829,13 +964,15 @@ const Calendar = () => {
                   </div>
 
                   <div>
-                    <span id="colorLabel" className="text-sm text-gray-600 block mb-1">色</span>
+                    <span id="colorLabel" className="text-sm text-gray-600 block mb-1">
+                      色
+                    </span>
                     <div className="flex gap-2" role="group" aria-labelledby="colorLabel">
                       {["#3b82f6", "#22c55e", "#f59e0b", "#ef4444"].map((color) => (
                         <button
                           key={color}
                           className={`w-8 h-8 rounded-full border-2 ${
-                            modal.event.color === color
+                            modal.event?.color === color
                               ? "border-gray-800 scale-110"
                               : "border-gray-300"
                           }`}
@@ -849,18 +986,20 @@ const Calendar = () => {
                   </div>
 
                   <div>
-                    <label htmlFor="eventComment" className="text-sm text-gray-600 block mb-1">コメント</label>
+                    <label htmlFor="eventComment" className="text-sm text-gray-600 block mb-1">
+                      コメント
+                    </label>
                     <textarea
                       id="eventComment"
                       className="w-full p-2 border rounded"
                       rows={3}
-                      value={modal.event.comment || ""}
+                      value={modal.event?.comment ?? ""}
                       onChange={(e) => updateEvent("comment", e.target.value)}
                       disabled={modal.event?.source === "task"}
                     />
                   </div>
 
-                  {modal.event?.source === "task" && modal.event.description && (
+                  {modal.event?.source === "task" && modal.event?.description && (
                     <div>
                       <span className="text-sm text-gray-600 block mb-1">タスク詳細</span>
                       <div className="w-full p-2 border rounded bg-gray-50 text-sm text-gray-700">

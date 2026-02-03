@@ -11,7 +11,7 @@ import {
   faUserCheck,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import ProjectRequired from "../components/ProjectRequired";
@@ -19,7 +19,33 @@ import { useAuth } from "../context/AuthContext";
 import { useProject } from "../context/ProjectContext";
 import { createComment } from "../services/CommentService";
 import { getTasks, updateTask } from "../services/TaskService";
+import type { TaskComment, TaskPriority, TaskStatus, TaskUser } from "../types";
 import { resolveImageUrl } from "../utils/resolveImageUrl";
+
+// ========================================
+// Local Types for Task Page
+// ========================================
+interface NormalizedTask {
+  id: string;
+  title: string;
+  description: string;
+  dueDate: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+  users: TaskUser[];
+  parentTasks: { task_id: string; relation_type: string }[];
+  comments: TaskComment[];
+}
+
+type FilterType = "my_tasks" | "all" | "high" | "active" | "done";
+
+type StatCardColor = "blue" | "indigo" | "yellow" | "green" | "red";
+
+interface StatCardProps {
+  title: string;
+  value: number;
+  color: StatCardColor;
+}
 
 const Task = () => {
   const { user } = useAuth();
@@ -27,21 +53,21 @@ const Task = () => {
   const currentProjectId = currentProject?.project_id;
 
   // For testing
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState<NormalizedTask[]>([]);
 
   const [loading, setLoading] = useState(true);
 
-  const [filter, setFilter] = useState("my_tasks");
+  const [filter, setFilter] = useState<FilterType>("my_tasks");
 
-  const [activeTaskId, setActiveTaskId] = useState(null);
-  const [newComments, setNewComments] = useState({});
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const [newComments, setNewComments] = useState<Record<string, string>>({});
 
-  const [openCommentsTaskId, setOpenCommentsTaskId] = useState(null);
+  const [openCommentsTaskId, setOpenCommentsTaskId] = useState<string | null>(null);
 
   // loading state for updating tasks
-  const [updatingTasks, _setUpdatingTasks] = useState({});
+  const [updatingTasks, _setUpdatingTasks] = useState<Record<string, boolean>>({});
 
-  const addComment = async (projectId, taskId) => {
+  const addComment = async (projectId: string, taskId: string): Promise<void> => {
     const commentText = newComments[taskId] || "";
 
     if (!commentText.trim()) {
@@ -50,6 +76,7 @@ const Task = () => {
     }
 
     try {
+      if (!user) return;
       const user_id = user.id;
 
       const body = {
@@ -66,7 +93,7 @@ const Task = () => {
           task.id === taskId
             ? {
                 ...task,
-                comments: [...task.comments, savedComment],
+                comments: [...task.comments, savedComment as TaskComment],
               }
             : task,
         ),
@@ -86,7 +113,7 @@ const Task = () => {
     }
   };
 
-  const isActiveStatus = (status) =>
+  const isActiveStatus = (status: TaskStatus): boolean =>
     ["todo", "pending", "in_progress", "in_review", "testing"].includes(status);
 
   useEffect(() => {
@@ -138,7 +165,7 @@ const Task = () => {
     void loadTasks();
   }, [currentProjectId]);
 
-  const isDeadlineNear = (dueDate) => {
+  const isDeadlineNear = (dueDate: string): boolean => {
     if (!dueDate) return false;
 
     const now = new Date();
@@ -149,10 +176,10 @@ const Task = () => {
   };
 
   // ✅ Check if task is assigned to current user
-  const isMyTask = (task) => {
+  const isMyTask = (task: NormalizedTask): boolean => {
     if (!user || !user.id || !task.users) return false;
 
-    return task.users.some((assignedUser) => assignedUser.user_id === user.id);
+    return task.users.some((assignedUser: TaskUser) => assignedUser.user_id === user.id);
   };
 
   // ✅ Dynamic filter logic
@@ -178,7 +205,7 @@ const Task = () => {
     return false;
   });
 
-  const toggleTaskStatus = async (taskId) => {
+  const toggleTaskStatus = async (taskId: string): Promise<void> => {
     try {
       const currentTask = tasks.find((task) => task.id === taskId);
       if (!currentTask) return;
@@ -202,6 +229,7 @@ const Task = () => {
         status: newStatus,
       };
 
+      if (!currentProjectId) return;
       await updateTask(currentProjectId, taskId, taskData);
 
       await refreshProjects();
@@ -227,13 +255,13 @@ const Task = () => {
     }
   };
 
-  const deleteTask = (taskId) => {
+  const deleteTask = (taskId: string): void => {
     if (!window.confirm("このタスクを削除しますか？")) return;
 
     setTasks((tasks) => tasks.filter((t) => t.id !== taskId));
   };
 
-  const getPriorityColor = (priority) => {
+  const getPriorityColor = (priority: TaskPriority): string => {
     switch (priority) {
       case "high":
         return "bg-red-100 text-red-700 border-red-300";
@@ -246,7 +274,7 @@ const Task = () => {
     }
   };
 
-  const formatDateTime = (isoString) => {
+  const formatDateTime = (isoString: string): string => {
     if (!isoString) return "-";
 
     const date = new Date(isoString);
@@ -323,29 +351,34 @@ const Task = () => {
       <div className="flex flex-wrap gap-4">
         {[
           {
-            type: "my_tasks",
+            type: "my_tasks" as FilterType,
             label: "マイタスク",
             icon: faUserCheck,
-            color: "indigo",
+            color: "indigo" as StatCardColor,
           },
-          { type: "all", label: "すべて", icon: faListUl, color: "blue" },
           {
-            type: "active",
+            type: "all" as FilterType,
+            label: "すべて",
+            icon: faListUl,
+            color: "blue" as StatCardColor,
+          },
+          {
+            type: "active" as FilterType,
             label: "進行中",
             icon: faPlayCircle,
-            color: "yellow",
+            color: "yellow" as StatCardColor,
           },
           {
-            type: "done",
+            type: "done" as FilterType,
             label: "完了",
             icon: faCheckCircle,
-            color: "green",
+            color: "green" as StatCardColor,
           },
           {
-            type: "high",
+            type: "high" as FilterType,
             label: "締め切り近い",
             icon: faExclamationCircle,
-            color: "red",
+            color: "red" as StatCardColor,
           },
         ].map(({ type, label, icon, color }) => {
           const isActive = filter === type;
@@ -399,7 +432,7 @@ const Task = () => {
               >
                 <div className="flex items-start gap-4 flex-1">
                   {/* user.id is the ID of current user */}
-                  {task.users.some((u) => u.user_id === user.id) && (
+                  {user && task.users.some((u: TaskUser) => u.user_id === user.id) && (
                     <button
                       onClick={() => toggleTaskStatus(task.id)}
                       disabled={updatingTasks[task.id]}
@@ -485,24 +518,24 @@ const Task = () => {
                       <div className="flex items-center gap-2 text-lg font-bold">
                         <span className="text-gray-600">担当者:</span>
                         <div className="flex gap-2 flex-wrap">
-                          {task.users.map((user) => (
+                          {task.users.map((taskUser: TaskUser) => (
                             <span
-                              key={user.user_id}
+                              key={taskUser.user_id}
                               className="px-3 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-full flex items-center gap-3"
                             >
-                              {user.profile_picture ? (
+                              {taskUser.profile_picture ? (
                                 <img
-                                  src={resolveImageUrl(user.profile_picture)}
-                                  alt={user.name}
+                                  src={resolveImageUrl(taskUser.profile_picture)}
+                                  alt={taskUser.name}
                                   className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center"
                                 />
                               ) : (
                                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-semibold">
-                                  {user.name.charAt(0).toUpperCase()}
+                                  {taskUser.name.charAt(0).toUpperCase()}
                                 </div>
                               )}
 
-                              {user.name}
+                              {taskUser.name}
                             </span>
                           ))}
                         </div>
@@ -545,7 +578,7 @@ const Task = () => {
                       <div className="mt-4 bg-gray-50 p-4 rounded-xl border border-gray-200 animate-in slide-in-from-top duration-200">
                         {task.comments.length > 0 ? (
                           <div className="space-y-3">
-                            {task.comments.map((comment) => (
+                            {task.comments.map((comment: TaskComment) => (
                               <div
                                 key={comment.comment_id}
                                 className="bg-white px-4 py-3 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
@@ -610,7 +643,7 @@ const Task = () => {
                           className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                         />
                         <button
-                          onClick={() => addComment(currentProjectId, task.id)}
+                          onClick={() => currentProjectId && addComment(currentProjectId, task.id)}
                           className="bg-blue-600 text-white px-4 py-2 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-all cursor-pointer"
                         >
                           投稿
@@ -621,7 +654,7 @@ const Task = () => {
                 </div>
 
                 <div className="flex gap-4 ml-4">
-                  {task.users.some((u) => u.user_id === user.id) && (
+                  {user && task.users.some((u: TaskUser) => u.user_id === user.id) && (
                     <>
                       <Link to={`/task/${task.id}/edit`}>
                         <button
@@ -653,14 +686,15 @@ const Task = () => {
   );
 };
 
-const StatCard = ({ title, value, color }) => {
-  const colorClasses = {
+const StatCard: React.FC<StatCardProps> = ({ title, value, color }) => {
+  const colorClassMap: Record<StatCardColor, string> = {
     blue: "bg-blue-50 border-blue-200 text-blue-700",
     indigo: "bg-indigo-50 border-indigo-200 text-indigo-700",
     yellow: "bg-yellow-50 border-yellow-200 text-yellow-700",
     green: "bg-green-50 border-green-200 text-green-700",
     red: "bg-red-50 border-red-200 text-red-700",
-  }[color];
+  };
+  const colorClasses = colorClassMap[color];
 
   return (
     <div

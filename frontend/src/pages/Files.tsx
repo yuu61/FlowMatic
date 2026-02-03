@@ -1,3 +1,4 @@
+import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
   faDownload,
   faFile,
@@ -13,7 +14,7 @@ import {
   faUpload,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 
 import ProjectRequired from "../components/ProjectRequired";
 import { useAuth } from "../context/AuthContext";
@@ -24,24 +25,28 @@ import {
   getProjectFiles,
   uploadProjectFile,
 } from "../services/FileService";
+import type { ProjectFile } from "../types";
 import { resolveImageUrl } from "../utils/resolveImageUrl";
+
+type SortKey = "name" | "uploader" | "date" | "size" | null;
 
 const Files = () => {
   const { user } = useAuth();
   // ✅ 表示モード切り替え
-  const [viewMode, setViewMode] = useState("list");
+  const [viewMode, setViewMode] = useState<"list" | "card">("list");
 
   // ✅ ソート設定
-  const [sortKey, setSortKey] = useState(null);
-  const [sortOrder, setSortOrder] = useState("asc");
+  const [sortKey, setSortKey] = useState<SortKey>(null);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   const { projects, currentProject } = useProject();
 
-  const [files, setFiles] = useState([]);
+  const [files, setFiles] = useState<ProjectFile[]>([]);
   const [_loading, _setLoading] = useState(true);
   const [_uploading, _setUploading] = useState(false);
 
   const loadFiles = async () => {
+    if (!currentProject) return;
     const files = await getProjectFiles(currentProject.project_id);
 
     console.log(files);
@@ -53,17 +58,18 @@ const Files = () => {
     void loadFiles();
   }, [currentProject]);
 
-  const handleUpload = async (e) => {
-    const file = e.target.files[0];
+  const handleUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!currentProject) return;
     await uploadProjectFile(currentProject.project_id, { file });
 
     // then refresh file list
     void loadFiles();
   };
 
-  const handleDownload = async (file) => {
+  const handleDownload = async (file: ProjectFile) => {
     try {
       await downloadProjectFile(file.url, file.name);
     } catch (error) {
@@ -73,10 +79,11 @@ const Files = () => {
   };
 
   // ✅ 削除処理
-  const handleDelete = async (file) => {
+  const handleDelete = async (file: ProjectFile) => {
     if (!window.confirm(`${file.name} を削除してもいいですか?`)) return;
 
     try {
+      if (!currentProject) return;
       await deleteProjectFile(currentProject.project_id, file.id);
       // Refresh file list
       await loadFiles();
@@ -86,13 +93,13 @@ const Files = () => {
     }
   };
 
-  const isImageFile = (name) => {
+  const isImageFile = (name: string): boolean => {
     const imageExtensions = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".svg"];
     return imageExtensions.some((ext) => name.toLowerCase().endsWith(ext));
   };
 
   // ✅ ファイルタイプに応じたFontAwesomeアイコンとカラー
-  const getFileIconData = (name) => {
+  const getFileIconData = (name: string): { icon: IconDefinition; color: string } => {
     if (name.endsWith(".pdf")) return { icon: faFilePdf, color: "text-red-500" };
     if (isImageFile(name)) return { icon: faFileImage, color: "text-blue-500" };
     if (name.endsWith(".docx")) return { icon: faFileWord, color: "text-blue-600" };
@@ -101,7 +108,7 @@ const Files = () => {
   };
 
   // ✅ ソート処理
-  const handleSort = (key) => {
+  const handleSort = (key: SortKey) => {
     if (sortKey === key) {
       // 同じ列をクリックした場合は昇順/降順を切り替え
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
@@ -113,7 +120,7 @@ const Files = () => {
   };
 
   // ✅ サイズを数値に変換(ソート用)
-  const parseSize = (sizeStr) => {
+  const parseSize = (sizeStr: string): number => {
     const num = parseFloat(sizeStr);
     if (sizeStr.includes("MB")) return num * 1024;
     if (sizeStr.includes("GB")) return num * 1024 * 1024;
@@ -303,7 +310,7 @@ const Files = () => {
                             />
                           ) : (
                             <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-semibold">
-                              {file.uploader.username.charAt(0).toUpperCase()}
+                              {file.uploader?.username?.charAt(0).toUpperCase() ?? "?"}
                             </div>
                           )}
                           <span>{file.uploader?.username}</span>
@@ -326,7 +333,7 @@ const Files = () => {
                             <FontAwesomeIcon icon={faDownload} />
                             <span className="hidden lg:inline">ダウンロード</span>
                           </button>
-                          {file.uploader?.id === user.id && (
+                          {file.uploader?.id === user?.id && (
                             <button
                               onClick={() => void handleDelete(file)}
                               className="px-2 lg:px-3 py-1.5 text-red-600 hover:text-red-700 rounded-md transition-colors flex items-center gap-1.5 text-base lg:text-xl font-bold cursor-pointer"
@@ -422,7 +429,7 @@ const Files = () => {
                       />
                     ) : (
                       <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-semibold">
-                        {file.uploader.username.charAt(0).toUpperCase()}
+                        {file.uploader?.username?.charAt(0).toUpperCase() ?? "?"}
                       </div>
                     )}
                     {file.uploader?.username}
@@ -441,7 +448,7 @@ const Files = () => {
                     <FontAwesomeIcon icon={faDownload} />
                     <span>ダウンロード</span>
                   </button>
-                  {file.uploader?.id === user.id && (
+                  {file.uploader?.id === user?.id && (
                     <button
                       onClick={() => void handleDelete(file)}
                       className="flex-1 sm:flex-none px-3 py-2 sm:py-1.5 text-red-600 hover:text-red-700 bg-red-50 sm:bg-transparent cursor-pointer rounded-lg sm:rounded-md transition-colors flex items-center justify-center gap-1.5 text-sm sm:text-xl font-bold"

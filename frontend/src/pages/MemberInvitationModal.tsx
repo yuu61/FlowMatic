@@ -6,7 +6,7 @@ import type { ProjectMember, User } from "../types";
 interface MemberInvitationModalProps {
   projectId?: string;
   existingMembers?: ProjectMember[];
-  onInvitationSuccess?: (users: User[], role: string) => void;
+  onInvitationSuccess?: (users: User[], role: "owner" | "admin" | "member") => void;
 }
 
 export interface MemberInvitationModalRef {
@@ -18,17 +18,17 @@ const MemberInvitationModal = forwardRef<MemberInvitationModalRef, MemberInvitat
   ({ projectId, existingMembers = [], onInvitationSuccess }, ref) => {
     // 状態管理
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [users, setUsers] = useState([]);
+    const [users, setUsers] = useState<User[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
-    const [searchResults, setSearchResults] = useState([]);
-    const [selectedUsers, setSelectedUsers] = useState([]);
-    const [role, setRole] = useState("member");
+    const [searchResults, setSearchResults] = useState<User[]>([]);
+    const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
+    const [role, setRole] = useState<"owner" | "admin" | "member">("member");
     const [showSuccessToast, setShowSuccessToast] = useState(false);
     const [searchError, setSearchError] = useState("");
 
     // 参照
-    const modalRef = useRef(null);
-    const debounceRef = useRef(null);
+    const modalRef = useRef<HTMLDivElement>(null);
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // モーダルを開く
     const openModal = () => {
@@ -60,7 +60,7 @@ const MemberInvitationModal = forwardRef<MemberInvitationModalRef, MemberInvitat
       try {
         const users = await getUsers();
 
-        setUsers(users);
+        setUsers(users ?? []);
       } catch (error) {
         console.error("ユーザー取得エラー:", error);
         setSearchError("ユーザーを取得できませんでした。");
@@ -107,7 +107,7 @@ const MemberInvitationModal = forwardRef<MemberInvitationModalRef, MemberInvitat
     }, [searchQuery, selectedUsers, users, existingMembers]);
 
     // ユーザーを選択
-    const selectUser = (user) => {
+    const selectUser = (user: User) => {
       if (!selectedUsers.some((u) => u.id === user.id)) {
         setSelectedUsers((prev) => [...prev, user]);
         setSearchQuery("");
@@ -116,7 +116,7 @@ const MemberInvitationModal = forwardRef<MemberInvitationModalRef, MemberInvitat
     };
 
     // ユーザーを削除
-    const removeUser = (userId) => {
+    const removeUser = (userId: number) => {
       setSelectedUsers(selectedUsers.filter((user) => user.id !== userId));
     };
 
@@ -160,8 +160,8 @@ const MemberInvitationModal = forwardRef<MemberInvitationModalRef, MemberInvitat
 
     // 外側をクリックしてモーダルを閉じる
     useEffect(() => {
-      const handleClickOutside = (event) => {
-        if (modalRef.current && !modalRef.current.contains(event.target)) {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
           closeModal();
         }
       };
@@ -200,7 +200,10 @@ const MemberInvitationModal = forwardRef<MemberInvitationModalRef, MemberInvitat
               <div className="p-6 space-y-4">
                 {/* ユーザー名検索 */}
                 <div>
-                  <label htmlFor="user-search-input" className="block text-md font-semibold text-gray-700 mb-2">
+                  <label
+                    htmlFor="user-search-input"
+                    className="block text-md font-semibold text-gray-700 mb-2"
+                  >
                     ユーザー名またはメールで検索
                   </label>
                   <div className="relative">
@@ -222,7 +225,12 @@ const MemberInvitationModal = forwardRef<MemberInvitationModalRef, MemberInvitat
                 {/* 検索結果 */}
                 {searchResults.length > 0 && (
                   <div>
-                    <h4 id="search-results-label" className="text-md font-semibold text-gray-700 mb-2">一致するユーザー</h4>
+                    <h4
+                      id="search-results-label"
+                      className="text-md font-semibold text-gray-700 mb-2"
+                    >
+                      一致するユーザー
+                    </h4>
                     <div className="border border-gray-200 rounded-lg divide-y divide-gray-100 max-h-60 overflow-y-auto">
                       {searchResults.map((user) => (
                         <div
@@ -263,7 +271,12 @@ const MemberInvitationModal = forwardRef<MemberInvitationModalRef, MemberInvitat
                 {/* 選択されたユーザー */}
                 {selectedUsers.length > 0 && (
                   <div>
-                    <h4 id="selected-users-label" className="text-md font-semibold text-gray-700 mb-2">選択されたユーザー</h4>
+                    <h4
+                      id="selected-users-label"
+                      className="text-md font-semibold text-gray-700 mb-2"
+                    >
+                      選択されたユーザー
+                    </h4>
                     <div className="flex flex-wrap gap-2 p-2 border border-gray-200 rounded-lg min-h-12">
                       {selectedUsers.map((user) => (
                         <div

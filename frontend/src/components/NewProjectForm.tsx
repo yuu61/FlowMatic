@@ -1,9 +1,10 @@
-// NewProjectForm.jsx
+// NewProjectForm.tsx
 import { faCircleXmark, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { MobileDateTimePicker } from "@mui/x-date-pickers";
+import { Dayjs } from "dayjs";
 import dayjs from "dayjs";
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { CURRENT_PROJECT_ID } from "../constants";
@@ -12,19 +13,27 @@ import { useProject } from "../context/ProjectContext";
 import { createChatroom } from "../services/ChatService"; // Add this import
 import { createProject } from "../services/ProjectService";
 import { getUsers } from "../services/UserService";
+import { ProjectStatus, User } from "../types";
 
 export default function NewProjectForm() {
   const navigate = useNavigate();
-  const inputRef = useRef(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const { user } = useAuth();
 
   const { projects, setProjects, setCurrentProject } = useProject();
 
-  const [availableMembers, setAvailableMembers] = useState([]);
+  const [availableMembers, setAvailableMembers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    title: string;
+    description: string;
+    startDate: string;
+    deadline: string;
+    status: ProjectStatus;
+    members: number[];
+  }>({
     title: "",
     description: "",
     startDate: dayjs().toISOString(),
@@ -60,7 +69,7 @@ export default function NewProjectForm() {
       try {
         const users = await getUsers();
         console.log(users);
-        setAvailableMembers(users);
+        setAvailableMembers(users ?? []);
       } catch (error) {
         console.error("Error fetching users:", error);
       }
@@ -69,14 +78,17 @@ export default function NewProjectForm() {
     void fetchUsers();
   }, []);
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    if (!user) return;
     const loggedInUserId = user.id;
 
     const newMembers = Array.from(new Set([...formData.members, loggedInUserId]));
@@ -106,9 +118,10 @@ export default function NewProjectForm() {
         console.log("Creating chatroom with data:", chatroomData);
         const newChatroom = await createChatroom(newProject.project_id, chatroomData);
         console.log("new chatroom : ", newChatroom);
-      } catch (chatroomError) {
+      } catch (chatroomError: unknown) {
         console.error("Error creating chatroom:", chatroomError);
-        console.error("Chatroom error details:", chatroomError.response?.data);
+        const axiosError = chatroomError as { response?: { data?: unknown } };
+        console.error("Chatroom error details:", axiosError.response?.data);
         // Note: Project was created successfully, only chatroom creation failed
         alert("プロジェクトは作成されましたが、チャットルームの作成に失敗しました");
       }
@@ -129,7 +142,7 @@ export default function NewProjectForm() {
     }
   };
 
-  const handleDateChange = (name, newValue) => {
+  const handleDateChange = (name: "startDate" | "deadline", newValue: Dayjs | null) => {
     setFormData((prev) => ({
       ...prev,
       [name]: newValue ? newValue.toISOString() : "",
@@ -252,7 +265,9 @@ export default function NewProjectForm() {
 
           {/* メンバー選択 */}
           <div>
-            <label htmlFor="member-search" className="block text-xl font-bold mb-3">メンバー</label>
+            <label htmlFor="member-search" className="block text-xl font-bold mb-3">
+              メンバー
+            </label>
 
             {/* Search box */}
             <div className="mb-4">

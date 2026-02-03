@@ -5,7 +5,7 @@ export interface User {
   id: number;
   username: string;
   email: string;
-  profile_picture: string | null;
+  profile_picture?: string | null;
   date_joined: string;
 }
 
@@ -30,7 +30,7 @@ export interface ProjectMember {
   user_id: number;
   name: string; // バックエンドは name を使用
   email: string;
-  profile_picture: string | null;
+  profile_picture?: string | null;
 }
 
 // ========================================
@@ -46,7 +46,7 @@ export interface TaskUser {
   user_id: number;
   name: string;
   email: string;
-  profile_picture: string | null;
+  profile_picture?: string | null;
 }
 
 export interface ParentTask {
@@ -60,7 +60,7 @@ export interface TaskComment {
   user_id: number;
   name: string;
   email: string;
-  profile_picture: string | null;
+  profile_picture?: string | null;
   content: string;
   created_at: string;
 }
@@ -131,7 +131,7 @@ export interface ChatMessage {
   username?: string; // 一部のAPIレスポンスで username が返る場合がある
   name: string; // バックエンドは name を使用
   email: string;
-  profile_picture: string | null;
+  profile_picture?: string | null;
   content: string;
   timestamp: string; // バックエンドは timestamp を使用
 }
@@ -142,7 +142,7 @@ export interface ChatMessage {
 export interface FileUploader {
   id: number;
   username: string;
-  profile_picture: string | null;
+  profile_picture?: string | null;
 }
 
 export interface ProjectFile {
@@ -163,7 +163,7 @@ export interface Comment {
   user_id: number;
   name: string; // バックエンドは name を使用
   email: string;
-  profile_picture: string | null;
+  profile_picture?: string | null;
   content: string;
   created_at: string;
 }
@@ -183,7 +183,7 @@ export interface MemoUser {
   user_id: number;
   name: string;
   email: string;
-  profile_picture: string | null;
+  profile_picture?: string | null;
 }
 
 export interface Memo {

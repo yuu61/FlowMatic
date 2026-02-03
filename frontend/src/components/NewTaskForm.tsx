@@ -1,10 +1,12 @@
 import { MobileDateTimePicker } from "@mui/x-date-pickers";
+import { Dayjs } from "dayjs";
 import dayjs from "dayjs";
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { useProject } from "../context/ProjectContext";
 import { createTask, getTaskById, getTasks, updateTask } from "../services/TaskService";
+import { Task } from "../types";
 
 export default function NewTaskForm() {
   const { currentProject } = useProject();
@@ -13,41 +15,27 @@ export default function NewTaskForm() {
   const { taskId } = useParams();
   const isEditMode = Boolean(taskId);
 
-  const [existingTasks, setExistingTasks] = useState([]);
+  const [existingTasks, setExistingTasks] = useState<Task[]>([]);
 
   const [taskName, setTaskName] = useState("");
   const [description, setDescription] = useState("");
 
-  const [dates, setDates] = useState({
+  const [dates, setDates] = useState<{ startDate: Date | null; deadline: Date | null }>({
     startDate: dayjs().toDate(),
     deadline: null,
   });
 
   const [priority, setPriority] = useState("medium");
   const [status, setStatus] = useState("todo"); // fixed default
-  const [assignees, setAssignees] = useState([]);
-  const [dependencies, setDependencies] = useState([]);
-  const [message, setMessage] = useState({ text: "", type: "" });
+  const [assignees, setAssignees] = useState<number[]>([]);
+  const [dependencies, setDependencies] = useState<{ taskId: string; type: string }[]>([]);
+  const [message, setMessage] = useState<{ text: string; type: string }>({ text: "", type: "" });
 
   const navigate = useNavigate();
-  const inputRef = useRef(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const _sampleTasks = [
-    { id: "task_1", name: "要件定義" },
-    { id: "task_2", name: "設計" },
-    { id: "task_3", name: "開発" },
-    { id: "task_4", name: "テスト" },
-    { id: "task_5", name: "リリース" },
-  ];
-
-  const _dependencyTypes = [
-    { id: "FtS", label: "完了→開始 (FtS)" },
-    { id: "FtF", label: "完了→完了 (FtF)" },
-    { id: "StS", label: "開始→開始 (StS)" },
-    { id: "StF", label: "開始→完了 (StF)" },
-  ];
-
-  const fetchTasks = async (projectId) => {
+  const fetchTasks = async (projectId: string | undefined) => {
+    if (!projectId) return;
     const tasks = await getTasks(projectId);
 
     setExistingTasks(tasks);
@@ -64,6 +52,7 @@ export default function NewTaskForm() {
     if (!isEditMode) return;
 
     const loadTask = async () => {
+      if (!currentProjectId || !taskId) return;
       const task = await getTaskById(currentProjectId, taskId);
 
       setTaskName(task.name);
@@ -93,29 +82,18 @@ export default function NewTaskForm() {
     console.log(existingTasks);
   }, [existingTasks]);
 
-  const groupMembers = useMemo(() => currentProject.members, [currentProject]);
+  const groupMembers = useMemo(() => currentProject?.members ?? [], [currentProject]);
   // console.log(groupMembers)
 
-  const handleDateChange = (field, value) => {
-    setDates((prev) => ({ ...prev, [field]: value }));
+  const handleDateChange = (field: "startDate" | "deadline", value: Dayjs | null) => {
+    setDates((prev) => ({ ...prev, [field]: value ? value.toDate() : null }));
   };
 
-  const handleAssigneeChange = (id) => {
+  const handleAssigneeChange = (id: number) => {
     setAssignees((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
-  const _handleAddDependency = () => setDependencies([...dependencies, { taskId: "", type: "FtS" }]);
-
-  const _handleRemoveDependency = (index) =>
-    setDependencies(dependencies.filter((_, i) => i !== index));
-
-  const _handleDependencyChange = (index, field, value) => {
-    const updated = [...dependencies];
-    updated[index][field] = value;
-    setDependencies(updated);
-  };
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!taskName.trim()) return showMessage("タスク名が必要です。", "error");
@@ -129,7 +107,7 @@ export default function NewTaskForm() {
     const requestData = {
       name: taskName,
       description,
-      start_date: dates.startDate?.toISOString() || null,
+      start_date: dates.startDate?.toISOString() || undefined,
       deadline: dates.deadline.toISOString(),
       priority,
       status,
@@ -141,7 +119,12 @@ export default function NewTaskForm() {
     };
 
     try {
+      if (!currentProjectId) {
+        showMessage("プロジェクトが選択されていません。", "error");
+        return;
+      }
       if (isEditMode) {
+        if (!taskId) return;
         await updateTask(currentProjectId, taskId, requestData);
         alert("タスクを更新しました！");
       } else {
@@ -156,7 +139,7 @@ export default function NewTaskForm() {
     }
   };
 
-  const showMessage = (text, type) => {
+  const showMessage = (text: string, type: string) => {
     setMessage({ text, type });
     setTimeout(() => setMessage({ text: "", type: "" }), 4000);
   };
@@ -199,7 +182,9 @@ export default function NewTaskForm() {
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Task Name */}
           <div>
-            <label htmlFor="taskName" className="block text-gray-700 text-lg font-semibold mb-2">タスク名</label>
+            <label htmlFor="taskName" className="block text-gray-700 text-lg font-semibold mb-2">
+              タスク名
+            </label>
             <input
               id="taskName"
               type="text"
@@ -213,7 +198,9 @@ export default function NewTaskForm() {
 
           {/* Description */}
           <div>
-            <label htmlFor="description" className="block text-gray-700 text-lg font-semibold mb-2">説明</label>
+            <label htmlFor="description" className="block text-gray-700 text-lg font-semibold mb-2">
+              説明
+            </label>
             <textarea
               id="description"
               value={description}
@@ -227,7 +214,9 @@ export default function NewTaskForm() {
           {/* Due Date + Assignees */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <span id="startDateLabel" className="block text-gray-700 text-lg font-semibold mb-2">開始日</span>
+              <span id="startDateLabel" className="block text-gray-700 text-lg font-semibold mb-2">
+                開始日
+              </span>
 
               <MobileDateTimePicker
                 label="開始日を設定してください"
@@ -246,7 +235,9 @@ export default function NewTaskForm() {
             </div>
 
             <div>
-              <span id="deadlineLabel" className="block text-gray-700 text-lg font-semibold mb-2">期限日</span>
+              <span id="deadlineLabel" className="block text-gray-700 text-lg font-semibold mb-2">
+                期限日
+              </span>
 
               <MobileDateTimePicker
                 label="期限日を設定してください"
@@ -290,7 +281,9 @@ export default function NewTaskForm() {
           {/* Priority + Status */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label htmlFor="priority" className="block text-gray-700 text-lg font-semibold mb-2">優先度</label>
+              <label htmlFor="priority" className="block text-gray-700 text-lg font-semibold mb-2">
+                優先度
+              </label>
               <select
                 id="priority"
                 value={priority}
@@ -304,7 +297,9 @@ export default function NewTaskForm() {
             </div>
 
             <div>
-              <label htmlFor="status" className="block text-gray-700 text-lg font-semibold mb-2">ステータス</label>
+              <label htmlFor="status" className="block text-gray-700 text-lg font-semibold mb-2">
+                ステータス
+              </label>
               <select
                 id="status"
                 value={status}

@@ -2,8 +2,20 @@ import "@svar-ui/react-gantt/all.css";
 
 import { Gantt, Willow } from "@svar-ui/react-gantt";
 
+interface GanttTask {
+  id: number;
+  text: string;
+  start: Date;
+  end: Date;
+  duration: number;
+  progress: number;
+  type: string;
+  lazy?: boolean;
+  parent: number | undefined;
+}
+
 const GanttChartBackup = () => {
-  const tasks = [
+  const tasks: GanttTask[] = [
     {
       id: 20,
       text: "NewTask",
@@ -13,7 +25,7 @@ const GanttChartBackup = () => {
       progress: 0.2, // 20%
       type: "task",
       lazy: false,
-      parent: null,
+      parent: undefined,
     },
     {
       id: 47,
@@ -23,7 +35,7 @@ const GanttChartBackup = () => {
       duration: 8,
       progress: 0,
       type: "summary",
-      parent: null,
+      parent: undefined,
     },
     {
       id: 22,
@@ -44,7 +56,7 @@ const GanttChartBackup = () => {
       progress: 0,
       type: "task",
       lazy: false,
-      parent: null,
+      parent: undefined,
     },
   ];
 
@@ -58,13 +70,7 @@ const GanttChartBackup = () => {
   return (
     <div className="max-w-7xl">
       <Willow>
-        <Gantt
-          tasks={tasks}
-          links={links}
-          scales={scales}
-          cellWidth={30}
-          cellHeight={24}
-        />
+        <Gantt tasks={tasks} links={links} scales={scales} cellWidth={30} cellHeight={24} />
       </Willow>
     </div>
   );

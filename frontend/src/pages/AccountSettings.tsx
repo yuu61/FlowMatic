@@ -6,18 +6,16 @@ import { changeUserPassword, updateUserProfile } from "../services/UserService";
 
 const AccountSettings = () => {
   const { user, setUser } = useAuth();
-  // console.log(user);
+
   const [edit, setEdit] = useState(false);
-
   const [passwordLoading, setPasswordLoading] = useState(false);
-
   const [userData, setUserData] = useState<{
-    id: any;
+    id: number | null;
     username: string;
     email: string;
-    profile_picture: any;
-    profile_preview: string | ArrayBuffer | null;
-    date_joined: any;
+    profile_picture: File | string | null | undefined;
+    profile_preview: string | null;
+    date_joined: string | null;
   }>({
     id: null,
     username: "",
@@ -26,26 +24,25 @@ const AccountSettings = () => {
     profile_preview: null,
     date_joined: null,
   });
-
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
-
   const [showPassword, setShowPassword] = useState({
     current: false,
     new: false,
     confirm: false,
   });
-
   const [notification, setNotification] = useState({
     show: false,
     message: "",
     type: "",
   });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    if (!user) return;
     setUserData({
       id: user.id,
       username: user.username,
@@ -56,9 +53,12 @@ const AccountSettings = () => {
     });
   }, [user]);
 
-  const fileInputRef = useRef(null);
+  // userがnullの場合は早期リターン
+  if (!user) {
+    return null;
+  }
 
-  const formatJoinedDateJP = (isoString) => {
+  const formatJoinedDateJP = (isoString: string | null): string => {
     if (!isoString) return "";
 
     const date = new Date(isoString);
@@ -66,14 +66,14 @@ const AccountSettings = () => {
     return `${date.getFullYear()}年${date.getMonth() + 1}月加入`;
   };
 
-  const togglePasswordVisibility = (field) => {
+  const togglePasswordVisibility = (field: keyof typeof showPassword): void => {
     setShowPassword((prev) => ({
       ...prev,
       [field]: !prev[field],
     }));
   };
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
     setUserData((prev) => ({
       ...prev,
@@ -81,7 +81,7 @@ const AccountSettings = () => {
     }));
   };
 
-  const handlePasswordChange = (e) => {
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
     setPasswordData((prev) => ({
       ...prev,
@@ -89,7 +89,7 @@ const AccountSettings = () => {
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>): Promise<void> => {
     e.preventDefault();
 
     try {
@@ -173,17 +173,20 @@ const AccountSettings = () => {
     }
   };
 
-  const handlePictureChange = async (e) => {
+  const handlePictureChange = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
 
       const reader = new FileReader();
       reader.onload = (event) => {
+        if (!event.target) return;
+
         // Update local state for preview
+        const result = event.target?.result;
         setUserData((prev) => ({
           ...prev,
           profile_picture: file,
-          profile_preview: event.target.result,
+          profile_preview: typeof result === "string" ? result : null,
         }));
 
         // Upload immediately
@@ -233,7 +236,7 @@ const AccountSettings = () => {
     }
   };
 
-  const showNotification = (message, type) => {
+  const showNotification = (message: string, type: string): void => {
     setNotification({
       show: true,
       message,
@@ -249,8 +252,8 @@ const AccountSettings = () => {
     }, 3000);
   };
 
-  const handleImageClick = () => {
-    fileInputRef.current.click();
+  const handleImageClick = (): void => {
+    fileInputRef.current?.click();
   };
 
   return (
@@ -324,9 +327,14 @@ const AccountSettings = () => {
             <div className="flex items-center gap-6 mb-6 pb-6 border-b border-gray-100">
               <div className="relative group">
                 <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
-                  {userData.profile_picture ? (
+                  {userData.profile_picture || userData.profile_preview ? (
                     <img
-                      src={userData.profile_preview || userData.profile_picture}
+                      src={
+                        userData.profile_preview ||
+                        (typeof userData.profile_picture === "string"
+                          ? userData.profile_picture
+                          : undefined)
+                      }
                       alt="プロフィール"
                       className="w-full h-full object-cover"
                     />
@@ -373,7 +381,10 @@ const AccountSettings = () => {
             {/* Profile Fields */}
             <div className="space-y-6">
               <div>
-                <label htmlFor="username" className="flex items-center gap-2 text-lg font-bold text-gray-700 mb-2">
+                <label
+                  htmlFor="username"
+                  className="flex items-center gap-2 text-lg font-bold text-gray-700 mb-2"
+                >
                   <i className="fas fa-user"></i>
                   ユーザー名
                 </label>
@@ -423,7 +434,10 @@ const AccountSettings = () => {
 
             <div className="space-y-6">
               <div>
-                <label htmlFor="currentPassword" className="block text-lg font-bold text-gray-700 mb-2">
+                <label
+                  htmlFor="currentPassword"
+                  className="block text-lg font-bold text-gray-700 mb-2"
+                >
                   現在のパスワード
                 </label>
                 <div className="relative">
@@ -483,7 +497,10 @@ const AccountSettings = () => {
               </div>
 
               <div>
-                <label htmlFor="confirmPassword" className="block text-lg font-bold text-gray-700 mb-2">
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-lg font-bold text-gray-700 mb-2"
+                >
                   新しいパスワード（確認）
                 </label>
                 <div className="relative">

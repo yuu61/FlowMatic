@@ -4,7 +4,7 @@ import "../styles/gantt-custom.css";
 import { faPlusCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { FrappeGantt, ViewMode } from "frappe-gantt-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import ProjectRequired from "../components/ProjectRequired";
@@ -42,48 +42,7 @@ export default function GanttChart() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [_animate, setAnimate] = useState(false);
   const ganttContainerRef = useRef<HTMLDivElement>(null);
-
-  // Calculate the earliest start date from tasks (kept for potential future use)
-  const _chartStartDate = useMemo(() => {
-    if (tasks.length === 0) {
-      // Default to today if no tasks
-      return new Date().toISOString().split("T")[0];
-    }
-
-    // Find the earliest start date among all tasks
-    const earliestDate = tasks.reduce((earliest, task) => {
-      const taskStart = new Date(task.start);
-      return taskStart < earliest ? taskStart : earliest;
-    }, new Date(tasks[0].start));
-
-    // Subtract 7 days for some padding before the first task
-    earliestDate.setDate(earliestDate.getDate() - 7);
-
-    return earliestDate.toISOString().split("T")[0];
-  }, [tasks]);
-
-  // Calculate the latest end date from tasks
-  const _chartEndDate = useMemo(() => {
-    if (tasks.length === 0) {
-      // Default to 30 days from today if no tasks
-      const futureDate = new Date();
-      futureDate.setDate(futureDate.getDate() + 30);
-      return futureDate.toISOString().split("T")[0];
-    }
-
-    // Find the latest end date among all tasks
-    const latestDate = tasks.reduce((latest, task) => {
-      const taskEnd = new Date(task.end);
-      return taskEnd > latest ? taskEnd : latest;
-    }, new Date(tasks[0].end));
-
-    // Add 7 days for some padding after the last task
-    latestDate.setDate(latestDate.getDate() + 7);
-
-    return latestDate.toISOString().split("T")[0];
-  }, [tasks]);
 
   useEffect(() => {
     if (!currentProject || !user) return;
@@ -160,8 +119,8 @@ export default function GanttChart() {
     try {
       setLoading(true);
       setError(null);
-      setAnimate(false);
 
+      if (!currentProjectId) return;
       const response = (await getTasks(currentProjectId)) as ApiTask[] | TasksApiResponse;
       console.log("API Response:", response);
 
@@ -169,7 +128,13 @@ export default function GanttChart() {
       let tasksData: ApiTask[] = [];
 
       // If response is an object with a 'tasks' property
-      if (response && typeof response === "object" && !Array.isArray(response) && "tasks" in response && response.tasks) {
+      if (
+        response &&
+        typeof response === "object" &&
+        !Array.isArray(response) &&
+        "tasks" in response &&
+        response.tasks
+      ) {
         tasksData = response.tasks;
         console.log("Extracted tasks from response.tasks");
       }
@@ -199,7 +164,6 @@ export default function GanttChart() {
       console.error("Error fetching tasks:", err);
     } finally {
       setLoading(false);
-      setTimeout(() => setAnimate(true), 100);
     }
   };
 
@@ -225,15 +189,6 @@ export default function GanttChart() {
           return null;
         }
 
-        const _progressMap: Record<string, number> = {
-          done: 100,
-          testing: 75,
-          in_review: 60,
-          in_progress: 40,
-          pending: 10,
-          todo: 0,
-        };
-
         let startDate: Date, endDate: Date;
         try {
           endDate = new Date(task.deadline);
@@ -252,14 +207,24 @@ export default function GanttChart() {
 
         if (task.users && Array.isArray(task.users)) {
           users = task.users;
-        } else if ((task as unknown as { assigned_users?: TaskUser[] }).assigned_users && Array.isArray((task as unknown as { assigned_users?: TaskUser[] }).assigned_users)) {
+        } else if (
+          (task as unknown as { assigned_users?: TaskUser[] }).assigned_users &&
+          Array.isArray((task as unknown as { assigned_users?: TaskUser[] }).assigned_users)
+        ) {
           users = (task as unknown as { assigned_users: TaskUser[] }).assigned_users;
-        } else if ((task as unknown as { assigned_user_ids?: number[] }).assigned_user_ids && Array.isArray((task as unknown as { assigned_user_ids?: number[] }).assigned_user_ids)) {
+        } else if (
+          (task as unknown as { assigned_user_ids?: number[] }).assigned_user_ids &&
+          Array.isArray((task as unknown as { assigned_user_ids?: number[] }).assigned_user_ids)
+        ) {
           // If it's just an array of IDs, convert to objects
-          users = (task as unknown as { assigned_user_ids: number[] }).assigned_user_ids.map((id) => ({ user_id: id } as TaskUser));
+          users = (task as unknown as { assigned_user_ids: number[] }).assigned_user_ids.map(
+            (id) => ({ user_id: id }) as TaskUser,
+          );
         }
 
-        const assignedUserIds = users.map((u) => u?.user_id).filter((id): id is number => id != null);
+        const assignedUserIds = users
+          .map((u) => u?.user_id)
+          .filter((id): id is number => id != null);
 
         const isAssignedToMe = user?.id ? assignedUserIds.includes(user.id) : false;
 
@@ -294,7 +259,7 @@ export default function GanttChart() {
 
   const formatDateForGantt = (isoDateString: string): string => {
     const date = new Date(isoDateString);
-    return date.toISOString().split("T")[0];
+    return date.toISOString().split("T")[0] ?? "";
   };
 
   const handleDateChange = async (task: GanttTask, start: string, end: string) => {
@@ -330,22 +295,24 @@ export default function GanttChart() {
         status: originalTask?.status || "todo",
       };
 
+      if (!currentProjectId) return;
       await updateTask(currentProjectId, task.id, updateData);
 
       setTasks((prevTasks) =>
-        prevTasks.map((t): GanttTask =>
-          t.id === task.id
-            ? {
-                ...t,
-                start: start,
-                end: end,
-                originalTask: {
-                  ...t.originalTask,
-                  start_date: startDate,
-                  deadline: endDate,
-                },
-              }
-            : t,
+        prevTasks.map(
+          (t): GanttTask =>
+            t.id === task.id
+              ? {
+                  ...t,
+                  start: start,
+                  end: end,
+                  originalTask: {
+                    ...t.originalTask,
+                    start_date: startDate,
+                    deadline: endDate,
+                  },
+                }
+              : t,
         ),
       );
 
@@ -354,20 +321,26 @@ export default function GanttChart() {
       console.error("Error updating task:", err);
 
       setTasks((prevTasks) =>
-        prevTasks.map((t): GanttTask =>
-          t.id === task.id
-            ? {
-                ...t,
-                start: t.originalTask?.start_date
-                  ? formatDateForGantt(t.originalTask.start_date)
-                  : t.start,
-                end: t.originalTask?.deadline ? formatDateForGantt(t.originalTask.deadline) : t.end,
-              }
-            : t,
+        prevTasks.map(
+          (t): GanttTask =>
+            t.id === task.id
+              ? {
+                  ...t,
+                  start: t.originalTask?.start_date
+                    ? formatDateForGantt(t.originalTask.start_date)
+                    : t.start,
+                  end: t.originalTask?.deadline
+                    ? formatDateForGantt(t.originalTask.deadline)
+                    : t.end,
+                }
+              : t,
         ),
       );
 
-      alert("❌ タスクの更新に失敗しました\n" + ((err as Error).message || "サーバーエラーが発生しました"));
+      alert(
+        "❌ タスクの更新に失敗しました\n" +
+          ((err as Error).message || "サーバーエラーが発生しました"),
+      );
     } finally {
       setIsUpdating(false);
     }
@@ -411,20 +384,22 @@ export default function GanttChart() {
         // assigned_user_ids: originalTask?.assigned_user_ids || [],
       };
 
+      if (!currentProjectId) return;
       await updateTask(currentProjectId, task.id, updateData);
 
       setTasks((prevTasks) =>
-        prevTasks.map((t): GanttTask =>
-          t.id === task.id
-            ? {
-                ...t,
-                progress: progress,
-                originalTask: {
-                  ...t.originalTask,
-                  status: status as TaskStatus,
-                },
-              }
-            : t,
+        prevTasks.map(
+          (t): GanttTask =>
+            t.id === task.id
+              ? {
+                  ...t,
+                  progress: progress,
+                  originalTask: {
+                    ...t.originalTask,
+                    status: status as TaskStatus,
+                  },
+                }
+              : t,
         ),
       );
 
@@ -443,17 +418,21 @@ export default function GanttChart() {
       };
 
       setTasks((prevTasks) =>
-        prevTasks.map((t): GanttTask =>
-          t.id === task.id
-            ? {
-                ...t,
-                progress: progressMap[originalStatus] || 0,
-              }
-            : t,
+        prevTasks.map(
+          (t): GanttTask =>
+            t.id === task.id
+              ? {
+                  ...t,
+                  progress: progressMap[originalStatus] || 0,
+                }
+              : t,
         ),
       );
 
-      alert("❌ 進捗の更新に失敗しました\n" + ((err as Error).message || "サーバーエラーが発生しました"));
+      alert(
+        "❌ 進捗の更新に失敗しました\n" +
+          ((err as Error).message || "サーバーエラーが発生しました"),
+      );
     } finally {
       setIsUpdating(false);
     }
@@ -506,7 +485,9 @@ export default function GanttChart() {
 
       <div className="bg-white w-xs p-6 rounded-lg shadow-md">
         <div className="flex items-center justify-between">
-          <label htmlFor="viewMode" className="font-bold text-xl">表示モード：</label>
+          <label htmlFor="viewMode" className="font-bold text-xl">
+            表示モード：
+          </label>
           <select
             id="viewMode"
             className="border rounded px-3 py-2 text-lg"
@@ -559,16 +540,21 @@ export default function GanttChart() {
                   `担当者: ${isMine ? "自分" : "他人"}`,
                   `User ID: ${user?.id}`,
                   `Assigned Users: ${
-                    ganttTask.originalTask?.users?.map((u) => `${u.name} (${u.user_id})`).join(", ") ||
-                    "None"
+                    ganttTask.originalTask?.users
+                      ?.map((u) => `${u.name} (${u.user_id})`)
+                      .join(", ") || "None"
                   }`,
                 );
                 if (!isMine) {
                   alert("このタスクは担当者ではないため変更できません");
                 }
               }}
-              onDateChange={(task, start, end) => handleDateChange(task as unknown as GanttTask, String(start), String(end))}
-              onProgressChange={(task, progress) => handleProgressChange(task as unknown as GanttTask, progress)}
+              onDateChange={(task, start, end) =>
+                handleDateChange(task as unknown as GanttTask, String(start), String(end))
+              }
+              onProgressChange={(task, progress) =>
+                handleProgressChange(task as unknown as GanttTask, progress)
+              }
               onTasksChange={(newTasks) => console.log("変更:", newTasks)}
             />
             <div className="mt-4 text-sm font-semibold text-gray-500 text-center">

@@ -1,3 +1,4 @@
+import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
   faCalendar,
   faChartLine,
@@ -18,6 +19,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Link } from "react-router-dom";
 
 import { useProject } from "../context/ProjectContext";
+import type { ProjectStatus } from "../types";
 import { formatUTC } from "../utils/dateUtils";
 
 const Project = () => {
@@ -26,18 +28,18 @@ const Project = () => {
   console.log(projects);
 
   // Status mapping from English to Japanese
-  const statusMap = {
+  const statusMap: Record<ProjectStatus, string> = {
     planning: "計画中",
     in_progress: "進行中",
     completed: "完了",
   };
 
   // Get Japanese label for status
-  const getStatusLabel = (status) => {
+  const getStatusLabel = (status: ProjectStatus): string => {
     return statusMap[status] || status;
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: string): string => {
     switch (status) {
       case "in_progress":
       case "進行中":
@@ -62,7 +64,7 @@ const Project = () => {
     }
   };
 
-  const getStatusIcon = (status) => {
+  const getStatusIcon = (status: string): IconDefinition => {
     switch (status) {
       case "in_progress":
       case "進行中":
@@ -224,7 +226,7 @@ const Project = () => {
                       <div className="flex items-center gap-2">
                         <FontAwesomeIcon icon={faUsers} className="text-gray-400 text-lg" />
                         <span className="text-lg text-gray-700">
-                          {project.members.map((m) => m.name).join("、")}
+                          {project.members?.map((m) => m.name).join("、") ?? ""}
                         </span>
                       </div>
                     </td>
@@ -304,7 +306,7 @@ const Project = () => {
                       メンバー
                     </p>
                     <p className="text-lg font-medium text-gray-900">
-                      {project.members.map((m) => m.name).join("、")}
+                      {project.members?.map((m) => m.name).join("、") ?? ""}
                     </p>
                   </div>
                   <div>

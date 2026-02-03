@@ -67,8 +67,11 @@ export const ProjectProvider = ({ children }: ProjectProviderProps) => {
 
       // Fallback: use first project
       if (fetchedProjects.length > 0) {
-        setCurrentProject(fetchedProjects[0]);
-        localStorage.setItem(CURRENT_PROJECT_ID, fetchedProjects[0].project_id);
+        const firstProject = fetchedProjects[0];
+        if (firstProject) {
+          setCurrentProject(firstProject);
+          localStorage.setItem(CURRENT_PROJECT_ID, firstProject.project_id);
+        }
       }
 
       setLoading(false);

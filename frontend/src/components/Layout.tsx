@@ -8,7 +8,7 @@ import { useProject } from "../context/ProjectContext";
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [_dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const { user: _user, setIsAuthorized } = useAuth();
   const [_username, setUsername] = useState("");
 
@@ -23,8 +23,8 @@ function Layout() {
       setUsername(user.username);
     }
 
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
       }
     };

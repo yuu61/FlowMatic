@@ -48,7 +48,7 @@ export async function deleteProjectFile(projectId: string, fileId: string): Prom
 
 export async function downloadProjectFile(fileUrl: string, fileName: string): Promise<void> {
   try {
-    const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+    const baseURL = import.meta.env["VITE_API_URL"] || "http://localhost:8000";
     const fullUrl = fileUrl.startsWith("http") ? fileUrl : `${baseURL}/${fileUrl}`;
 
     const response = await api.get(fullUrl, {

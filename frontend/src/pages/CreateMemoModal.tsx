@@ -1,11 +1,31 @@
 import { useEffect, useRef, useState } from "react";
 
-const CreateMemoModal = ({ isOpen, onClose, onSubmit, initialMemo = null }) => {
+import type { Memo, MemoColor } from "../types";
+
+interface MemoSubmitData {
+  memo_id?: string;
+  content: string;
+  color: MemoColor;
+}
+
+interface CreateMemoModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: MemoSubmitData) => Promise<void>;
+  initialMemo?: Memo | null;
+}
+
+const CreateMemoModal = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  initialMemo = null,
+}: CreateMemoModalProps) => {
   const [content, setContent] = useState("");
-  const [color, setColor] = useState("blue");
+  const [color, setColor] = useState<MemoColor>("blue");
   const [loading, setLoading] = useState(false);
 
-  const textareaRef = useRef(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -28,7 +48,7 @@ const CreateMemoModal = ({ isOpen, onClose, onSubmit, initialMemo = null }) => {
   useEffect(() => {
     if (!isOpen) return;
 
-    const handleEsc = (e) => {
+    const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         onClose();
       }
@@ -41,7 +61,7 @@ const CreateMemoModal = ({ isOpen, onClose, onSubmit, initialMemo = null }) => {
   if (!isOpen) return null;
 
   /* ---------------- Submit ---------------- */
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!content.trim()) return;
 
@@ -60,7 +80,7 @@ const CreateMemoModal = ({ isOpen, onClose, onSubmit, initialMemo = null }) => {
   };
 
   /* ---------------- Backdrop click close ---------------- */
-  const handleBackdropClick = (e) => {
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget && !loading) {
       onClose();
     }
@@ -115,7 +135,7 @@ const CreateMemoModal = ({ isOpen, onClose, onSubmit, initialMemo = null }) => {
           <fieldset>
             <legend className="text-sm font-bold mb-2">色</legend>
             <div className="flex gap-3" role="radiogroup" aria-label="メモの色を選択">
-              {["blue", "yellow", "green"].map((c) => (
+              {(["blue", "yellow", "green"] as const).map((c) => (
                 <button
                   type="button"
                   key={c}
@@ -123,9 +143,7 @@ const CreateMemoModal = ({ isOpen, onClose, onSubmit, initialMemo = null }) => {
                   disabled={loading}
                   role="radio"
                   aria-checked={color === c}
-                  aria-label={
-                    c === "yellow" ? "黄色" : c === "blue" ? "青色" : "緑色"
-                  }
+                  aria-label={c === "yellow" ? "黄色" : c === "blue" ? "青色" : "緑色"}
                   className={`w-8 h-8 rounded-full border-2 transition
                     ${color === c ? "ring-3 ring-offset-2 ring-blue-600" : ""}
                     ${

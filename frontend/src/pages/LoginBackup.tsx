@@ -15,7 +15,7 @@ function LoginBackup() {
 
   const route = "/api/token/";
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
@@ -27,8 +27,9 @@ function LoginBackup() {
 
       setIsAuthorized(true);
       void navigate("/");
-    } catch (error) {
-      alert(error.response?.data ? JSON.stringify(error.response.data) : error);
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: unknown } };
+      alert(axiosError.response?.data ? JSON.stringify(axiosError.response.data) : String(error));
     } finally {
       setLoading(false);
     }

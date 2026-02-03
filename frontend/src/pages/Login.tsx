@@ -13,7 +13,7 @@ function Login() {
   const [loading, setLoading] = useState(false);
 
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const inputRef = useRef(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   const route = "/api/token/";
@@ -26,7 +26,7 @@ function Login() {
     localStorage.clear();
   }, []);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
@@ -41,8 +41,11 @@ function Login() {
       setUser(res.data.user);
 
       void navigate("/");
-    } catch (error) {
-      alert(error.response?.data?.message || "メールアドレス、またはパスワードは正しくありません");
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: { message?: string } } };
+      alert(
+        axiosError.response?.data?.message || "メールアドレス、またはパスワードは正しくありません",
+      );
     } finally {
       setLoading(false);
     }
@@ -66,7 +69,9 @@ function Login() {
           <div className="p-10">
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div>
-                <label htmlFor="email" className="block text-md font-bold text-gray-700 mb-3">メールアドレス</label>
+                <label htmlFor="email" className="block text-md font-bold text-gray-700 mb-3">
+                  メールアドレス
+                </label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-4">
                     <i className="fa-solid fa-envelope text-gray-400 text-lg"></i>
@@ -86,7 +91,9 @@ function Login() {
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-md font-bold text-gray-700 mb-3">パスワード</label>
+                <label htmlFor="password" className="block text-md font-bold text-gray-700 mb-3">
+                  パスワード
+                </label>
                 <div className="relative mb-3">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-4">
                     <svg className="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">

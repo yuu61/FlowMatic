@@ -1,38 +1,85 @@
 // Chat.jsx
-import EmojiPicker from "emoji-picker-react";
-import { useEffect, useRef, useState } from "react";
+import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
+import React, { useEffect, useRef, useState } from "react";
 
 import api from "../api";
 import { useAuth } from "../context/AuthContext";
 import { useProject } from "../context/ProjectContext";
-import { getChatrooms, getMessages } from "../services/ChatService";
+import { Chatroom as ServiceChatroom, getChatrooms, getMessages } from "../services/ChatService";
+import { ChatMessage } from "../types";
 import { resolveImageUrl } from "../utils/resolveImageUrl";
+
+// ========================================
+// Local Types for ChatBackup
+// ========================================
+
+interface FormattedChat extends ServiceChatroom {
+  id: string;
+  lastMessage: string;
+  timestamp: string;
+}
+
+interface MessageReplyTo {
+  id: string;
+  text: string;
+  userName?: string;
+}
+
+interface FormattedMessage {
+  id: string;
+  userId: number;
+  userName: string;
+  profilePicture?: string | null;
+  text: string;
+  time: string;
+  self: boolean;
+  replyTo: MessageReplyTo | null;
+  reaction: string | null;
+  reactions: Record<string, number[]>;
+  edited?: boolean;
+  user?: string;
+}
+
+interface DeletedMessage {
+  chatId: string;
+  msg: FormattedMessage;
+}
+
+interface AllMessagesMap {
+  [chatroomId: string]: FormattedMessage[];
+}
+
+interface IconButtonProps {
+  children: React.ReactNode;
+  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
+}
 
 const ChatBackup = () => {
   const { user } = useAuth();
   const { currentProject } = useProject();
-  const currentProjectId = currentProject.project_id;
+  const currentProjectId = currentProject?.project_id;
+  const userId = user?.id;
 
-  const [chats, setChats] = useState([]);
-  const [allMessages, setAllMessages] = useState({});
-  const [selectedChat, setSelectedChat] = useState(null);
+  const [chats, setChats] = useState<FormattedChat[]>([]);
+  const [allMessages, setAllMessages] = useState<AllMessagesMap>({});
+  const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState("");
-  const [editingId, setEditingId] = useState(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
-  const [replyTo, setReplyTo] = useState(null);
-  const [_openMenuId, setOpenMenuId] = useState(null);
-  const [lastDeleted, setLastDeleted] = useState(null);
+  const [replyTo, setReplyTo] = useState<MessageReplyTo | null>(null);
+  const [_openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [lastDeleted, setLastDeleted] = useState<DeletedMessage | null>(null);
   const [isComposing, setIsComposing] = useState(false);
-  const [_reactionTarget, _setReactionTarget] = useState(null);
+  const [_reactionTarget, _setReactionTarget] = useState<string | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
-  const [reactionPickerMessageId, setReactionPickerMessageId] = useState(null);
+  const [reactionPickerMessageId, setReactionPickerMessageId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  const messagesEndRef = useRef(null);
-  const currentMessages = allMessages[selectedChat] || [];
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const currentMessages: FormattedMessage[] = selectedChat ? allMessages[selectedChat] || [] : [];
   const currentChat = chats.find((c) => c.chatroom_id === selectedChat);
 
   useEffect(() => {
@@ -53,18 +100,20 @@ const ChatBackup = () => {
 
         console.log(chatrooms);
 
-        const formattedChats = chatrooms.map((room) => ({
+        const formattedChats: FormattedChat[] = chatrooms.map((room: ServiceChatroom) => ({
           ...room,
           id: room.chatroom_id,
-          name: currentProject.title,
+          name: currentProject?.title ?? "",
           lastMessage: "",
-          timestamp: new Date(room.created_at).toLocaleDateString(),
+          timestamp: room.created_at
+            ? new Date(room.created_at).toLocaleDateString()
+            : new Date().toLocaleDateString(),
         }));
 
         setChats(formattedChats);
 
         // 最初のチャットルームを自動選択
-        if (formattedChats.length > 0) {
+        if (formattedChats.length > 0 && formattedChats[0]) {
           setSelectedChat(formattedChats[0].chatroom_id);
         }
       } catch (error) {
@@ -88,7 +137,7 @@ const ChatBackup = () => {
 
         console.log("messages: ", response);
 
-        const formattedMessages = response.messages.map((msg) => ({
+        const formattedMessages: FormattedMessage[] = response.messages.map((msg: ChatMessage) => ({
           id: msg.message_id,
           userId: msg.user_id,
           userName: msg.name || `User ${msg.user_id}`,
@@ -98,13 +147,13 @@ const ChatBackup = () => {
             hour: "2-digit",
             minute: "2-digit",
           }),
-          self: msg.user_id === user.id ? true : false,
-          replyTo: null,
-          reaction: null,
-          reactions: {},
+          self: msg.user_id === userId,
+          replyTo: null as MessageReplyTo | null,
+          reaction: null as string | null,
+          reactions: {} as Record<string, number[]>,
         }));
 
-        setAllMessages((prev) => ({
+        setAllMessages((prev: AllMessagesMap) => ({
           ...prev,
           [selectedChat]: formattedMessages,
         }));
@@ -127,13 +176,11 @@ const ChatBackup = () => {
 
   // メッセージ送信
   const handleSendMessage = async () => {
-    if (!messageInput.trim() || !currentProjectId || !selectedChat) return;
+    if (!messageInput.trim() || !currentProjectId || !selectedChat || !userId) return;
 
     try {
-      const user_id = user.id;
-
       const messageData = {
-        user_id: user_id,
+        user_id: userId,
         content: messageInput,
       };
 
@@ -144,8 +191,11 @@ const ChatBackup = () => {
 
       const newMessage = response.data;
 
-      const formattedMessage = {
+      const formattedMessage: FormattedMessage = {
         id: newMessage.message_id,
+        userId: userId,
+        userName: "自分",
+        profilePicture: null,
         user: "自分",
         text: newMessage.content,
         time: new Date(newMessage.timestamp).toLocaleTimeString("ja-JP", {
@@ -158,7 +208,7 @@ const ChatBackup = () => {
         reactions: {},
       };
 
-      setAllMessages((prev) => ({
+      setAllMessages((prev: AllMessagesMap) => ({
         ...prev,
         [selectedChat]: [...(prev[selectedChat] || []), formattedMessage],
       }));
@@ -184,16 +234,17 @@ const ChatBackup = () => {
   };
 
   // 編集開始 / 保存
-  const startEditing = (msg) => {
+  const startEditing = (msg: FormattedMessage) => {
     setEditingId(msg.id);
     setEditingText(msg.text);
     setOpenMenuId(null);
   };
 
   const saveEdit = () => {
-    setAllMessages((prev) => ({
+    if (!selectedChat) return;
+    setAllMessages((prev: AllMessagesMap) => ({
       ...prev,
-      [selectedChat]: prev[selectedChat].map((m) =>
+      [selectedChat]: (prev[selectedChat] ?? []).map((m: FormattedMessage) =>
         m.id === editingId ? { ...m, text: editingText, edited: true } : m,
       ),
     }));
@@ -207,15 +258,15 @@ const ChatBackup = () => {
   };
 
   // メッセージ削除(Undo対応)
-  const deleteMessage = (id) => {
-    const msg = currentMessages.find((m) => m.id === id);
-    if (!msg) return;
+  const deleteMessage = (id: string) => {
+    const msg = currentMessages.find((m: FormattedMessage) => m.id === id);
+    if (!msg || !selectedChat) return;
 
     setLastDeleted({ chatId: selectedChat, msg });
 
-    setAllMessages((prev) => ({
+    setAllMessages((prev: AllMessagesMap) => ({
       ...prev,
-      [selectedChat]: prev[selectedChat].filter((m) => m.id !== id),
+      [selectedChat]: (prev[selectedChat] ?? []).filter((m: FormattedMessage) => m.id !== id),
     }));
 
     setOpenMenuId(null);
@@ -226,24 +277,19 @@ const ChatBackup = () => {
     if (!lastDeleted) return;
     const { chatId, msg } = lastDeleted;
 
-    setAllMessages((prev) => ({
+    setAllMessages((prev: AllMessagesMap) => ({
       ...prev,
-      [chatId]: [...prev[chatId], msg].sort((a, b) => a.id - b.id),
+      [chatId]: [...(prev[chatId] ?? []), msg].sort((a: FormattedMessage, b: FormattedMessage) =>
+        a.id.localeCompare(b.id),
+      ),
     }));
 
     setLastDeleted(null);
   };
 
   // リプライ
-  const handleReply = (msg) => {
-    setReplyTo(msg);
-    setOpenMenuId(null);
-  };
-
-  // メッセージリンクコピー
-  const _copyMessageLink = (msg) => {
-    const link = `${window.location.origin}${window.location.pathname}#chat-${selectedChat}-msg-${msg.id}`;
-    void navigator.clipboard?.writeText(link);
+  const handleReply = (msg: FormattedMessage) => {
+    setReplyTo({ id: msg.id, text: msg.text, userName: msg.userName });
     setOpenMenuId(null);
   };
 
@@ -272,23 +318,25 @@ const ChatBackup = () => {
         },
       );
 
-      const formattedMessages = response.data.messages.map((msg) => ({
-        id: msg.message_id,
-        userId: msg.user_id,
-        userName: msg.name || `User ${msg.user_id}`,
-        profilePicture: msg.profile_picture,
-        text: msg.content,
-        time: new Date(msg.timestamp).toLocaleTimeString("ja-JP", {
-          hour: "2-digit",
-          minute: "2-digit",
+      const formattedMessages: FormattedMessage[] = response.data.messages.map(
+        (msg: ChatMessage) => ({
+          id: msg.message_id,
+          userId: msg.user_id,
+          userName: msg.name || `User ${msg.user_id}`,
+          profilePicture: msg.profile_picture,
+          text: msg.content,
+          time: new Date(msg.timestamp).toLocaleTimeString("ja-JP", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          self: msg.user_id === userId,
+          replyTo: null as MessageReplyTo | null,
+          reaction: null as string | null,
+          reactions: {} as Record<string, number[]>,
         }),
-        self: msg.user_id === user.id,
-        replyTo: null,
-        reaction: null,
-        reactions: {},
-      }));
+      );
 
-      setAllMessages((prev) => ({
+      setAllMessages((prev: AllMessagesMap) => ({
         ...prev,
         [selectedChat]: [...formattedMessages, ...(prev[selectedChat] || [])],
       }));
@@ -355,7 +403,7 @@ const ChatBackup = () => {
               メッセージがありません。最初のメッセージを送信しましょう!
             </div>
           ) : (
-            currentMessages.map((msg) => (
+            currentMessages.map((msg: FormattedMessage) => (
               <div
                 key={msg.id}
                 className={`flex gap-3 ${msg.self ? "justify-end" : "justify-start"}`}
@@ -365,11 +413,10 @@ const ChatBackup = () => {
                   <div className="flex-shrink-0">
                     <img
                       src={
-                        msg.profilePicture
-                          ? resolveImageUrl(msg.profilePicture)
-                          : `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                              msg.userName || "User",
-                            )}&background=random`
+                        resolveImageUrl(msg.profilePicture) ??
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          msg.userName || "User",
+                        )}&background=random`
                       }
                       alt={msg.userName}
                       className="w-10 h-10 rounded-full object-cover"
@@ -460,9 +507,9 @@ const ChatBackup = () => {
 
                     {/* リアクション表示 */}
                     <div className="flex gap-2 text-sm mt-1">
-                      {Object.entries(msg.reactions || {}).map(([e, users]: [string, string[]]) => (
-                        <span key={e}>
-                          {e} {users.length}
+                      {Object.entries(msg.reactions || {}).map(([emoji, users]) => (
+                        <span key={emoji}>
+                          {emoji} {(users as number[]).length}
                         </span>
                       ))}
                     </div>
@@ -474,11 +521,10 @@ const ChatBackup = () => {
                   <div className="flex-shrink-0">
                     <img
                       src={
-                        msg.profilePicture
-                          ? resolveImageUrl(msg.profilePicture)
-                          : `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                              msg.userName || "User",
-                            )}&background=random`
+                        resolveImageUrl(msg.profilePicture) ??
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          msg.userName || "User",
+                        )}&background=random`
                       }
                       alt="You"
                       className="w-10 h-10 rounded-full object-cover"
@@ -501,16 +547,17 @@ const ChatBackup = () => {
             tabIndex={0}
           >
             <EmojiPicker
-              onEmojiClick={(emoji) => {
-                setAllMessages((prev) => ({
+              onEmojiClick={(emoji: EmojiClickData) => {
+                if (!selectedChat) return;
+                setAllMessages((prev: AllMessagesMap) => ({
                   ...prev,
-                  [selectedChat]: prev[selectedChat].map((m) =>
-                    m.id === reactionPickerMessageId
+                  [selectedChat]: (prev[selectedChat] ?? []).map((m: FormattedMessage) =>
+                    m.id === reactionPickerMessageId && userId
                       ? {
                           ...m,
                           reactions: {
                             ...m.reactions,
-                            [emoji.emoji]: [...(m.reactions[emoji.emoji] || []), user.id],
+                            [emoji.emoji]: [...(m.reactions[emoji.emoji] ?? []), userId],
                           },
                         }
                       : m,
@@ -596,10 +643,10 @@ const ChatBackup = () => {
   );
 };
 
-function IconButton({ children, onClick }) {
+function IconButton({ children, onClick }: IconButtonProps) {
   return (
     <button
-      onClick={(e) => {
+      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
         e.stopPropagation();
         onClick(e);
       }}

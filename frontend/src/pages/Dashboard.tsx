@@ -6,33 +6,21 @@ import { useProject } from "../context/ProjectContext";
 import { getEvents } from "../services/EventService";
 import { createMemo, deleteMemo, getMemos, updateMemo } from "../services/MemoService";
 import { getTasks } from "../services/TaskService";
+import type { CalendarEvent, Memo, MemoColor, Task, TaskUser } from "../types";
 import { formatDateJP, formatUTC } from "../utils/dateUtils";
 import { resolveImageUrl } from "../utils/resolveImageUrl";
 import CreateMemoModal from "./CreateMemoModal";
 
 const Dashboard = () => {
   const { user } = useAuth();
-
   const { projects, currentProject } = useProject();
 
-  const [events, setEvents] = useState([]);
-
-  const [tasks, setTasks] = useState([]);
-
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [_loading, setLoading] = useState(true);
-
   const [isMemoModalOpen, setIsMemoModalOpen] = useState(false);
-
-  const [projectMemos, setProjectMemos] = useState([]);
-
-  const [editingMemo, setEditingMemo] = useState(null);
-
-  const memoColors = {
-    yellow: "bg-yellow-100 border-yellow-300",
-    blue: "bg-blue-100 border-blue-300",
-    green: "bg-green-100 border-green-300",
-  };
-
+  const [projectMemos, setProjectMemos] = useState<Memo[]>([]);
+  const [editingMemo, setEditingMemo] = useState<Memo | null>(null);
   const [summary, setSummary] = useState({
     progress: 0,
     activeTasks: 0,
@@ -40,14 +28,24 @@ const Dashboard = () => {
     membersCount: 0,
   });
 
-  const toDate = (iso) => new Date(iso);
+  const userId = user?.id;
+
+  const memoColors: Record<MemoColor, string> = {
+    yellow: "bg-yellow-100 border-yellow-300",
+    blue: "bg-blue-100 border-blue-300",
+    green: "bg-green-100 border-green-300",
+  };
+
+  const toDate = (iso: string): Date => new Date(iso);
 
   const fetchTasks = async () => {
-    try {
-      const tasks = await getTasks(currentProject.project_id);
+    if (!currentProject) return;
 
-      setTasks(tasks);
-      console.log(tasks);
+    try {
+      const fetchedTasks = await getTasks(currentProject.project_id);
+
+      setTasks(fetchedTasks);
+      console.log(fetchedTasks);
     } catch (error) {
       console.error("Failed to fetch tasks:", error);
     } finally {
@@ -56,11 +54,12 @@ const Dashboard = () => {
   };
 
   const loadMyTasksCount = () => {
+    if (!userId) return;
     try {
       setLoading(true);
 
       const myActiveTasks = tasks.filter(
-        (task) => task.status !== "done" && task.users.some((u) => u.user_id === user.id),
+        (task) => task.status !== "done" && task.users.some((u: TaskUser) => u.user_id === userId),
       ).length;
 
       setSummary((prev) => ({
@@ -99,19 +98,22 @@ const Dashboard = () => {
   const loadMemberCount = () => {
     if (!currentProject?.members) return;
 
+    const members = currentProject.members;
     setSummary((prev) => ({
       ...prev,
-      membersCount: currentProject.members.length,
+      membersCount: members.length,
     }));
   };
 
   const fetchEvents = async () => {
+    if (!currentProject) return;
+
     try {
-      const events = await getEvents(currentProject.project_id);
+      const fetchedEvents = await getEvents(currentProject.project_id);
 
-      console.log(events);
+      console.log(fetchedEvents);
 
-      setEvents(events);
+      setEvents(fetchedEvents);
     } catch (error) {
       console.error("Failed to fetch events:", error);
     }
@@ -133,6 +135,8 @@ const Dashboard = () => {
   };
 
   const fetchMemos = async () => {
+    if (!currentProject) return;
+
     try {
       const memos = await getMemos(currentProject.project_id);
       console.log(memos);
@@ -146,13 +150,23 @@ const Dashboard = () => {
     setIsMemoModalOpen(true);
   };
 
-  const handleSubmitMemo = async ({ memo_id, content, color }) => {
+  const handleSubmitMemo = async ({
+    memo_id,
+    content,
+    color,
+  }: {
+    memo_id?: string;
+    content: string;
+    color: MemoColor;
+  }): Promise<void> => {
+    if (!currentProject || !userId) return;
+
     try {
       if (memo_id) {
         const targetMemo = projectMemos.find((m) => m.memo_id === memo_id);
 
         const updated = await updateMemo(currentProject.project_id, memo_id, {
-          user_id: user.id,
+          user_id: userId,
           content,
           color,
           is_pinned: targetMemo?.is_pinned ?? false,
@@ -161,7 +175,7 @@ const Dashboard = () => {
         setProjectMemos((prev) => prev.map((m) => (m.memo_id === memo_id ? updated : m)));
       } else {
         const created = await createMemo(currentProject.project_id, {
-          user_id: user.id,
+          user_id: userId,
           content,
           color,
           is_pinned: false,
@@ -177,12 +191,15 @@ const Dashboard = () => {
     }
   };
 
-  const handleTogglePin = async (memo_id) => {
+  const handleTogglePin = async (memo_id: string): Promise<void> => {
+    if (!currentProject) return;
+
+    const memo = projectMemos.find((m) => m.memo_id === memo_id);
+    if (!memo) return;
+
     setProjectMemos((prev) =>
       prev.map((m) => (m.memo_id === memo_id ? { ...m, is_pinned: !m.is_pinned } : m)),
     );
-
-    const memo = projectMemos.find((m) => m.memo_id === memo_id);
 
     try {
       await updateMemo(currentProject.project_id, memo_id, {
@@ -196,12 +213,13 @@ const Dashboard = () => {
     }
   };
 
-  const handleEditMemo = (memo) => {
+  const handleEditMemo = (memo: Memo): void => {
     setEditingMemo(memo);
     setIsMemoModalOpen(true);
   };
 
-  const handleDeleteMemo = async (memo_id) => {
+  const handleDeleteMemo = async (memo_id: string): Promise<void> => {
+    if (!currentProject) return;
     if (!window.confirm("このメモを削除しますか？")) return;
 
     // Save current state for rollback
@@ -230,13 +248,19 @@ const Dashboard = () => {
     void fetchTasks();
     void fetchEvents();
     void fetchMemos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentProject]);
 
   useEffect(() => {
     loadMyTasksCount();
-
     loadClearedTasksCount();
-  }, [tasks]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tasks, userId]);
+
+  // userがnullの場合は早期リターン
+  if (!user) {
+    return null;
+  }
 
   const cards: {
     key: string;
@@ -357,7 +381,7 @@ const Dashboard = () => {
               {(projectMemos ?? [])
                 .sort((a, b) => {
                   if (a.is_pinned !== b.is_pinned) {
-                    return b.is_pinned - a.is_pinned;
+                    return Number(b.is_pinned) - Number(a.is_pinned);
                   }
                   return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
                 })
@@ -417,7 +441,7 @@ const Dashboard = () => {
                       <span className="flex gap-3">
                         {memo.user?.profile_picture ? (
                           <img
-                            src={resolveImageUrl(memo.user.profile_picture)}
+                            src={resolveImageUrl(memo.user.profile_picture) ?? undefined}
                             alt="profile"
                             className="w-8 h-8 rounded-full object-cover border"
                           />

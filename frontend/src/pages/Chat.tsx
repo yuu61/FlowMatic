@@ -1,4 +1,4 @@
-// Chat.jsx
+// Chat.tsx
 import {
   faChevronUp,
   faClock,
@@ -14,42 +14,80 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import EmojiPicker from "emoji-picker-react";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import api from "../api";
 import ProjectRequired from "../components/ProjectRequired";
 import { ACCESS_TOKEN } from "../constants";
 import { useAuth } from "../context/AuthContext";
 import { useProject } from "../context/ProjectContext";
-import { getChatrooms, getMessages } from "../services/ChatService";
+import { Chatroom as ChatroomResponse, getChatrooms, getMessages } from "../services/ChatService";
+import type { ChatMessage } from "../types";
 import { resolveImageUrl } from "../utils/resolveImageUrl";
+
+// ========================================
+// Local Types
+// ========================================
+interface FormattedMessage {
+  id: string;
+  userId: number;
+  userName: string;
+  profilePicture?: string | null;
+  text: string;
+  time: string;
+  date: string;
+  self: boolean;
+  edited?: boolean;
+  replyTo?: FormattedMessage | null;
+  reaction?: string | null;
+  reactions: Record<string, number[]>;
+}
+
+interface FormattedChat extends ChatroomResponse {
+  id: string;
+  name: string;
+  lastMessage: string;
+  timestamp: string;
+}
+
+interface DeletedMessage {
+  chatId: string;
+  msg: FormattedMessage;
+}
+
+interface IconButtonProps {
+  children: React.ReactNode;
+  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  tooltip: string;
+}
 
 const Chat = () => {
   const { user } = useAuth();
   const { currentProject } = useProject();
   const currentProjectId = currentProject?.project_id;
+  const userId = user?.id;
 
-  const socketRef = useRef(null);
+  const socketRef = useRef<WebSocket | null>(null);
 
-  const [chats, setChats] = useState([]);
-  const [allMessages, setAllMessages] = useState({});
-  const [selectedChat, setSelectedChat] = useState(null);
+  const [chats, setChats] = useState<FormattedChat[]>([]);
+  const [allMessages, setAllMessages] = useState<Record<string, FormattedMessage[]>>({});
+  const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState("");
-  const [editingId, setEditingId] = useState(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
-  const [replyTo, setReplyTo] = useState(null);
-  const [_openMenuId, setOpenMenuId] = useState(null);
-  const [lastDeleted, setLastDeleted] = useState(null);
+  const [replyTo, setReplyTo] = useState<FormattedMessage | null>(null);
+  const [_openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [lastDeleted, setLastDeleted] = useState<DeletedMessage | null>(null);
   const [isComposing, setIsComposing] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
-  const [reactionPickerMessageId, setReactionPickerMessageId] = useState(null);
+  const [reactionPickerMessageId, setReactionPickerMessageId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  const messagesEndRef = useRef(null);
-  const currentMessages = allMessages[selectedChat] || [];
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const currentMessages = selectedChat ? allMessages[selectedChat] || [] : [];
   const currentChat = chats.find((c) => c.chatroom_id === selectedChat);
 
   useEffect(() => {
@@ -76,18 +114,18 @@ const Chat = () => {
 
         console.log(chatrooms);
 
-        const formattedChats = chatrooms.map((room) => ({
+        const formattedChats: FormattedChat[] = chatrooms.map((room: ChatroomResponse) => ({
           ...room,
           id: room.chatroom_id,
-          name: currentProject.title,
+          name: currentProject?.title ?? "",
           lastMessage: "",
-          timestamp: new Date(room.created_at).toLocaleDateString(),
+          timestamp: room.created_at ? new Date(room.created_at).toLocaleDateString() : "",
         }));
 
         setChats(formattedChats);
 
         // 最初のチャットルームを自動選択
-        if (formattedChats.length > 0) {
+        if (formattedChats.length > 0 && formattedChats[0]) {
           setSelectedChat(formattedChats[0].chatroom_id);
         }
       } catch (error) {
@@ -108,7 +146,7 @@ const Chat = () => {
       try {
         const res = await getMessages(currentProjectId, selectedChat, 1, 50);
 
-        const formatted = res.messages.map((msg) => ({
+        const formatted: FormattedMessage[] = res.messages.map((msg: ChatMessage) => ({
           id: msg.message_id,
           userId: msg.user_id,
           userName: msg.username || msg.name,
@@ -119,11 +157,11 @@ const Chat = () => {
             minute: "2-digit",
           }),
           date: new Date(msg.timestamp).toLocaleDateString("ja-JP"),
-          self: msg.user_id === user.id,
+          self: msg.user_id === userId,
           reactions: {},
         }));
 
-        setAllMessages((prev) => ({
+        setAllMessages((prev: Record<string, FormattedMessage[]>) => ({
           ...prev,
           [selectedChat]: formatted,
         }));
@@ -133,7 +171,7 @@ const Chat = () => {
     };
 
     void loadInitialMessages();
-  }, [currentProjectId, selectedChat]);
+  }, [currentProjectId, selectedChat, userId]);
 
   useEffect(() => {
     if (!currentProjectId || !selectedChat) return;
@@ -175,15 +213,15 @@ const Chat = () => {
           minute: "2-digit",
         }),
         date: new Date(msg.timestamp).toLocaleDateString("ja-JP"),
-        self: msg.user_id === user.id,
+        self: msg.user_id === userId,
         reactions: {},
       };
 
-      setAllMessages((prev) => {
+      setAllMessages((prev: Record<string, FormattedMessage[]>) => {
         const existing = prev[selectedChat] || [];
 
         // prevent duplicates
-        if (existing.some((m) => m.id === formattedMessage.id)) {
+        if (existing.some((m: FormattedMessage) => m.id === formattedMessage.id)) {
           return prev;
         }
 
@@ -205,7 +243,7 @@ const Chat = () => {
     return () => {
       socket.close();
     };
-  }, [currentProjectId, selectedChat, user.id]);
+  }, [currentProjectId, selectedChat, userId]);
 
   // メッセージ送信
   const handleSendMessage = () => {
@@ -229,16 +267,17 @@ const Chat = () => {
   };
 
   // 編集開始 / 保存
-  const startEditing = (msg) => {
+  const startEditing = (msg: FormattedMessage) => {
     setEditingId(msg.id);
     setEditingText(msg.text);
     setOpenMenuId(null);
   };
 
   const saveEdit = () => {
-    setAllMessages((prev) => ({
+    if (!selectedChat) return;
+    setAllMessages((prev: Record<string, FormattedMessage[]>) => ({
       ...prev,
-      [selectedChat]: prev[selectedChat].map((m) =>
+      [selectedChat]: (prev[selectedChat] ?? []).map((m: FormattedMessage) =>
         m.id === editingId ? { ...m, text: editingText, edited: true } : m,
       ),
     }));
@@ -252,15 +291,16 @@ const Chat = () => {
   };
 
   // メッセージ削除(Undo対応)
-  const deleteMessage = (id) => {
-    const msg = currentMessages.find((m) => m.id === id);
+  const deleteMessage = (id: string) => {
+    if (!selectedChat) return;
+    const msg = currentMessages.find((m: FormattedMessage) => m.id === id);
     if (!msg) return;
 
     setLastDeleted({ chatId: selectedChat, msg });
 
-    setAllMessages((prev) => ({
+    setAllMessages((prev: Record<string, FormattedMessage[]>) => ({
       ...prev,
-      [selectedChat]: prev[selectedChat].filter((m) => m.id !== id),
+      [selectedChat]: (prev[selectedChat] ?? []).filter((m: FormattedMessage) => m.id !== id),
     }));
 
     setOpenMenuId(null);
@@ -271,24 +311,19 @@ const Chat = () => {
     if (!lastDeleted) return;
     const { chatId, msg } = lastDeleted;
 
-    setAllMessages((prev) => ({
+    setAllMessages((prev: Record<string, FormattedMessage[]>) => ({
       ...prev,
-      [chatId]: [...prev[chatId], msg].sort((a, b) => a.id - b.id),
+      [chatId]: [...(prev[chatId] ?? []), msg].sort((a: FormattedMessage, b: FormattedMessage) =>
+        a.id.localeCompare(b.id),
+      ),
     }));
 
     setLastDeleted(null);
   };
 
   // リプライ
-  const handleReply = (msg) => {
+  const handleReply = (msg: FormattedMessage) => {
     setReplyTo(msg);
-    setOpenMenuId(null);
-  };
-
-  // メッセージリンクコピー
-  const _copyMessageLink = (msg) => {
-    const link = `${window.location.origin}${window.location.pathname}#chat-${selectedChat}-msg-${msg.id}`;
-    void navigator.clipboard?.writeText(link);
     setOpenMenuId(null);
   };
 
@@ -317,23 +352,26 @@ const Chat = () => {
         },
       );
 
-      const formattedMessages = response.data.messages.map((msg) => ({
-        id: msg.message_id,
-        userId: msg.user_id,
-        userName: msg.name || `User ${msg.user_id}`,
-        profilePicture: msg.profile_picture,
-        text: msg.content,
-        time: new Date(msg.timestamp).toLocaleTimeString("ja-JP", {
-          hour: "2-digit",
-          minute: "2-digit",
+      const formattedMessages: FormattedMessage[] = response.data.messages.map(
+        (msg: ChatMessage) => ({
+          id: msg.message_id,
+          userId: msg.user_id,
+          userName: msg.name || `User ${msg.user_id}`,
+          profilePicture: msg.profile_picture,
+          text: msg.content,
+          time: new Date(msg.timestamp).toLocaleTimeString("ja-JP", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          date: new Date(msg.timestamp).toLocaleDateString("ja-JP"),
+          self: msg.user_id === userId,
+          replyTo: null as FormattedMessage | null,
+          reaction: null as string | null,
+          reactions: {} as Record<string, number[]>,
         }),
-        self: msg.user_id === user.id,
-        replyTo: null,
-        reaction: null,
-        reactions: {},
-      }));
+      );
 
-      setAllMessages((prev) => ({
+      setAllMessages((prev: Record<string, FormattedMessage[]>) => ({
         ...prev,
         [selectedChat]: [...formattedMessages, ...(prev[selectedChat] || [])],
       }));
@@ -444,9 +482,10 @@ const Chat = () => {
             </div>
           ) : (
             <div className="space-y-8">
-              {currentMessages.map((msg, index) => {
+              {currentMessages.map((msg: FormattedMessage, index: number) => {
                 // 日付の変更をチェック
-                const showDate = index === 0 || msg.date !== currentMessages[index - 1].date;
+                const prevMsg = currentMessages[index - 1];
+                const showDate = index === 0 || msg.date !== prevMsg?.date;
 
                 return (
                   <div key={msg.id} className="group">
@@ -468,11 +507,10 @@ const Chat = () => {
                           <div className="relative">
                             <img
                               src={
-                                msg.profilePicture
-                                  ? resolveImageUrl(msg.profilePicture)
-                                  : `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                      msg.userName || "User",
-                                    )}&background=random`
+                                resolveImageUrl(msg.profilePicture) ??
+                                `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                  msg.userName || "User",
+                                )}&background=random`
                               }
                               alt={msg.userName}
                               className="w-12 h-12 rounded-full object-cover ring-4 ring-white shadow-md"
@@ -486,7 +524,7 @@ const Chat = () => {
                         {/* User name - show above message for others */}
                         {!msg.self && (
                           <div className="text-sm font-semibold text-gray-800 mb-1.5 px-1">
-                            {msg.userName || `User ${msg.user}`}
+                            {msg.userName || `User ${msg.userId}`}
                           </div>
                         )}
 
@@ -600,14 +638,14 @@ const Chat = () => {
                           {/* Reactions */}
                           {Object.keys(msg.reactions || {}).length > 0 && (
                             <div className="flex gap-2 mt-2 flex-wrap">
-                              {Object.entries(msg.reactions || {}).map(([emoji, users]: [string, number[]]) => (
+                              {Object.entries(msg.reactions || {}).map(([emoji, users]) => (
                                 <span
                                   key={emoji}
                                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-full text-sm shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 cursor-pointer"
                                 >
                                   <span className="text-base">{emoji}</span>
                                   <span className="font-semibold text-gray-700">
-                                    {users.length}
+                                    {(users as number[]).length}
                                   </span>
                                 </span>
                               ))}
@@ -622,11 +660,10 @@ const Chat = () => {
                           <div className="relative">
                             <img
                               src={
-                                msg.profilePicture
-                                  ? resolveImageUrl(msg.profilePicture)
-                                  : `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                      msg.userName || "User",
-                                    )}&background=random`
+                                resolveImageUrl(msg.profilePicture) ??
+                                `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                  msg.userName || "User",
+                                )}&background=random`
                               }
                               alt="You"
                               className="w-12 h-12 rounded-full object-cover ring-4 ring-blue-200 shadow-md"
@@ -657,15 +694,16 @@ const Chat = () => {
               width={350}
               height={400}
               onEmojiClick={(emoji) => {
-                setAllMessages((prev) => ({
+                if (!selectedChat) return;
+                setAllMessages((prev: Record<string, FormattedMessage[]>) => ({
                   ...prev,
-                  [selectedChat]: prev[selectedChat].map((m) =>
-                    m.id === reactionPickerMessageId
+                  [selectedChat]: (prev[selectedChat] ?? []).map((m: FormattedMessage) =>
+                    m.id === reactionPickerMessageId && userId
                       ? {
                           ...m,
                           reactions: {
                             ...m.reactions,
-                            [emoji.emoji]: [...(m.reactions[emoji.emoji] || []), user.id],
+                            [emoji.emoji]: [...(m.reactions[emoji.emoji] ?? []), userId],
                           },
                         }
                       : m,
@@ -761,10 +799,10 @@ const Chat = () => {
   );
 };
 
-function IconButton({ children, onClick, tooltip }) {
+function IconButton({ children, onClick, tooltip }: IconButtonProps) {
   return (
     <button
-      onClick={(e) => {
+      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
         e.stopPropagation();
         onClick(e);
       }}
