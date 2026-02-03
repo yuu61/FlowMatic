@@ -3,10 +3,7 @@ import api from "../api";
 
 export async function createChatroom(projectId, chatroomData) {
   try {
-    const response = await api.post(
-      `/api/projects/${projectId}/chatrooms/`,
-      chatroomData
-    );
+    const response = await api.post(`/api/projects/${projectId}/chatrooms/`, chatroomData);
     return response.data;
   } catch (error) {
     console.error("API Error:", error);
@@ -36,10 +33,7 @@ export async function getChatroomById(chatroomId) {
 
 export async function updateChatroom(chatroomId, chatroomData) {
   try {
-    const response = await api.put(
-      `/api/chatrooms/${chatroomId}/`,
-      chatroomData
-    );
+    const response = await api.put(`/api/chatrooms/${chatroomId}/`, chatroomData);
     return response.data;
   } catch (error) {
     console.error("API Error:", error);
@@ -67,15 +61,12 @@ export async function deleteChatroom(chatroomId) {
  */
 export async function getMessages(projectId, chatroomId, page = 1, perPage = 20) {
   try {
-    const response = await api.get(
-      `/api/projects/${projectId}/chatrooms/${chatroomId}/messages/`,
-      {
-        params: {
-          p: page,
-          per_page: perPage
-        }
-      }
-    );
+    const response = await api.get(`/api/projects/${projectId}/chatrooms/${chatroomId}/messages/`, {
+      params: {
+        p: page,
+        per_page: perPage,
+      },
+    });
     return response.data;
   } catch (error) {
     console.error("API Error:", error);
@@ -96,7 +87,7 @@ export async function postMessage(projectId, chatroomId, messageData) {
   try {
     const response = await api.post(
       `/api/projects/${projectId}/chatrooms/${chatroomId}/messages/`,
-      messageData
+      messageData,
     );
     return response.data;
   } catch (error) {

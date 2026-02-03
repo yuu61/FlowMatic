@@ -14,11 +14,7 @@ import { getTasks } from "../services/TaskService";
 import { useProject } from "../context/ProjectContext";
 import { MobileDateTimePicker } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
-import { 
-  createEvent, 
-  updateEvent as updateEventApi, 
-  getEvents 
-} from "../services/EventService";
+import { createEvent, updateEvent as updateEventApi, getEvents } from "../services/EventService";
 import { formatDateJP, formatUTC } from "../utils/dateUtils";
 import utc from "dayjs/plugin/utc";
 import ProjectRequired from "../components/ProjectRequired";
@@ -150,8 +146,8 @@ const Calendar = () => {
   const sortFunctions = {
     dueDate: (a, b) => new Date(a.dueDate || a.start) - new Date(b.dueDate || b.start),
     priority: (a, b) =>
-      (({ high: 1, medium: 2, low: 3 }[a.priority] || 2) -
-      ({ high: 1, medium: 2, low: 3 }[b.priority] || 2)),
+      (({ high: 1, medium: 2, low: 3 })[a.priority] || 2) -
+      ({ high: 1, medium: 2, low: 3 }[b.priority] || 2),
   };
 
   // ========== Effects ==========
@@ -245,10 +241,7 @@ const Calendar = () => {
   const addNotification = (text) => {
     const id = Date.now();
     setNotifications((prev) => [...prev, { id, text }]);
-    setTimeout(
-      () => setNotifications((prev) => prev.filter((n) => n.id !== id)),
-      3000
-    );
+    setTimeout(() => setNotifications((prev) => prev.filter((n) => n.id !== id)), 3000);
   };
 
   const saveEvents = (newEvents, msg) => {
@@ -263,11 +256,11 @@ const Calendar = () => {
       alert("タイトルは必須です");
       return;
     }
-    
+
     // FIX: Proper date comparison that allows same day with different times
     const startDateTime = new Date(modal.event.start);
     const endDateTime = new Date(modal.event.end);
-    
+
     if (endDateTime <= startDateTime) {
       addNotification("終了日時は開始日時より後に設定してください");
       return;
@@ -297,10 +290,7 @@ const Calendar = () => {
           color: mapColorToApi(evt.color),
         };
 
-        const apiResponse = await createEvent(
-          currentProject.project_id,
-          requestData
-        );
+        const apiResponse = await createEvent(currentProject.project_id, requestData);
 
         const newEvent = {
           id: apiResponse.event_id,
@@ -335,9 +325,7 @@ const Calendar = () => {
           source: "user",
         };
 
-        const updatedEvents = events.map((e) =>
-          e.id === updatedEvent.id ? updatedEvent : e
-        );
+        const updatedEvents = events.map((e) => (e.id === updatedEvent.id ? updatedEvent : e));
         saveEvents(updatedEvents, "イベントを保存しました 💾");
       }
 
@@ -358,10 +346,9 @@ const Calendar = () => {
 
     if (window.confirm("本当に削除しますか?")) {
       try {
-
         saveEvents(
           events.filter((e) => e.id !== modal.event.id),
-          "イベントが削除されました 🗑️"
+          "イベントが削除されました 🗑️",
         );
         closeModal();
       } catch (error) {
@@ -388,7 +375,7 @@ const Calendar = () => {
 
   // FIX: Separate function for opening task details (read-only view)
   const openTaskDetail = (task) => {
-    const taskEvent = events.find(e => e.id === `task-${task.id}`);
+    const taskEvent = events.find((e) => e.id === `task-${task.id}`);
     if (taskEvent) {
       // Task dates are already in ISO format from API, no need to reformat
       openModal(taskEvent, false);
@@ -408,7 +395,7 @@ const Calendar = () => {
   // FIX: Handle event drag-and-drop with API persistence
   const handleEventDrop = async (info) => {
     const droppedEvent = events.find((e) => e.id === info.event.id);
-    
+
     // Prevent dragging task events
     if (droppedEvent?.source === "task") {
       info.revert();
@@ -428,9 +415,7 @@ const Calendar = () => {
       await updateEventApi(currentProject.project_id, droppedEvent.id, requestData);
 
       const updated = events.map((e) =>
-        e.id === info.event.id
-          ? { ...e, start: info.event.startStr, end: info.event.endStr }
-          : e
+        e.id === info.event.id ? { ...e, start: info.event.startStr, end: info.event.endStr } : e,
       );
       saveEvents(updated, "イベントを移動しました 🔄");
     } catch (error) {
@@ -450,21 +435,20 @@ const Calendar = () => {
   }
 
   if (!projects || projects.length === 0 || !currentProject) {
-  return (
-    <ProjectRequired
-      icon="📅"
-      title="カレンダーを表示するプロジェクトがありません"
-      description={
-        <>
-          カレンダーを表示するには、まずプロジェクトを作成、
-          <br />
-          または選択してください。
-        </>
-      }
-    />
-  );
-}
-
+    return (
+      <ProjectRequired
+        icon="📅"
+        title="カレンダーを表示するプロジェクトがありません"
+        description={
+          <>
+            カレンダーを表示するには、まずプロジェクトを作成、
+            <br />
+            または選択してください。
+          </>
+        }
+      />
+    );
+  }
 
   const filteredAndSortedEvents = tasks
     .filter((e) => {
@@ -525,7 +509,7 @@ const Calendar = () => {
               onClick={() => setFilter(f.type)}
               className={`flex items-center gap-2 px-3 py-1 rounded-full cursor-pointer text-sm font-bold ${getFilterColorClasses(
                 f.color,
-                filter === f.type
+                filter === f.type,
               )}`}
             >
               <FontAwesomeIcon icon={f.icon} /> {f.label}
@@ -548,9 +532,7 @@ const Calendar = () => {
                 <div>
                   <p
                     className={`text-lg font-bold ${
-                      e.status === "completed"
-                        ? "line-through text-gray-400"
-                        : ""
+                      e.status === "completed" ? "line-through text-gray-400" : ""
                     }`}
                   >
                     {e.title}
@@ -565,15 +547,11 @@ const Calendar = () => {
                   e.priority === "high"
                     ? "bg-red-100 text-red-700"
                     : e.priority === "medium"
-                    ? "bg-yellow-100 text-yellow-700"
-                    : "bg-green-100 text-green-700"
+                      ? "bg-yellow-100 text-yellow-700"
+                      : "bg-green-100 text-green-700"
                 }`}
               >
-                {e.priority === "high"
-                  ? "高"
-                  : e.priority === "medium"
-                  ? "中"
-                  : "低"}
+                {e.priority === "high" ? "高" : e.priority === "medium" ? "中" : "低"}
               </span>
             </div>
           ))}
@@ -617,9 +595,7 @@ const Calendar = () => {
           eventContent={(arg) => (
             <div
               className={`whitespace-normal text-sm font-semibold ${
-                arg.event.extendedProps?.status === "completed"
-                  ? "line-through"
-                  : ""
+                arg.event.extendedProps?.status === "completed" ? "line-through" : ""
               }`}
               style={{
                 backgroundColor: arg.event.backgroundColor,
@@ -647,7 +623,7 @@ const Calendar = () => {
                 status: "active",
                 source: "user", // FIX: Explicitly set source
               },
-              true
+              true,
             );
           }}
           eventClick={(info) => {
@@ -689,11 +665,11 @@ const Calendar = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-              {modal.event?.source === "task" 
-                ? "📋 タスク詳細" 
-                : modal.isNew 
-                ? "📅 新規イベント" 
-                : "✏️ イベント編集"}
+              {modal.event?.source === "task"
+                ? "📋 タスク詳細"
+                : modal.isNew
+                  ? "📅 新規イベント"
+                  : "✏️ イベント編集"}
             </h3>
 
             {/* FIX: Show task warning */}
@@ -711,19 +687,17 @@ const Calendar = () => {
                     <div>開始: {modal.event.start ? formatUTC(modal.event.start) : "未設定"}</div>
                     <div>期限: {modal.event.end ? formatUTC(modal.event.end) : "未設定"}</div>
                   </>
+                ) : // For events, show range
+                modal.event.allDay ? (
+                  `${modal.event.start} 〜 ${modal.event.end}`
                 ) : (
-                  // For events, show range
-                  modal.event.allDay
-                    ? `${modal.event.start} 〜 ${modal.event.end}`
-                    : `${formatUTC(modal.event.start)} 〜 ${formatUTC(modal.event.end)}`
+                  `${formatUTC(modal.event.start)} 〜 ${formatUTC(modal.event.end)}`
                 )}
               </div>
             )}
 
             <div className="mb-4">
-              <label className="text-sm text-gray-600 block mb-1">
-                タイトル
-              </label>
+              <label className="text-sm text-gray-600 block mb-1">タイトル</label>
               <input
                 type="text"
                 className="w-full p-2 border rounded"
@@ -735,48 +709,34 @@ const Calendar = () => {
 
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="text-sm text-gray-600 block mb-1">
-                  開始日
-                </label>
+                <label className="text-sm text-gray-600 block mb-1">開始日</label>
                 <MobileDateTimePicker
-                  value={
-                    modal.event.start ? dayjs.utc(modal.event.start) : null
-                  }
+                  value={modal.event.start ? dayjs.utc(modal.event.start) : null}
                   onChange={(newValue) =>
                     newValue &&
                     updateEvent(
                       "start",
-                      newValue.format(
-                        modal.event.allDay ? "YYYY-MM-DD" : "YYYY-MM-DDTHH:mm"
-                      )
+                      newValue.format(modal.event.allDay ? "YYYY-MM-DD" : "YYYY-MM-DDTHH:mm"),
                     )
                   }
-                  maxDate={
-                    modal.event.end ? dayjs.utc(modal.event.end) : undefined
-                  }
+                  maxDate={modal.event.end ? dayjs.utc(modal.event.end) : undefined}
                   disabled={modal.event?.source === "task"} // FIX: Disable for tasks
                   slotProps={{ textField: { fullWidth: true, size: "small" } }}
                 />
               </div>
 
               <div>
-                <label className="text-sm text-gray-600 block mb-1">
-                  終了日
-                </label>
+                <label className="text-sm text-gray-600 block mb-1">終了日</label>
                 <MobileDateTimePicker
                   value={modal.event.end ? dayjs.utc(modal.event.end) : null}
                   onChange={(newValue) =>
                     newValue &&
                     updateEvent(
                       "end",
-                      newValue.format(
-                        modal.event.allDay ? "YYYY-MM-DD" : "YYYY-MM-DDTHH:mm"
-                      )
+                      newValue.format(modal.event.allDay ? "YYYY-MM-DD" : "YYYY-MM-DDTHH:mm"),
                     )
                   }
-                  minDate={
-                    modal.event.start ? dayjs(modal.event.start) : undefined
-                  }
+                  minDate={modal.event.start ? dayjs(modal.event.start) : undefined}
                   disabled={modal.event?.source === "task"} // FIX: Disable for tasks
                   slotProps={{ textField: { fullWidth: true, size: "small" } }}
                 />
@@ -806,18 +766,13 @@ const Calendar = () => {
                   }));
                 }}
               />
-              <label
-                htmlFor="allDayCheckbox"
-                className="text-sm text-gray-700 cursor-pointer"
-              >
+              <label htmlFor="allDayCheckbox" className="text-sm text-gray-700 cursor-pointer">
                 終日イベント
               </label>
             </div>
 
             <div className="mb-4">
-              <label className="text-sm text-gray-600 block mb-1">
-                ステータス
-              </label>
+              <label className="text-sm text-gray-600 block mb-1">ステータス</label>
               <select
                 className="w-full p-2 border rounded"
                 value={modal.event.status || "active"}
@@ -840,9 +795,7 @@ const Calendar = () => {
               {showDetail && (
                 <div className="mt-3 space-y-3">
                   <div>
-                    <label className="text-sm text-gray-600 block mb-1">
-                      優先度
-                    </label>
+                    <label className="text-sm text-gray-600 block mb-1">優先度</label>
                     <select
                       className="w-full p-2 border rounded"
                       value={modal.event.priority || "medium"}
@@ -856,9 +809,7 @@ const Calendar = () => {
                   </div>
 
                   <div>
-                    <label className="text-sm text-gray-600 block mb-1">
-                      色
-                    </label>
+                    <label className="text-sm text-gray-600 block mb-1">色</label>
                     <div className="flex gap-2">
                       {["#3b82f6", "#22c55e", "#f59e0b", "#ef4444"].map((color) => (
                         <button
@@ -877,9 +828,7 @@ const Calendar = () => {
                   </div>
 
                   <div>
-                    <label className="text-sm text-gray-600 block mb-1">
-                      コメント
-                    </label>
+                    <label className="text-sm text-gray-600 block mb-1">コメント</label>
                     <textarea
                       className="w-full p-2 border rounded"
                       rows={3}
@@ -891,9 +840,7 @@ const Calendar = () => {
 
                   {modal.event?.source === "task" && modal.event.description && (
                     <div>
-                      <label className="text-sm text-gray-600 block mb-1">
-                        タスク詳細
-                      </label>
+                      <label className="text-sm text-gray-600 block mb-1">タスク詳細</label>
                       <div className="w-full p-2 border rounded bg-gray-50 text-sm text-gray-700">
                         {modal.event.description}
                       </div>

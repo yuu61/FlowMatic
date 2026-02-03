@@ -33,9 +33,7 @@ export const ProjectProvider = ({ children }) => {
 
       // Try to restore previously selected project
       if (savedProjectId) {
-        const restored = fetchedProjects.find(
-          (p) => p.project_id === savedProjectId
-        );
+        const restored = fetchedProjects.find((p) => p.project_id === savedProjectId);
 
         if (restored) {
           setCurrentProject(restored);
@@ -65,7 +63,7 @@ export const ProjectProvider = ({ children }) => {
       // Update current project if it exists in the refreshed list
       if (currentProject) {
         const updatedCurrentProject = fetchedProjects.find(
-          (p) => p.project_id === currentProject.project_id
+          (p) => p.project_id === currentProject.project_id,
         );
 
         if (updatedCurrentProject) {
@@ -80,13 +78,11 @@ export const ProjectProvider = ({ children }) => {
 
   const updateProjectInContext = (updatedProject) => {
     setProjects((prevProjects) =>
-      prevProjects.map((p) =>
-        p.project_id === updatedProject.project_id ? updatedProject : p
-      )
+      prevProjects.map((p) => (p.project_id === updatedProject.project_id ? updatedProject : p)),
     );
 
     setCurrentProject((prev) =>
-      prev?.project_id === updatedProject.project_id ? updatedProject : prev
+      prev?.project_id === updatedProject.project_id ? updatedProject : prev,
     );
   };
 

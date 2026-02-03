@@ -41,17 +41,14 @@ export default function NewProjectForm() {
   const filteredMembers = useMemo(() => {
     const excludedIds = new Set(formData.members);
 
-    const unselectedMembers = availableMembers.filter(
-      (member) => !excludedIds.has(member.id)
-    );
+    const unselectedMembers = availableMembers.filter((member) => !excludedIds.has(member.id));
 
     if (!searchQuery.trim()) return unselectedMembers;
 
     const query = searchQuery.toLowerCase();
     return unselectedMembers.filter(
       (member) =>
-        member.username.toLowerCase().includes(query) ||
-        member.email.toLowerCase().includes(query)
+        member.username.toLowerCase().includes(query) || member.email.toLowerCase().includes(query),
     );
   }, [searchQuery, availableMembers, formData.members]);
 
@@ -81,9 +78,7 @@ export default function NewProjectForm() {
 
     const loggedInUserId = user.id;
 
-    const newMembers = Array.from(
-      new Set([...formData.members, loggedInUserId])
-    );
+    const newMembers = Array.from(new Set([...formData.members, loggedInUserId]));
 
     const submitData = {
       title: formData.title,
@@ -108,18 +103,13 @@ export default function NewProjectForm() {
         };
 
         console.log("Creating chatroom with data:", chatroomData);
-        const newChatroom = await createChatroom(
-          newProject.project_id,
-          chatroomData
-        );
+        const newChatroom = await createChatroom(newProject.project_id, chatroomData);
         console.log("new chatroom : ", newChatroom);
       } catch (chatroomError) {
         console.error("Error creating chatroom:", chatroomError);
         console.error("Chatroom error details:", chatroomError.response?.data);
         // Note: Project was created successfully, only chatroom creation failed
-        alert(
-          "プロジェクトは作成されましたが、チャットルームの作成に失敗しました"
-        );
+        alert("プロジェクトは作成されましたが、チャットルームの作成に失敗しました");
       }
 
       // ✅ Update projects list
@@ -184,10 +174,7 @@ export default function NewProjectForm() {
 
           {/* 説明 */}
           <div>
-            <label
-              htmlFor="description"
-              className="block text-xl font-bold mb-3"
-            >
+            <label htmlFor="description" className="block text-xl font-bold mb-3">
               説明
             </label>
             <textarea
@@ -304,9 +291,7 @@ export default function NewProjectForm() {
                           <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-medium">
                             {member.username.charAt(0)}
                           </div>
-                          <span className="text-lg font-bold ml-2">
-                            {member.username}
-                          </span>
+                          <span className="text-lg font-bold ml-2">{member.username}</span>
                           <span className="text-sm font-bold text-gray-500 ml-4">
                             {member.email}
                           </span>
@@ -361,9 +346,7 @@ export default function NewProjectForm() {
               {formData.members.length > 0 ? (
                 <div className="flex flex-wrap gap-2 min-h-[60px] p-3 border border-gray-200 rounded-lg bg-gray-50">
                   {formData.members.map((memberId) => {
-                    const member = availableMembers.find(
-                      (m) => m.id === memberId
-                    );
+                    const member = availableMembers.find((m) => m.id === memberId);
                     return member ? (
                       <div
                         key={member.id}
@@ -381,17 +364,13 @@ export default function NewProjectForm() {
                           </div>
                         )}
 
-                        <span className="text-lg font-bold">
-                          {member.username}
-                        </span>
+                        <span className="text-lg font-bold">{member.username}</span>
                         <button
                           type="button"
                           onClick={() => {
                             setFormData((prev) => ({
                               ...prev,
-                              members: prev.members.filter(
-                                (id) => id !== member.id
-                              ),
+                              members: prev.members.filter((id) => id !== member.id),
                             }));
                           }}
                           className="w-5 h-5 flex items-center justify-center text-gray-500 hover:text-gray-600 hover:bg-gray-200 rounded-full transition-colors"
@@ -404,9 +383,7 @@ export default function NewProjectForm() {
                 </div>
               ) : (
                 <div className="min-h-[60px] p-4 border border-gray-200 rounded-lg bg-gray-50 flex items-center justify-center">
-                  <p className="text-gray-500 text-lg">
-                    メンバーが選択されていません
-                  </p>
+                  <p className="text-gray-500 text-lg">メンバーが選択されていません</p>
                 </div>
               )}
             </div>

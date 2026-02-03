@@ -47,9 +47,7 @@ const GanttChartBackup = () => {
     },
   ];
 
-  const links = [
-    { id: 1, source: 20, target: 21, type: "finish_to_start" }
-  ];
+  const links = [{ id: 1, source: 20, target: 21, type: "finish_to_start" }];
 
   const scales = [
     { unit: "month", step: 1, format: "MMMM yyyy" },
@@ -58,15 +56,14 @@ const GanttChartBackup = () => {
 
   return (
     <div className="max-w-7xl">
-        <Willow>
-      <Gantt
-  tasks={tasks}
-  links={links}
-  scales={scales}
-  columnWidth={30}  // width per time unit in px (default may be 60)
-  barHeight={24}
-/>
-
+      <Willow>
+        <Gantt
+          tasks={tasks}
+          links={links}
+          scales={scales}
+          columnWidth={30} // width per time unit in px (default may be 60)
+          barHeight={24}
+        />
       </Willow>
     </div>
   );

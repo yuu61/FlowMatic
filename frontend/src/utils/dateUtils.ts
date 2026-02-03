@@ -8,6 +8,6 @@ export const formatDateJP = (date) => {
   const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
     2,
-    "0"
+    "0",
   )}-${String(d.getDate()).padStart(2, "0")}`;
 };

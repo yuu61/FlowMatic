@@ -112,10 +112,7 @@ const AccountSettings = () => {
     }
 
     if (passwordData.newPassword.length < 6) {
-      showNotification(
-        "新しいパスワードは6文字以上で入力してください",
-        "error"
-      );
+      showNotification("新しいパスワードは6文字以上で入力してください", "error");
       return;
     }
 
@@ -199,9 +196,7 @@ const AccountSettings = () => {
   };
 
   const removeProfilePicture = async () => {
-    const confirmed = window.confirm(
-      "プロフィール画像を削除してもよろしいですか？"
-    );
+    const confirmed = window.confirm("プロフィール画像を削除してもよろしいですか？");
 
     if (!confirmed) return;
 
@@ -255,8 +250,8 @@ const AccountSettings = () => {
               notification.type === "success"
                 ? "bg-green-500"
                 : notification.type === "error"
-                ? "bg-red-500"
-                : "bg-blue-500"
+                  ? "bg-red-500"
+                  : "bg-blue-500"
             }`}
           >
             {notification.message}
@@ -267,17 +262,13 @@ const AccountSettings = () => {
           {/* Header */}
           <div className="mb-6">
             <h1 className="text-4xl font-bold text-gray-800">アカウント設定</h1>
-            <p className="text-gray-600 mt-3 text-lg">
-              プロフィールとセキュリティの管理
-            </p>
+            <p className="text-gray-600 mt-3 text-lg">プロフィールとセキュリティの管理</p>
           </div>
 
           {/* Profile Section */}
           <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-semibold text-gray-800">
-                プロフィール
-              </h2>
+              <h2 className="text-2xl font-semibold text-gray-800">プロフィール</h2>
               {!edit ? (
                 <button
                   onClick={() => setEdit(true)}
@@ -382,9 +373,7 @@ const AccountSettings = () => {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xl"
                   />
                 ) : (
-                  <p className="text-gray-900 text-xl px-4 py-2">
-                    {userData.username}
-                  </p>
+                  <p className="text-gray-900 text-xl px-4 py-2">{userData.username}</p>
                 )}
               </div>
 
@@ -396,9 +385,7 @@ const AccountSettings = () => {
                 <p className="text-gray-900 text-xl px-4 py-2 bg-gray-50 rounded-lg">
                   {userData.email}
                 </p>
-                <p className="text-xs text-gray-500 mt-1 px-4">
-                  メールアドレスは変更できません
-                </p>
+                <p className="text-xs text-gray-500 mt-1 px-4">メールアドレスは変更できません</p>
               </div>
 
               <div>
@@ -445,11 +432,7 @@ const AccountSettings = () => {
                hover:text-gray-700 cursor-pointer"
                     tabIndex={-1}
                   >
-                    <i
-                      className={`fas ${
-                        showPassword.current ? "fa-eye-slash" : "fa-eye"
-                      }`}
-                    ></i>
+                    <i className={`fas ${showPassword.current ? "fa-eye-slash" : "fa-eye"}`}></i>
                   </button>
                 </div>
               </div>
@@ -478,11 +461,7 @@ const AccountSettings = () => {
                hover:text-gray-700 cursor-pointer"
                     tabIndex={-1}
                   >
-                    <i
-                      className={`fas ${
-                        showPassword.new ? "fa-eye-slash" : "fa-eye"
-                      }`}
-                    ></i>
+                    <i className={`fas ${showPassword.new ? "fa-eye-slash" : "fa-eye"}`}></i>
                   </button>
                 </div>
               </div>
@@ -511,11 +490,7 @@ const AccountSettings = () => {
                hover:text-gray-700 cursor-pointer"
                     tabIndex={-1}
                   >
-                    <i
-                      className={`fas ${
-                        showPassword.confirm ? "fa-eye-slash" : "fa-eye"
-                      }`}
-                    ></i>
+                    <i className={`fas ${showPassword.confirm ? "fa-eye-slash" : "fa-eye"}`}></i>
                   </button>
                 </div>
               </div>

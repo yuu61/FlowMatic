@@ -88,27 +88,16 @@ const Files = () => {
   };
 
   const isImageFile = (name) => {
-    const imageExtensions = [
-      ".png",
-      ".jpg",
-      ".jpeg",
-      ".gif",
-      ".bmp",
-      ".webp",
-      ".svg",
-    ];
+    const imageExtensions = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".svg"];
     return imageExtensions.some((ext) => name.toLowerCase().endsWith(ext));
   };
 
   // ✅ ファイルタイプに応じたFontAwesomeアイコンとカラー
   const getFileIconData = (name) => {
-    if (name.endsWith(".pdf"))
-      return { icon: faFilePdf, color: "text-red-500" };
+    if (name.endsWith(".pdf")) return { icon: faFilePdf, color: "text-red-500" };
     if (isImageFile(name)) return { icon: faFileImage, color: "text-blue-500" };
-    if (name.endsWith(".docx"))
-      return { icon: faFileWord, color: "text-blue-600" };
-    if (name.endsWith(".xlsx"))
-      return { icon: faFileExcel, color: "text-green-600" };
+    if (name.endsWith(".docx")) return { icon: faFileWord, color: "text-blue-600" };
+    if (name.endsWith(".xlsx")) return { icon: faFileExcel, color: "text-green-600" };
     return { icon: faFile, color: "text-gray-500" };
   };
 
@@ -172,9 +161,7 @@ const Files = () => {
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 bg-gray-50 min-h-screen">
       {/* ✅ ヘッダー */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <h1 className="text-2xl sm:text-4xl font-bold text-gray-800">
-          共有ファイル
-        </h1>
+        <h1 className="text-2xl sm:text-4xl font-bold text-gray-800">共有ファイル</h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
           {/* ✅ 表示切替(グループ化) */}
@@ -209,12 +196,7 @@ const Files = () => {
           </div>
 
           {/* ✅ アップロード(強調) */}
-          <input
-            type="file"
-            className="hidden"
-            id="fileUpload"
-            onChange={handleUpload}
-          />
+          <input type="file" className="hidden" id="fileUpload" onChange={handleUpload} />
           <label
             htmlFor="fileUpload"
             className="px-4 sm:px-6 py-2.5 bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 hover:from-blue-700 hover:via-blue-800 hover:to-blue-900 transition-all duration-300
@@ -243,9 +225,7 @@ const Files = () => {
                     <div className="flex items-center gap-2">
                       ファイル名
                       {sortKey === "name" && (
-                        <FontAwesomeIcon
-                          icon={sortOrder === "asc" ? faSortUp : faSortDown}
-                        />
+                        <FontAwesomeIcon icon={sortOrder === "asc" ? faSortUp : faSortDown} />
                       )}
                     </div>
                   </th>
@@ -256,9 +236,7 @@ const Files = () => {
                     <div className="flex items-center gap-2">
                       投稿者
                       {sortKey === "uploader" && (
-                        <FontAwesomeIcon
-                          icon={sortOrder === "asc" ? faSortUp : faSortDown}
-                        />
+                        <FontAwesomeIcon icon={sortOrder === "asc" ? faSortUp : faSortDown} />
                       )}
                     </div>
                   </th>
@@ -269,9 +247,7 @@ const Files = () => {
                     <div className="flex items-center gap-2">
                       日付
                       {sortKey === "date" && (
-                        <FontAwesomeIcon
-                          icon={sortOrder === "asc" ? faSortUp : faSortDown}
-                        />
+                        <FontAwesomeIcon icon={sortOrder === "asc" ? faSortUp : faSortDown} />
                       )}
                     </div>
                   </th>
@@ -282,9 +258,7 @@ const Files = () => {
                     <div className="flex items-center justify-end gap-2">
                       サイズ
                       {sortKey === "size" && (
-                        <FontAwesomeIcon
-                          icon={sortOrder === "asc" ? faSortUp : faSortDown}
-                        />
+                        <FontAwesomeIcon icon={sortOrder === "asc" ? faSortUp : faSortDown} />
                       )}
                     </div>
                   </th>
@@ -317,9 +291,7 @@ const Files = () => {
                         <div className="flex items-center gap-2">
                           {file.uploader?.profile_picture ? (
                             <img
-                              src={resolveImageUrl(
-                                file.uploader.profile_picture
-                              )}
+                              src={resolveImageUrl(file.uploader.profile_picture)}
                               alt="profile"
                               className="w-8 h-8 rounded-full object-cover border"
                             />
@@ -346,9 +318,7 @@ const Files = () => {
                             title="ダウンロード"
                           >
                             <FontAwesomeIcon icon={faDownload} />
-                            <span className="hidden lg:inline">
-                              ダウンロード
-                            </span>
+                            <span className="hidden lg:inline">ダウンロード</span>
                           </button>
                           {file.uploader?.id === user.id && (
                             <button
@@ -410,9 +380,7 @@ const Files = () => {
                     ) : (
                       <FontAwesomeIcon
                         icon={fileIconData.icon}
-                        className={`${
-                          fileIconData.color
-                        } text-3xl sm:text-4xl ${
+                        className={`${fileIconData.color} text-3xl sm:text-4xl ${
                           isImage && file.url ? "hidden" : ""
                         }`}
                       />
@@ -425,9 +393,7 @@ const Files = () => {
                     >
                       {file.name}
                     </p>
-                    <p className="text-sm sm:text-lg text-gray-500">
-                      {file.size}
-                    </p>
+                    <p className="text-sm sm:text-lg text-gray-500">{file.size}</p>
                   </div>
                 </div>
 
@@ -477,9 +443,7 @@ const Files = () => {
           })}
 
           {files.length === 0 && (
-            <p className="text-center text-gray-500 col-span-full py-8">
-              ファイルがありません
-            </p>
+            <p className="text-center text-gray-500 col-span-full py-8">ファイルがありません</p>
           )}
         </div>
       )}

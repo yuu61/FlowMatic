@@ -16,8 +16,6 @@ function Home() {
     localStorage.clear();
     setIsAuthorized(false);
     navigate("/login");
-
-    
   };
 
   useEffect(() => {
@@ -34,9 +32,7 @@ function Home() {
           sidebarOpen ? "" : "-translate-x-full md:translate-x-0"
         }`}
       >
-        <div className="p-4 text-2xl font-bold border-b border-gray-700">
-          新庄剛志タスク管理
-        </div>
+        <div className="p-4 text-2xl font-bold border-b border-gray-700">新庄剛志タスク管理</div>
         <ul className="flex-1 p-4 space-y-3 sidebar-menu">
           {[
             {

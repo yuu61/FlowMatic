@@ -114,8 +114,8 @@ const CreateMemoModal = ({ isOpen, onClose, onSubmit, initialMemo = null }) => {
                       c === "yellow"
                         ? "bg-yellow-300"
                         : c === "blue"
-                        ? "bg-blue-300"
-                        : "bg-green-300"
+                          ? "bg-blue-300"
+                          : "bg-green-300"
                     }
                   `}
                 />

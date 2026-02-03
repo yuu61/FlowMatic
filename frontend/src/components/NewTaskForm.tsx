@@ -1,12 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useProject } from "../context/ProjectContext";
-import {
-  createTask,
-  getTaskById,
-  getTasks,
-  updateTask,
-} from "../services/TaskService";
+import { createTask, getTaskById, getTasks, updateTask } from "../services/TaskService";
 import { MobileDateTimePicker } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
 import { CURRENT_PROJECT_ID } from "../constants";
@@ -86,7 +81,7 @@ export default function NewTaskForm() {
         (task.parent_tasks || []).map((p) => ({
           taskId: p.task_id,
           type: p.relation_type,
-        }))
+        })),
       );
     };
 
@@ -105,13 +100,10 @@ export default function NewTaskForm() {
   };
 
   const handleAssigneeChange = (id) => {
-    setAssignees((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+    setAssignees((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
-  const handleAddDependency = () =>
-    setDependencies([...dependencies, { taskId: "", type: "FtS" }]);
+  const handleAddDependency = () => setDependencies([...dependencies, { taskId: "", type: "FtS" }]);
 
   const handleRemoveDependency = (index) =>
     setDependencies(dependencies.filter((_, i) => i !== index));
@@ -126,16 +118,11 @@ export default function NewTaskForm() {
     e.preventDefault();
 
     if (!taskName.trim()) return showMessage("タスク名が必要です。", "error");
-    if (!dates.deadline)
-      return showMessage("期限日を設定してください。", "error");
-    if (assignees.length === 0)
-      return showMessage("担当者を1名以上選択してください。", "error");
+    if (!dates.deadline) return showMessage("期限日を設定してください。", "error");
+    if (assignees.length === 0) return showMessage("担当者を1名以上選択してください。", "error");
 
     if (dates.startDate && dates.deadline < dates.startDate) {
-      return showMessage(
-        "期限日は開始日より後の日付を選択してください。",
-        "error"
-      );
+      return showMessage("期限日は開始日より後の日付を選択してください。", "error");
     }
 
     const requestData = {
@@ -208,9 +195,7 @@ export default function NewTaskForm() {
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Task Name */}
           <div>
-            <label className="block text-gray-700 text-lg font-semibold mb-2">
-              タスク名
-            </label>
+            <label className="block text-gray-700 text-lg font-semibold mb-2">タスク名</label>
             <input
               type="text"
               value={taskName}
@@ -223,9 +208,7 @@ export default function NewTaskForm() {
 
           {/* Description */}
           <div>
-            <label className="block text-gray-700 text-lg font-semibold mb-2">
-              説明
-            </label>
+            <label className="block text-gray-700 text-lg font-semibold mb-2">説明</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -238,9 +221,7 @@ export default function NewTaskForm() {
           {/* Due Date + Assignees */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label className="block text-gray-700 text-lg font-semibold mb-2">
-                開始日
-              </label>
+              <label className="block text-gray-700 text-lg font-semibold mb-2">開始日</label>
 
               <MobileDateTimePicker
                 label="開始日を設定してください"
@@ -259,9 +240,7 @@ export default function NewTaskForm() {
             </div>
 
             <div>
-              <label className="block text-gray-700 text-lg font-semibold mb-2">
-                期限日
-              </label>
+              <label className="block text-gray-700 text-lg font-semibold mb-2">期限日</label>
 
               <MobileDateTimePicker
                 label="期限日を設定してください"
@@ -280,9 +259,7 @@ export default function NewTaskForm() {
             </div>
 
             <div>
-              <label className="block text-gray-700 text-lg font-semibold mb-2">
-                担当者
-              </label>
+              <label className="block text-gray-700 text-lg font-semibold mb-2">担当者</label>
               <div className="max-h-full overflow-y-auto border border-gray-300 rounded-lg p-2">
                 {groupMembers.map((member) => (
                   <label
@@ -307,9 +284,7 @@ export default function NewTaskForm() {
           {/* Priority + Status */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label className="block text-gray-700 text-lg font-semibold mb-2">
-                優先度
-              </label>
+              <label className="block text-gray-700 text-lg font-semibold mb-2">優先度</label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
@@ -322,9 +297,7 @@ export default function NewTaskForm() {
             </div>
 
             <div>
-              <label className="block text-gray-700 text-lg font-semibold mb-2">
-                ステータス
-              </label>
+              <label className="block text-gray-700 text-lg font-semibold mb-2">ステータス</label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
@@ -461,9 +434,7 @@ export default function NewTaskForm() {
         {message.text && (
           <div
             className={`mt-6 p-4 rounded-lg text-lg text-center ${
-              message.type === "success"
-                ? "bg-green-100 text-green-700"
-                : "bg-red-100 text-red-700"
+              message.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
             }`}
           >
             {message.text}

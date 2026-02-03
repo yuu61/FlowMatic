@@ -97,7 +97,7 @@ class TaskRelation(models.Model):
         unique_together = ("parent_task", "child_task")
         constraints = [
             CheckConstraint(
-                check=Q(
+                condition=Q(
                     relation_type__in=[
                         TaskRelationType.FINISH_TO_START,
                         TaskRelationType.FINISH_TO_FINISH,

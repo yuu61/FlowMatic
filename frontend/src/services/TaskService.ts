@@ -12,8 +12,8 @@ export async function createTask(projectId, taskData) {
 }
 
 export async function getTasks(projectId) {
-    try {
-        // f28497cc-6801-46a1-ac69-dada7febd96c = 実際のprojectId
+  try {
+    // f28497cc-6801-46a1-ac69-dada7febd96c = 実際のprojectId
     const response = await api.get(`/api/projects/${projectId}/tasks/`);
     return response.data.tasks;
   } catch (error) {
@@ -23,9 +23,7 @@ export async function getTasks(projectId) {
 }
 
 export async function getTaskById(projectId, taskId) {
-  const response = await api.get(
-    `/api/projects/${projectId}/tasks/${taskId}/`
-  );
+  const response = await api.get(`/api/projects/${projectId}/tasks/${taskId}/`);
   return response.data;
 }
 
@@ -34,7 +32,7 @@ export async function updateTask(projectId, taskId, taskData) {
     // Update a specific task within a project
     const response = await api.put(`/api/projects/${projectId}/tasks/${taskId}/`, taskData);
 
-    console.log(response.data)
+    console.log(response.data);
     return response.data;
   } catch (error) {
     console.error("API Error:", error);

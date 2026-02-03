@@ -7,10 +7,7 @@ import api from "../api";
  */
 export async function createMemo(projectId, memoData) {
   try {
-    const response = await api.post(
-      `/api/projects/${projectId}/memos/`,
-      memoData
-    );
+    const response = await api.post(`/api/projects/${projectId}/memos/`, memoData);
     return response.data;
   } catch (error) {
     console.error("Create Memo API Error:", error);
@@ -24,9 +21,7 @@ export async function createMemo(projectId, memoData) {
  */
 export async function getMemos(projectId) {
   try {
-    const response = await api.get(
-      `/api/projects/${projectId}/memos/`
-    );
+    const response = await api.get(`/api/projects/${projectId}/memos/`);
     return response.data;
   } catch (error) {
     console.error("Get Memos API Error:", error);
@@ -40,10 +35,7 @@ export async function getMemos(projectId) {
  */
 export async function updateMemo(projectId, memoId, memoData) {
   try {
-    const response = await api.patch(
-      `/api/projects/${projectId}/memos/${memoId}/`,
-      memoData
-    );
+    const response = await api.patch(`/api/projects/${projectId}/memos/${memoId}/`, memoData);
     return response.data;
   } catch (error) {
     console.error("Update Memo API Error:", error);
@@ -57,9 +49,7 @@ export async function updateMemo(projectId, memoId, memoData) {
  */
 export async function deleteMemo(projectId, memoId) {
   try {
-    await api.delete(
-      `/api/projects/${projectId}/memos/${memoId}/`
-    );
+    await api.delete(`/api/projects/${projectId}/memos/${memoId}/`);
   } catch (error) {
     console.error("Delete Memo API Error:", error);
     throw error;

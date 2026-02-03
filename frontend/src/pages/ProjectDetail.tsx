@@ -95,10 +95,7 @@ const ProjectDetail = () => {
     try {
       const payload = buildUpdatePayload(projectData);
 
-      const updatedProject = await updateProject(
-        projectData.project_id,
-        payload
-      );
+      const updatedProject = await updateProject(projectData.project_id, payload);
 
       const normalized = normalizeProject(updatedProject);
 
@@ -155,12 +152,8 @@ const ProjectDetail = () => {
         {/* Header */}
         <div className="flex items-center gap-4">
           <div className="flex-1">
-            <h1 className="text-4xl font-bold text-gray-900">
-              プロジェクト編集
-            </h1>
-            <p className="text-xl text-gray-600 mt-1">
-              プロジェクトの詳細とメンバーを管理
-            </p>
+            <h1 className="text-4xl font-bold text-gray-900">プロジェクト編集</h1>
+            <p className="text-xl text-gray-600 mt-1">プロジェクトの詳細とメンバーを管理</p>
           </div>
           <button
             onClick={handleSave}
@@ -175,9 +168,7 @@ const ProjectDetail = () => {
         <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 space-y-6">
           {/* Project Title */}
           <div>
-            <label className="block text-lg font-semibold text-gray-700 mb-2">
-              プロジェクト名
-            </label>
+            <label className="block text-lg font-semibold text-gray-700 mb-2">プロジェクト名</label>
             <input
               type="text"
               value={projectData.title || ""}
@@ -189,9 +180,7 @@ const ProjectDetail = () => {
 
           {/* Description */}
           <div>
-            <label className="block text-lg font-semibold text-gray-700 mb-2">
-              説明
-            </label>
+            <label className="block text-lg font-semibold text-gray-700 mb-2">説明</label>
             <textarea
               value={projectData.description || ""}
               onChange={(e) => handleInputChange("description", e.target.value)}
@@ -203,9 +192,7 @@ const ProjectDetail = () => {
 
           {/* Status */}
           <div>
-            <label className="block text-lg font-semibold text-gray-700 mb-2">
-              ステータス
-            </label>
+            <label className="block text-lg font-semibold text-gray-700 mb-2">ステータス</label>
             <select
               value={projectData.status || "planning"}
               onChange={(e) => handleInputChange("status", e.target.value)}
@@ -229,17 +216,10 @@ const ProjectDetail = () => {
               </label>
               <MobileDateTimePicker
                 label="開始日を設定してください"
-                value={
-                  projectData.start_date
-                    ? dayjs.utc(projectData.start_date)
-                    : null
-                }
+                value={projectData.start_date ? dayjs.utc(projectData.start_date) : null}
                 onChange={(newValue) => {
                   if (newValue && newValue.isValid()) {
-                    handleInputChange(
-                      "start_date",
-                      newValue.utc().toISOString()
-                    );
+                    handleInputChange("start_date", newValue.utc().toISOString());
                   } else {
                     handleInputChange("start_date", "");
                   }
@@ -263,9 +243,7 @@ const ProjectDetail = () => {
               </label>
               <MobileDateTimePicker
                 label="締切日を設定してください"
-                value={
-                  projectData.deadline ? dayjs.utc(projectData.deadline) : null
-                }
+                value={projectData.deadline ? dayjs.utc(projectData.deadline) : null}
                 onChange={(newValue) => {
                   if (newValue && newValue.isValid()) {
                     handleInputChange("deadline", newValue.utc().toISOString());
@@ -327,15 +305,10 @@ const ProjectDetail = () => {
                     )}
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="font-bold text-lg text-gray-900">
-                          {member.name}
-                        </p>
+                        <p className="font-bold text-lg text-gray-900">{member.name}</p>
                         {member.role === "owner" && (
                           <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-full flex items-center gap-1">
-                            <FontAwesomeIcon
-                              icon={faCrown}
-                              className="text-xs"
-                            />
+                            <FontAwesomeIcon icon={faCrown} className="text-xs" />
                             オーナー
                           </span>
                         )}
@@ -352,10 +325,7 @@ const ProjectDetail = () => {
                       </div>
                       {member.email && (
                         <p className="text-base text-gray-600 flex items-center gap-2">
-                          <FontAwesomeIcon
-                            icon={faEnvelope}
-                            className="text-xs"
-                          />
+                          <FontAwesomeIcon icon={faEnvelope} className="text-xs" />
                           {member.email}
                         </p>
                       )}
@@ -372,9 +342,7 @@ const ProjectDetail = () => {
                 </div>
               ))
             ) : (
-              <div className="text-center py-8 text-gray-500">
-                メンバーがいません
-              </div>
+              <div className="text-center py-8 text-gray-500">メンバーがいません</div>
             )}
           </div>
         </div>

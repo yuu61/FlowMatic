@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  forwardRef,
-  useImperativeHandle,
-} from "react";
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import api from "../api";
 import { getUsers } from "../services/UserService";
 
@@ -81,19 +75,14 @@ const MemberInvitationModal = forwardRef(
           .filter(
             (user) =>
               user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              user.email.toLowerCase().includes(searchQuery.toLowerCase())
+              user.email.toLowerCase().includes(searchQuery.toLowerCase()),
           )
 
           // Exclude already selected users
-          .filter(
-            (user) => !selectedUsers.some((selected) => selected.id === user.id)
-          )
+          .filter((user) => !selectedUsers.some((selected) => selected.id === user.id))
 
           // Exclude existing project members (including pending)
-          .filter(
-            (user) =>
-              !existingMembers.some((member) => member.user_id === user.id)
-          );
+          .filter((user) => !existingMembers.some((member) => member.user_id === user.id));
 
         setSearchResults(filteredUsers);
       }, 300);
@@ -186,9 +175,7 @@ const MemberInvitationModal = forwardRef(
             >
               {/* モーダルヘッダー */}
               <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                <h3 className="text-2xl font-semibold text-gray-800">
-                  メンバー招待
-                </h3>
+                <h3 className="text-2xl font-semibold text-gray-800">メンバー招待</h3>
                 <button
                   onClick={closeModal}
                   className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
@@ -216,17 +203,13 @@ const MemberInvitationModal = forwardRef(
                       <i className="fas fa-search"></i>
                     </div>
                   </div>
-                  {searchError && (
-                    <p className="text-red-500 text-md mt-1">{searchError}</p>
-                  )}
+                  {searchError && <p className="text-red-500 text-md mt-1">{searchError}</p>}
                 </div>
 
                 {/* 検索結果 */}
                 {searchResults.length > 0 && (
                   <div>
-                    <h4 className="text-md font-semibold text-gray-700 mb-2">
-                      一致するユーザー
-                    </h4>
+                    <h4 className="text-md font-semibold text-gray-700 mb-2">一致するユーザー</h4>
                     <div className="border border-gray-200 rounded-lg divide-y divide-gray-100 max-h-60 overflow-y-auto">
                       {searchResults.map((user) => (
                         <div
@@ -246,12 +229,8 @@ const MemberInvitationModal = forwardRef(
                             )}
 
                             <div>
-                              <div className="font-semibold text-gray-900">
-                                {user.username}
-                              </div>
-                              <div className="text-md text-gray-500">
-                                {user.email}
-                              </div>
+                              <div className="font-semibold text-gray-900">{user.username}</div>
+                              <div className="text-md text-gray-500">{user.email}</div>
                             </div>
                           </div>
                         </div>
@@ -263,9 +242,7 @@ const MemberInvitationModal = forwardRef(
                 {/* 選択されたユーザー */}
                 {selectedUsers.length > 0 && (
                   <div>
-                    <h4 className="text-md font-semibold text-gray-700 mb-2">
-                      選択されたユーザー
-                    </h4>
+                    <h4 className="text-md font-semibold text-gray-700 mb-2">選択されたユーザー</h4>
                     <div className="flex flex-wrap gap-2 p-2 border border-gray-200 rounded-lg min-h-12">
                       {selectedUsers.map((user) => (
                         <div
@@ -281,9 +258,7 @@ const MemberInvitationModal = forwardRef(
                           ) : (
                             <i className="fa-solid fa-user text-gray-400 text-sm mr-2"></i>
                           )}
-                          <span className="text-md mr-1 font-bold">
-                            {user.username}
-                          </span>
+                          <span className="text-md mr-1 font-bold">{user.username}</span>
                           <button
                             type="button"
                             onClick={() => removeUser(user.id)}
@@ -329,7 +304,7 @@ const MemberInvitationModal = forwardRef(
         )}
       </>
     );
-  }
+  },
 );
 
 MemberInvitationModal.displayName = "MemberInvitationModal";

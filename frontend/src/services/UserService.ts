@@ -1,13 +1,13 @@
-import api from "../api"
+import api from "../api";
 
 export async function getUsers() {
-    try {
-        const result = await api.get("/api/users/");
+  try {
+    const result = await api.get("/api/users/");
 
-        return result.data
-    } catch (error) {
-        console.log("Error fetching user : " + error)
-    }
+    return result.data;
+  } catch (error) {
+    console.log("Error fetching user : " + error);
+  }
 }
 
 /**
@@ -17,11 +17,11 @@ export async function getUsers() {
 export async function updateUserProfile(userData) {
   try {
     const formData = new FormData();
-    
+
     if (userData.username) {
       formData.append("username", userData.username);
     }
-    
+
     // Handle profile picture update or deletion
     if ("profile_picture" in userData) {
       if (userData.profile_picture === null) {

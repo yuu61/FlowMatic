@@ -9,12 +9,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCirclePlus } from "@fortawesome/free-solid-svg-icons";
 import { Link } from "react-router-dom";
 import ProjectRequired from "../components/ProjectRequired";
-import {
-  createMemo,
-  deleteMemo,
-  getMemos,
-  updateMemo,
-} from "../services/MemoService";
+import { createMemo, deleteMemo, getMemos, updateMemo } from "../services/MemoService";
 import { resolveImageUrl } from "../utils/resolveImageUrl";
 
 const Dashboard = () => {
@@ -67,9 +62,7 @@ const Dashboard = () => {
       setLoading(true);
 
       const myActiveTasks = tasks.filter(
-        (task) =>
-          task.status !== "done" &&
-          task.users.some((u) => u.user_id === user.id)
+        (task) => task.status !== "done" && task.users.some((u) => u.user_id === user.id),
       ).length;
 
       setSummary((prev) => ({
@@ -85,9 +78,7 @@ const Dashboard = () => {
     try {
       setLoading(true);
 
-      const clearedTasks = tasks.filter(
-        (task) => task.status === "done"
-      ).length;
+      const clearedTasks = tasks.filter((task) => task.status === "done").length;
 
       setSummary((prev) => ({
         ...prev,
@@ -169,9 +160,7 @@ const Dashboard = () => {
           is_pinned: targetMemo?.is_pinned ?? false,
         });
 
-        setProjectMemos((prev) =>
-          prev.map((m) => (m.memo_id === memo_id ? updated : m))
-        );
+        setProjectMemos((prev) => prev.map((m) => (m.memo_id === memo_id ? updated : m)));
       } else {
         const created = await createMemo(currentProject.project_id, {
           user_id: user.id,
@@ -192,9 +181,7 @@ const Dashboard = () => {
 
   const handleTogglePin = async (memo_id) => {
     setProjectMemos((prev) =>
-      prev.map((m) =>
-        m.memo_id === memo_id ? { ...m, is_pinned: !m.is_pinned } : m
-      )
+      prev.map((m) => (m.memo_id === memo_id ? { ...m, is_pinned: !m.is_pinned } : m)),
     );
 
     const memo = projectMemos.find((m) => m.memo_id === memo_id);
@@ -206,9 +193,7 @@ const Dashboard = () => {
     } catch (err) {
       // rollback on failure
       setProjectMemos((prev) =>
-        prev.map((m) =>
-          m.memo_id === memo_id ? { ...m, is_pinned: memo.is_pinned } : m
-        )
+        prev.map((m) => (m.memo_id === memo_id ? { ...m, is_pinned: memo.is_pinned } : m)),
       );
     }
   };
@@ -309,9 +294,7 @@ const Dashboard = () => {
               <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
                 おかえりなさい! 👋
               </h1>
-              <p className="text-gray-600 text-lg">
-                今日も一緒に頑張りましょう!
-              </p>
+              <p className="text-gray-600 text-lg">今日も一緒に頑張りましょう!</p>
             </div>
           </div>
         </div>
@@ -346,9 +329,7 @@ const Dashboard = () => {
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center">
                 <i className="fa-solid fa-note-sticky text-3xl text-blue-600 mr-3"></i>
-                <h2 className="text-2xl font-bold text-gray-800">
-                  📌 プロジェクトメモ
-                </h2>
+                <h2 className="text-2xl font-bold text-gray-800">📌 プロジェクトメモ</h2>
               </div>
 
               <button
@@ -387,9 +368,7 @@ const Dashboard = () => {
                           onClick={() => handleTogglePin(memo.memo_id)}
                           className={`transition cursor-pointer
         ${
-          memo.is_pinned
-            ? "text-blue-600 hover:text-blue-700"
-            : "text-gray-400 hover:text-gray-600"
+          memo.is_pinned ? "text-blue-600 hover:text-blue-700" : "text-gray-400 hover:text-gray-600"
         }
       `}
                           title="ピン留め"
@@ -453,9 +432,7 @@ const Dashboard = () => {
           <div className="bg-white rounded-3xl shadow-sm p-6 border-2 border-green-100">
             <div className="flex items-center mb-5">
               <i className="fa-solid fa-calendar-days text-3xl text-blue-700 mr-3"></i>
-              <h2 className="text-2xl font-bold text-gray-800">
-                直近7日間の予定
-              </h2>
+              <h2 className="text-2xl font-bold text-gray-800">直近7日間の予定</h2>
             </div>
 
             <div className="space-y-4">
@@ -469,9 +446,7 @@ const Dashboard = () => {
                   className="bg-gradient-to-r from-blue-50 to-blue-100 p-5 rounded-2xl border-2 border-blue-300 hover:shadow-md transition-all cursor-default"
                 >
                   <div className="mb-3">
-                    <h3 className="text-lg font-bold text-gray-800 mb-2">
-                      📅 {event.title}
-                    </h3>
+                    <h3 className="text-lg font-bold text-gray-800 mb-2">📅 {event.title}</h3>
 
                     <div className="space-y-1 text-sm text-gray-700">
                       <p className="flex items-center">
@@ -485,8 +460,7 @@ const Dashboard = () => {
                         <p className="flex items-center">
                           <span className="mr-2">⏰</span>
                           <span>
-                            {formatUTC(event.start_date)} 〜{" "}
-                            {formatUTC(event.end_date)}
+                            {formatUTC(event.start_date)} 〜 {formatUTC(event.end_date)}
                           </span>
                         </p>
                       )}
@@ -504,9 +478,7 @@ const Dashboard = () => {
 
         {/* Motivational Footer */}
         <div className="bg-white rounded-3xl shadow-sm p-6 md:p-8 border-2 border-purple-100">
-          <h2 className="text-2xl md:text-3xl font-bold mb-2">
-            今日もお疲れ様でした! 🎉
-          </h2>
+          <h2 className="text-2xl md:text-3xl font-bold mb-2">今日もお疲れ様でした! 🎉</h2>
           <p className="text-lg opacity-90 mb-4">
             あなたは素晴らしい進歩を遂げています。明日も一緒に頑張りましょう!
           </p>

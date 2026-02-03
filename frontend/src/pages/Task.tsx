@@ -69,8 +69,8 @@ const Task = () => {
                 ...task,
                 comments: [...task.comments, savedComment],
               }
-            : task
-        )
+            : task,
+        ),
       );
 
       // Clear only this task's comment
@@ -165,13 +165,7 @@ const Task = () => {
     }
 
     if (filter === "active") {
-      return [
-        "todo",
-        "pending",
-        "in_progress",
-        "in_review",
-        "testing",
-      ].includes(task.status);
+      return ["todo", "pending", "in_progress", "in_review", "testing"].includes(task.status);
     }
 
     if (filter === "done") {
@@ -200,8 +194,8 @@ const Task = () => {
                 ...task,
                 status: newStatus,
               }
-            : task
-        )
+            : task,
+        ),
       );
 
       // Then update database
@@ -225,8 +219,8 @@ const Task = () => {
                   ...task,
                   status: currentTask.status, // Revert to original status
                 }
-              : task
-          )
+              : task,
+          ),
         );
       }
 
@@ -260,14 +254,14 @@ const Task = () => {
 
     return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(
       2,
-      "0"
-    )}/${String(date.getDate()).padStart(2, "0")} ${String(
-      date.getHours()
-    ).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+      "0",
+    )}/${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(
+      2,
+      "0",
+    )}:${String(date.getMinutes()).padStart(2, "0")}`;
   };
 
-  if (loading)
-    return <div className="p-6 text-gray-600">タスクの読み込み中...</div>;
+  if (loading) return <div className="p-6 text-gray-600">タスクの読み込み中...</div>;
 
   if (!projects || projects.length === 0 || !currentProject) {
     return (
@@ -395,9 +389,7 @@ const Task = () => {
         {filteredTasks.length === 0 ? (
           <div className="text-center py-16 font-bold">
             <p className="text-gray-500 text-lg">タスクがありません</p>
-            <p className="text-gray-400 mt-2">
-              新しいタスクを作成してみましょう。
-            </p>
+            <p className="text-gray-400 mt-2">新しいタスクを作成してみましょう。</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
@@ -416,11 +408,7 @@ const Task = () => {
                         task.status === "done"
                           ? "bg-green-500 border-green-500"
                           : "border-gray-300 hover:border-green-500"
-                      } ${
-                        updatingTasks[task.id]
-                          ? "opacity-50 cursor-not-allowed"
-                          : ""
-                      }`}
+                      } ${updatingTasks[task.id] ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
                       {updatingTasks[task.id] ? (
                         <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -446,36 +434,25 @@ const Task = () => {
                     <div className="flex items-center gap-3">
                       <h3
                         className={`text-2xl font-bold ${
-                          task.status === "done"
-                            ? "text-gray-400 line-through"
-                            : "text-gray-800"
+                          task.status === "done" ? "text-gray-400 line-through" : "text-gray-800"
                         }`}
                       >
                         {task.title}
                       </h3>
                       <span
                         className={`px-2 py-1 text-xl font-bold rounded-full border ${getPriorityColor(
-                          task.priority
+                          task.priority,
                         )}`}
                       >
-                        {task.priority === "high"
-                          ? "高"
-                          : task.priority === "medium"
-                          ? "中"
-                          : "低"}
+                        {task.priority === "high" ? "高" : task.priority === "medium" ? "中" : "低"}
                       </span>
                     </div>
 
-                    <p className="font-semibold text-gray-500 text-lg">
-                      {task.description}
-                    </p>
+                    <p className="font-semibold text-gray-500 text-lg">{task.description}</p>
 
                     <div className="flex items-center font-bold gap-4 text-gray-700 text-lg">
                       <span>
-                        期限:{" "}
-                        <span className="text-gray-700">
-                          {formatDateTime(task.dueDate)}
-                        </span>
+                        期限: <span className="text-gray-700">{formatDateTime(task.dueDate)}</span>
                       </span>
 
                       <span
@@ -483,25 +460,25 @@ const Task = () => {
                           task.status === "done"
                             ? "bg-green-100 text-green-700 border border-green-300"
                             : task.status === "in_progress"
-                            ? "bg-blue-100 text-blue-700 border border-blue-300"
-                            : task.status === "in_review"
-                            ? "bg-purple-100 text-purple-700 border border-purple-300"
-                            : task.status === "testing"
-                            ? "bg-yellow-100 text-yellow-700 border border-yellow-300"
-                            : "bg-gray-100 text-gray-700 border border-gray-300"
+                              ? "bg-blue-100 text-blue-700 border border-blue-300"
+                              : task.status === "in_review"
+                                ? "bg-purple-100 text-purple-700 border border-purple-300"
+                                : task.status === "testing"
+                                  ? "bg-yellow-100 text-yellow-700 border border-yellow-300"
+                                  : "bg-gray-100 text-gray-700 border border-gray-300"
                         }`}
                       >
                         {task.status === "done"
                           ? "完了"
                           : task.status === "in_progress"
-                          ? "進行中"
-                          : task.status === "in_review"
-                          ? "レビュー待ち"
-                          : task.status === "testing"
-                          ? "テスト中"
-                          : task.status === "pending"
-                          ? "保留中"
-                          : "未着手"}
+                            ? "進行中"
+                            : task.status === "in_review"
+                              ? "レビュー待ち"
+                              : task.status === "testing"
+                                ? "テスト中"
+                                : task.status === "pending"
+                                  ? "保留中"
+                                  : "未着手"}
                       </span>
                     </div>
 
@@ -537,9 +514,7 @@ const Task = () => {
                       {task.comments && task.comments.length > 0 && (
                         <button
                           onClick={() =>
-                            setOpenCommentsTaskId(
-                              openCommentsTaskId === task.id ? null : task.id
-                            )
+                            setOpenCommentsTaskId(openCommentsTaskId === task.id ? null : task.id)
                           }
                           className="flex items-center gap-2 text-blue-600 text-lg font-bold hover:text-blue-800 hover:underline hover:cursor-pointer transition-transform duration-200 hover:translate-x-1"
                         >
@@ -550,11 +525,7 @@ const Task = () => {
                         </button>
                       )}
                       <button
-                        onClick={() =>
-                          setActiveTaskId(
-                            activeTaskId === task.id ? null : task.id
-                          )
-                        }
+                        onClick={() => setActiveTaskId(activeTaskId === task.id ? null : task.id)}
                         className={`flex items-center gap-2 px-4 py-2 text-lg font-extrabold rounded-xl shadow-md hover:cursor-pointer
     ${
       activeTaskId === task.id
@@ -563,16 +534,10 @@ const Task = () => {
     }`}
                       >
                         <FontAwesomeIcon
-                          icon={
-                            activeTaskId === task.id
-                              ? faMinusCircle
-                              : faPlusCircle
-                          }
+                          icon={activeTaskId === task.id ? faMinusCircle : faPlusCircle}
                           className="text-white text-xl"
                         />
-                        {activeTaskId === task.id
-                          ? "コメントを閉じる"
-                          : "コメント追加"}
+                        {activeTaskId === task.id ? "コメントを閉じる" : "コメント追加"}
                       </button>
                     </div>
 
@@ -589,9 +554,7 @@ const Task = () => {
                                   {/* Avatar with initials */}
                                   {comment.profile_picture ? (
                                     <img
-                                      src={resolveImageUrl(
-                                        comment.profile_picture
-                                      )}
+                                      src={resolveImageUrl(comment.profile_picture)}
                                       className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center"
                                     />
                                   ) : (
@@ -624,9 +587,7 @@ const Task = () => {
                           </div>
                         ) : (
                           <div className="text-center py-6 text-gray-500">
-                            <p className="text-base">
-                              No comments yet. Be the first to comment!
-                            </p>
+                            <p className="text-base">No comments yet. Be the first to comment!</p>
                           </div>
                         )}
                       </div>

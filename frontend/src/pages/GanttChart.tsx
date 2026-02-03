@@ -143,12 +143,7 @@ export default function GanttChart() {
       let tasksData = response;
 
       // If response is an object with a 'tasks' property
-      if (
-        response &&
-        typeof response === "object" &&
-        !Array.isArray(response) &&
-        response.tasks
-      ) {
+      if (response && typeof response === "object" && !Array.isArray(response) && response.tasks) {
         tasksData = response.tasks;
         console.log("Extracted tasks from response.tasks");
       }
@@ -231,21 +226,14 @@ export default function GanttChart() {
           users = task.users;
         } else if (task.assigned_users && Array.isArray(task.assigned_users)) {
           users = task.assigned_users;
-        } else if (
-          task.assigned_user_ids &&
-          Array.isArray(task.assigned_user_ids)
-        ) {
+        } else if (task.assigned_user_ids && Array.isArray(task.assigned_user_ids)) {
           // If it's just an array of IDs, convert to objects
           users = task.assigned_user_ids.map((id) => ({ user_id: id }));
         }
 
-        const assignedUserIds = users
-          .map((u) => u?.user_id)
-          .filter((id) => id != null);
+        const assignedUserIds = users.map((u) => u?.user_id).filter((id) => id != null);
 
-        const isAssignedToMe = user?.id
-          ? assignedUserIds.includes(user.id)
-          : false;
+        const isAssignedToMe = user?.id ? assignedUserIds.includes(user.id) : false;
 
         console.log("Task transformation:", {
           taskId: task.task_id,
@@ -303,8 +291,7 @@ export default function GanttChart() {
         draggable: task.draggable,
       });
 
-      const originalTask =
-        task.originalTask || tasks.find((t) => t.id === task.id)?.originalTask;
+      const originalTask = task.originalTask || tasks.find((t) => t.id === task.id)?.originalTask;
 
       const updateData = {
         name: originalTask?.name || task.name,
@@ -330,8 +317,8 @@ export default function GanttChart() {
                   deadline: endDate,
                 },
               }
-            : t
-        )
+            : t,
+        ),
       );
 
       alert("✅ タスクの日付を更新しました");
@@ -346,18 +333,13 @@ export default function GanttChart() {
                 start: t.originalTask?.start_date
                   ? formatDateForGantt(t.originalTask.start_date)
                   : t.start,
-                end: t.originalTask?.deadline
-                  ? formatDateForGantt(t.originalTask.deadline)
-                  : t.end,
+                end: t.originalTask?.deadline ? formatDateForGantt(t.originalTask.deadline) : t.end,
               }
-            : t
-        )
+            : t,
+        ),
       );
 
-      alert(
-        "❌ タスクの更新に失敗しました\n" +
-          (err.message || "サーバーエラーが発生しました")
-      );
+      alert("❌ タスクの更新に失敗しました\n" + (err.message || "サーバーエラーが発生しました"));
     } finally {
       setIsUpdating(false);
     }
@@ -365,10 +347,7 @@ export default function GanttChart() {
 
   const handleProgressChange = async (task, progress) => {
     if (!task.draggable) {
-      console.warn(
-        "Attempted to change progress of non-assigned task:",
-        task.id
-      );
+      console.warn("Attempted to change progress of non-assigned task:", task.id);
       alert("このタスクは担当者ではないため変更できません");
       return;
     }
@@ -392,8 +371,7 @@ export default function GanttChart() {
         draggable: task.draggable,
       });
 
-      const originalTask =
-        task.originalTask || tasks.find((t) => t.id === task.id)?.originalTask;
+      const originalTask = task.originalTask || tasks.find((t) => t.id === task.id)?.originalTask;
 
       const updateData = {
         name: originalTask?.name || task.name,
@@ -418,8 +396,8 @@ export default function GanttChart() {
                   status: status,
                 },
               }
-            : t
-        )
+            : t,
+        ),
       );
 
       alert("✅ 進捗を更新しました");
@@ -443,14 +421,11 @@ export default function GanttChart() {
                 ...t,
                 progress: progressMap[originalStatus] || 0,
               }
-            : t
-        )
+            : t,
+        ),
       );
 
-      alert(
-        "❌ 進捗の更新に失敗しました\n" +
-          (err.message || "サーバーエラーが発生しました")
-      );
+      alert("❌ 進捗の更新に失敗しました\n" + (err.message || "サーバーエラーが発生しました"));
     } finally {
       setIsUpdating(false);
     }
@@ -555,10 +530,9 @@ export default function GanttChart() {
                   `担当者: ${isMine ? "自分" : "他人"}`,
                   `User ID: ${user?.id}`,
                   `Assigned Users: ${
-                    task.originalTask?.users
-                      ?.map((u) => `${u.name} (${u.user_id})`)
-                      .join(", ") || "None"
-                  }`
+                    task.originalTask?.users?.map((u) => `${u.name} (${u.user_id})`).join(", ") ||
+                    "None"
+                  }`,
                 );
                 if (!isMine) {
                   alert("このタスクは担当者ではないため変更できません");
@@ -577,14 +551,14 @@ export default function GanttChart() {
             <h1 className="text-2xl font-semibold">データがありません</h1>
             <h3 className="text-lg font-bold">タスクを追加してください。</h3>
 
-          <Link to="/task/new">
-            <button
-              className="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800
+            <Link to="/task/new">
+              <button
+                className="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800
               text-white font-bold text-lg rounded-xl transition cursor-pointer"
-            >
-              <FontAwesomeIcon icon={faPlusCircle} />
-              新規タスク
-            </button>
+              >
+                <FontAwesomeIcon icon={faPlusCircle} />
+                新規タスク
+              </button>
             </Link>
           </div>
         )}

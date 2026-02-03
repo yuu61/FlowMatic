@@ -11,8 +11,7 @@ function Layout() {
   const { user, setIsAuthorized } = useAuth();
   const [username, setUsername] = useState("");
 
-  const { projects, currentProject, handleProjectChange, loading } =
-    useProject();
+  const { projects, currentProject, handleProjectChange, loading } = useProject();
 
   // Close dropdown if clicked outside
   useEffect(() => {
@@ -34,12 +33,11 @@ function Layout() {
     };
   }, []);
 
-  if (loading)
-    return <div className="p-6 text-gray-600">Loading projects...</div>;
+  if (loading) return <div className="p-6 text-gray-600">Loading projects...</div>;
 
   const handleLogout = () => {
     if (!window.confirm("本当にログアウトしますか？")) return;
-    
+
     localStorage.clear();
     setIsAuthorized(false);
     window.location.href = "/login";

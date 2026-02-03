@@ -139,7 +139,7 @@ const ChatBackup = () => {
 
       const response = await api.post(
         `/api/projects/${currentProjectId}/chatrooms/${selectedChat}/messages/`,
-        messageData
+        messageData,
       );
 
       const newMessage = response.data;
@@ -174,8 +174,8 @@ const ChatBackup = () => {
         prev.map((chat) =>
           chat.chatroom_id === selectedChat
             ? { ...chat, lastMessage: messageData.content, timestamp: "今" }
-            : chat
-        )
+            : chat,
+        ),
       );
     } catch (error) {
       console.error("メッセージの送信に失敗しました:", error);
@@ -194,7 +194,7 @@ const ChatBackup = () => {
     setAllMessages((prev) => ({
       ...prev,
       [selectedChat]: prev[selectedChat].map((m) =>
-        m.id === editingId ? { ...m, text: editingText, edited: true } : m
+        m.id === editingId ? { ...m, text: editingText, edited: true } : m,
       ),
     }));
     setEditingId(null);
@@ -269,7 +269,7 @@ const ChatBackup = () => {
             page: nextPage,
             per_page: 50,
           },
-        }
+        },
       );
 
       const formattedMessages = response.data.messages.map((msg) => ({
@@ -315,19 +315,14 @@ const ChatBackup = () => {
       {/* チャット画面 (Full Width) */}
       <div className="w-full h-full grid relative">
         <div className="p-4 border-b bg-gray-100">
-          <h2 className="text-3xl font-bold">
-            {currentChat?.name || "チャット"}
-          </h2>
+          <h2 className="text-3xl font-bold">{currentChat?.name || "チャット"}</h2>
         </div>
 
         {/* Undo */}
         {lastDeleted && (
           <div className="p-3 bg-yellow-50 border-l-4 border-yellow-400 flex justify-between items-center">
             <p className="text-sm">メッセージを削除しました。</p>
-            <button
-              onClick={undoDelete}
-              className="px-3 py-1 bg-white border rounded"
-            >
+            <button onClick={undoDelete} className="px-3 py-1 bg-white border rounded">
               元に戻す
             </button>
           </div>
@@ -355,19 +350,17 @@ const ChatBackup = () => {
             currentMessages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex gap-3 ${
-                  msg.self ? "justify-end" : "justify-start"
-                }`}
+                className={`flex gap-3 ${msg.self ? "justify-end" : "justify-start"}`}
               >
                 {/* User icon - show on left for others */}
                 {!msg.self && (
                   <div className="flex-shrink-0">
                     <img
                       src={
-                        msg.profilePicture 
+                        msg.profilePicture
                           ? resolveImageUrl(msg.profilePicture)
                           : `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                              msg.userName || "User"
+                              msg.userName || "User",
                             )}&background=random`
                       }
                       alt={msg.userName}
@@ -376,11 +369,7 @@ const ChatBackup = () => {
                   </div>
                 )}
 
-                <div
-                  className={`relative max-w-lg group ${
-                    msg.self ? "ml-auto" : ""
-                  }`}
-                >
+                <div className={`relative max-w-lg group ${msg.self ? "ml-auto" : ""}`}>
                   {/* User name - show above message for others */}
                   {!msg.self && (
                     <div className="text-sm font-medium text-gray-700 mb-1 px-1">
@@ -396,11 +385,7 @@ const ChatBackup = () => {
             opacity-0 group-hover:opacity-100 transition
           `}
                   >
-                    {msg.self && (
-                      <IconButton onClick={() => startEditing(msg)}>
-                        ✏️
-                      </IconButton>
-                    )}
+                    {msg.self && <IconButton onClick={() => startEditing(msg)}>✏️</IconButton>}
                     <IconButton onClick={() => handleReply(msg)}>💬</IconButton>
                     <IconButton
                       onClick={() => {
@@ -410,11 +395,7 @@ const ChatBackup = () => {
                     >
                       😊
                     </IconButton>
-                    {msg.self && (
-                      <IconButton onClick={() => deleteMessage(msg.id)}>
-                        🗑
-                      </IconButton>
-                    )}
+                    {msg.self && <IconButton onClick={() => deleteMessage(msg.id)}>🗑</IconButton>}
                   </div>
 
                   {/* 吹き出し */}
@@ -485,10 +466,10 @@ const ChatBackup = () => {
                   <div className="flex-shrink-0">
                     <img
                       src={
-                        msg.profilePicture 
+                        msg.profilePicture
                           ? resolveImageUrl(msg.profilePicture)
                           : `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                              msg.userName || "User"
+                              msg.userName || "User",
                             )}&background=random`
                       }
                       alt="You"
@@ -504,10 +485,7 @@ const ChatBackup = () => {
 
         {/* リアクションピッカー */}
         {showReactionPicker && reactionPickerMessageId && (
-          <div
-            className="absolute bottom-20 left-4 z-50"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="absolute bottom-20 left-4 z-50" onClick={(e) => e.stopPropagation()}>
             <EmojiPicker
               onEmojiClick={(emoji) => {
                 setAllMessages((prev) => ({
@@ -518,13 +496,10 @@ const ChatBackup = () => {
                           ...m,
                           reactions: {
                             ...m.reactions,
-                            [emoji.emoji]: [
-                              ...(m.reactions[emoji.emoji] || []),
-                              user.id,
-                            ],
+                            [emoji.emoji]: [...(m.reactions[emoji.emoji] || []), user.id],
                           },
                         }
-                      : m
+                      : m,
                   ),
                 }));
 
@@ -562,10 +537,7 @@ const ChatBackup = () => {
           </button>
 
           {showEmojiPicker && (
-            <div
-              className="absolute bottom-16 left-4 z-50"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <div className="absolute bottom-16 left-4 z-50" onClick={(e) => e.stopPropagation()}>
               <EmojiPicker
                 onEmojiClick={(emoji) => {
                   setMessageInput((prev) => prev + emoji.emoji);

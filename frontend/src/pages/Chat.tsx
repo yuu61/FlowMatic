@@ -155,7 +155,7 @@ const Chat = () => {
       socket.send(
         JSON.stringify({
           type: "join_room",
-        })
+        }),
       );
     };
 
@@ -226,7 +226,7 @@ const Chat = () => {
       JSON.stringify({
         type: "message", // ✅ MUST be "message"
         content: messageInput, // ✅ backend expects this
-      })
+      }),
     );
 
     setMessageInput("");
@@ -244,7 +244,7 @@ const Chat = () => {
     setAllMessages((prev) => ({
       ...prev,
       [selectedChat]: prev[selectedChat].map((m) =>
-        m.id === editingId ? { ...m, text: editingText, edited: true } : m
+        m.id === editingId ? { ...m, text: editingText, edited: true } : m,
       ),
     }));
     setEditingId(null);
@@ -319,7 +319,7 @@ const Chat = () => {
             page: nextPage,
             per_page: 50,
           },
-        }
+        },
       );
 
       const formattedMessages = response.data.messages.map((msg) => ({
@@ -384,9 +384,7 @@ const Chat = () => {
                 <FontAwesomeIcon icon={faMessage} className="text-xl" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold">
-                  {currentChat?.name || "チャット"}
-                </h2>
+                <h2 className="text-2xl font-bold">{currentChat?.name || "チャット"}</h2>
                 <p className="text-blue-100 text-sm mt-1">
                   {currentMessages.length} 件のメッセージ
                 </p>
@@ -403,14 +401,9 @@ const Chat = () => {
           <div className="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border-y border-yellow-100 flex justify-between items-center shadow-sm flex-shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-                <FontAwesomeIcon
-                  icon={faTrash}
-                  className="text-yellow-600 text-sm"
-                />
+                <FontAwesomeIcon icon={faTrash} className="text-yellow-600 text-sm" />
               </div>
-              <p className="text-sm text-yellow-800">
-                メッセージを削除しました。
-              </p>
+              <p className="text-sm text-yellow-800">メッセージを削除しました。</p>
             </div>
             <button
               onClick={undoDelete}
@@ -440,10 +433,7 @@ const Chat = () => {
           {currentMessages.length === 0 && !isLoading ? (
             <div className="flex flex-col items-center justify-center h-full py-12">
               <div className="w-24 h-24 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mb-4">
-                <FontAwesomeIcon
-                  icon={faSmile}
-                  className="text-3xl text-blue-500"
-                />
+                <FontAwesomeIcon icon={faSmile} className="text-3xl text-blue-500" />
               </div>
               <h3 className="text-xl font-semibold text-gray-700 mb-2">
                 まだメッセージがありません
@@ -456,8 +446,7 @@ const Chat = () => {
             <div className="space-y-8">
               {currentMessages.map((msg, index) => {
                 // 日付の変更をチェック
-                const showDate =
-                  index === 0 || msg.date !== currentMessages[index - 1].date;
+                const showDate = index === 0 || msg.date !== currentMessages[index - 1].date;
 
                 return (
                   <div key={msg.id} className="group">
@@ -472,11 +461,7 @@ const Chat = () => {
                     )}
 
                     {/* メッセージ */}
-                    <div
-                      className={`flex gap-4 ${
-                        msg.self ? "justify-end" : "justify-start"
-                      }`}
-                    >
+                    <div className={`flex gap-4 ${msg.self ? "justify-end" : "justify-start"}`}>
                       {/* User icon - show on left for others */}
                       {!msg.self && (
                         <div className="flex-shrink-0">
@@ -486,7 +471,7 @@ const Chat = () => {
                                 msg.profilePicture
                                   ? resolveImageUrl(msg.profilePicture)
                                   : `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                      msg.userName || "User"
+                                      msg.userName || "User",
                                     )}&background=random`
                               }
                               alt={msg.userName}
@@ -497,11 +482,7 @@ const Chat = () => {
                         </div>
                       )}
 
-                      <div
-                        className={`relative max-w-xl ${
-                          msg.self ? "ml-auto" : ""
-                        }`}
-                      >
+                      <div className={`relative max-w-xl ${msg.self ? "ml-auto" : ""}`}>
                         {/* User name - show above message for others */}
                         {!msg.self && (
                           <div className="text-sm font-semibold text-gray-800 mb-1.5 px-1">
@@ -518,24 +499,15 @@ const Chat = () => {
                           `}
                         >
                           {msg.self && (
-                            <IconButton
-                              onClick={() => startEditing(msg)}
-                              tooltip="編集"
-                            >
+                            <IconButton onClick={() => startEditing(msg)} tooltip="編集">
                               <FontAwesomeIcon
                                 icon={faPenToSquare}
                                 className="w-4 h-4 text-gray-600"
                               />
                             </IconButton>
                           )}
-                          <IconButton
-                            onClick={() => handleReply(msg)}
-                            tooltip="返信"
-                          >
-                            <FontAwesomeIcon
-                              icon={faReply}
-                              className="w-4 h-4 text-gray-600"
-                            />
+                          <IconButton onClick={() => handleReply(msg)} tooltip="返信">
+                            <FontAwesomeIcon icon={faReply} className="w-4 h-4 text-gray-600" />
                           </IconButton>
                           <IconButton
                             onClick={() => {
@@ -544,20 +516,11 @@ const Chat = () => {
                             }}
                             tooltip="リアクション"
                           >
-                            <FontAwesomeIcon
-                              icon={faSmile}
-                              className="w-4 h-4 text-gray-600"
-                            />
+                            <FontAwesomeIcon icon={faSmile} className="w-4 h-4 text-gray-600" />
                           </IconButton>
                           {msg.self && (
-                            <IconButton
-                              onClick={() => deleteMessage(msg.id)}
-                              tooltip="削除"
-                            >
-                              <FontAwesomeIcon
-                                icon={faTrash}
-                                className="w-4 h-4 text-gray-600"
-                              />
+                            <IconButton onClick={() => deleteMessage(msg.id)} tooltip="削除">
+                              <FontAwesomeIcon icon={faTrash} className="w-4 h-4 text-gray-600" />
                             </IconButton>
                           )}
                         </div>
@@ -567,13 +530,8 @@ const Chat = () => {
                           {msg.replyTo && (
                             <div className="mb-2 p-3 bg-gradient-to-r from-gray-50 to-gray-100 border-l-4 border-blue-400 rounded-lg text-sm text-gray-600 shadow-sm">
                               <div className="flex items-center gap-2 mb-1">
-                                <FontAwesomeIcon
-                                  icon={faReply}
-                                  className="w-3 h-3 text-blue-500"
-                                />
-                                <span className="font-semibold text-xs text-gray-500">
-                                  引用
-                                </span>
+                                <FontAwesomeIcon icon={faReply} className="w-3 h-3 text-blue-500" />
+                                <span className="font-semibold text-xs text-gray-500">引用</span>
                               </div>
                               {msg.replyTo.text.slice(0, 50)}
                             </div>
@@ -632,10 +590,7 @@ const Chat = () => {
                             {msg.self && <span>{msg.time}</span>}
                             {msg.edited && (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded-full">
-                                <FontAwesomeIcon
-                                  icon={faEdit}
-                                  className="w-3 h-3"
-                                />
+                                <FontAwesomeIcon icon={faEdit} className="w-3 h-3" />
                                 編集済み
                               </span>
                             )}
@@ -644,19 +599,17 @@ const Chat = () => {
                           {/* Reactions */}
                           {Object.keys(msg.reactions || {}).length > 0 && (
                             <div className="flex gap-2 mt-2 flex-wrap">
-                              {Object.entries(msg.reactions || {}).map(
-                                ([emoji, users]) => (
-                                  <span
-                                    key={emoji}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-full text-sm shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 cursor-pointer"
-                                  >
-                                    <span className="text-base">{emoji}</span>
-                                    <span className="font-semibold text-gray-700">
-                                      {users.length}
-                                    </span>
+                              {Object.entries(msg.reactions || {}).map(([emoji, users]) => (
+                                <span
+                                  key={emoji}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-full text-sm shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 cursor-pointer"
+                                >
+                                  <span className="text-base">{emoji}</span>
+                                  <span className="font-semibold text-gray-700">
+                                    {users.length}
                                   </span>
-                                )
-                              )}
+                                </span>
+                              ))}
                             </div>
                           )}
                         </div>
@@ -671,7 +624,7 @@ const Chat = () => {
                                 msg.profilePicture
                                   ? resolveImageUrl(msg.profilePicture)
                                   : `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                      msg.userName || "User"
+                                      msg.userName || "User",
                                     )}&background=random`
                               }
                               alt="You"
@@ -708,13 +661,10 @@ const Chat = () => {
                           ...m,
                           reactions: {
                             ...m.reactions,
-                            [emoji.emoji]: [
-                              ...(m.reactions[emoji.emoji] || []),
-                              user.id,
-                            ],
+                            [emoji.emoji]: [...(m.reactions[emoji.emoji] || []), user.id],
                           },
                         }
-                      : m
+                      : m,
                   ),
                 }));
                 setShowReactionPicker(false);
@@ -728,12 +678,8 @@ const Chat = () => {
         {replyTo && (
           <div className="mx-6 mb-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-xl shadow-sm flex items-center gap-3 flex-shrink-0">
             <div className="flex-1">
-              <div className="text-xs font-semibold text-blue-700 mb-1">
-                返信中:
-              </div>
-              <div className="text-sm text-gray-800 line-clamp-1">
-                {replyTo.text}
-              </div>
+              <div className="text-xs font-semibold text-blue-700 mb-1">返信中:</div>
+              <div className="text-sm text-gray-800 line-clamp-1">{replyTo.text}</div>
             </div>
             <button
               onClick={() => setReplyTo(null)}
@@ -755,10 +701,7 @@ const Chat = () => {
               }}
               className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-gradient-to-r from-yellow-100 to-orange-100 hover:from-yellow-200 hover:to-orange-200 rounded-full mb-3 transition-all shadow"
             >
-              <FontAwesomeIcon
-                icon={faSmile}
-                className="text-xl text-yellow-600"
-              />
+              <FontAwesomeIcon icon={faSmile} className="text-xl text-yellow-600" />
             </button>
 
             {showEmojiPicker && (

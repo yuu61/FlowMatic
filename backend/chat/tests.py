@@ -106,7 +106,7 @@ class ChatWebSocketTests(TestCase):
 
         await communicator.send_json_to({"type": "join_room"})
         response = await communicator.receive_json_from()
-        self.assertEqual(response["type"], "connected")
+        self.assertEqual(response["type"], "history_complete")
 
         await communicator.disconnect()
 

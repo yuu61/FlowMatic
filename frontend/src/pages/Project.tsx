@@ -18,7 +18,7 @@ import {
   faChartLine,
   faPause,
   faClipboardCheck,
-  faVial
+  faVial,
 } from "@fortawesome/free-solid-svg-icons";
 import { Link } from "react-router-dom";
 import { useProject } from "../context/ProjectContext";
@@ -27,7 +27,7 @@ import { formatUTC } from "../utils/dateUtils";
 const Project = () => {
   const { projects } = useProject();
 
-  console.log(projects)
+  console.log(projects);
 
   // Status mapping from English to Japanese
   const statusMap = {
@@ -97,15 +97,16 @@ const Project = () => {
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-6">
-              プロジェクト一覧
-            </h1>
+            <h1 className="text-4xl font-bold text-gray-900 mb-6">プロジェクト一覧</h1>
             <p className="text-xl text-gray-600">チーム全体のプロジェクトを管理</p>
           </div>
 
           <Link to="/project/new">
             <button className="px-5 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-2xl font-bold rounded-xl cursor-pointer shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center gap-3 group">
-              <FontAwesomeIcon icon={faCirclePlus} className="group-hover:rotate-90 transition-transform duration-200" />
+              <FontAwesomeIcon
+                icon={faCirclePlus}
+                className="group-hover:rotate-90 transition-transform duration-200"
+              />
               新規プロジェクト
             </button>
           </Link>
@@ -117,9 +118,7 @@ const Project = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 font-bold text-2xl mb-1">総プロジェクト</p>
-                <h2 className="text-5xl font-bold text-gray-900 mt-2">
-                  {projects.length}
-                </h2>
+                <h2 className="text-5xl font-bold text-gray-900 mt-2">{projects.length}</h2>
               </div>
               <div className="bg-blue-50 p-4 rounded-xl group-hover:bg-blue-100 transition-colors">
                 <FontAwesomeIcon icon={faTasks} className="text-blue-600 text-2xl" />
@@ -132,7 +131,10 @@ const Project = () => {
               <div>
                 <p className="text-gray-500 font-bold text-2xl mb-1">進行中</p>
                 <h2 className="text-5xl font-bold text-blue-700 mt-2">
-                  {projects.filter((p) => p.status === "in_progress" || p.status === "進行中").length}
+                  {
+                    projects.filter((p) => p.status === "in_progress" || p.status === "進行中")
+                      .length
+                  }
                 </h2>
               </div>
               <div className="bg-blue-50 p-4 rounded-xl group-hover:bg-blue-100 transition-colors">
@@ -160,7 +162,10 @@ const Project = () => {
         <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
           <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800">
             <h2 className="text-3xl font-bold text-white flex items-center gap-4">
-              <FontAwesomeIcon icon={faChartLine} className="text-blue-600 bg-white p-2 rounded-2xl" />
+              <FontAwesomeIcon
+                icon={faChartLine}
+                className="text-blue-600 bg-white p-2 rounded-2xl"
+              />
               プロジェクト詳細
             </h2>
           </div>
@@ -170,7 +175,9 @@ const Project = () => {
             <table className="min-w-full">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="p-4 text-left font-semibold text-gray-700 text-lg">プロジェクト名</th>
+                  <th className="p-4 text-left font-semibold text-gray-700 text-lg">
+                    プロジェクト名
+                  </th>
                   <th className="p-4 text-left font-semibold text-gray-700 text-lg">進捗</th>
                   <th className="p-4 text-left font-semibold text-gray-700 text-lg">ステータス</th>
                   <th className="p-4 text-left font-semibold text-gray-700 text-lg">メンバー</th>
@@ -183,15 +190,13 @@ const Project = () => {
                   <tr
                     key={project.project_id}
                     className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
-                      index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'
+                      index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
                     }`}
                   >
                     <td className="p-4">
                       <div className="flex flex-col gap-4">
                         <p className="font-bold text-xl text-gray-900">{project.title}</p>
-                        <p className="text-lg text-gray-600 line-clamp-2">
-                          {project.description}
-                        </p>
+                        <p className="text-lg text-gray-600 line-clamp-2">{project.description}</p>
                       </div>
                     </td>
 
@@ -214,7 +219,9 @@ const Project = () => {
                     </td>
 
                     <td className="p-4">
-                      <span className={`inline-flex items-center gap-1 w-24 px-1.5 py-2 rounded-2xl text-lg font-semibold border ${getStatusColor(project.status)}`}>
+                      <span
+                        className={`inline-flex items-center gap-1 w-24 px-1.5 py-2 rounded-2xl text-lg font-semibold border ${getStatusColor(project.status)}`}
+                      >
                         <FontAwesomeIcon icon={getStatusIcon(project.status)} className="text-lg" />
                         {getStatusLabel(project.status)}
                       </span>
@@ -232,9 +239,7 @@ const Project = () => {
                     <td className="p-4">
                       <div className="flex items-center gap-2">
                         <FontAwesomeIcon icon={faCalendar} className="text-gray-400 text-lg" />
-                        <span className="text-lg text-gray-700">
-                          {formatUTC(project.deadline)}
-                        </span>
+                        <span className="text-lg text-gray-700">{formatUTC(project.deadline)}</span>
                       </div>
                     </td>
 
@@ -268,19 +273,17 @@ const Project = () => {
               >
                 {/* Header */}
                 <div className="flex justify-between items-start mb-4">
-                  <h3 className="font-bold text-xl text-gray-900 flex-1 pr-2">
-                    {project.title}
-                  </h3>
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold border shrink-0 ${getStatusColor(project.status)}`}>
+                  <h3 className="font-bold text-xl text-gray-900 flex-1 pr-2">{project.title}</h3>
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold border shrink-0 ${getStatusColor(project.status)}`}
+                  >
                     <FontAwesomeIcon icon={getStatusIcon(project.status)} className="text-sm" />
                     {getStatusLabel(project.status)}
                   </span>
                 </div>
 
                 {/* Description */}
-                <p className="text-lg text-gray-600 mb-4 line-clamp-2">
-                  {project.description}
-                </p>
+                <p className="text-lg text-gray-600 mb-4 line-clamp-2">{project.description}</p>
 
                 {/* Progress */}
                 <div className="mb-4">

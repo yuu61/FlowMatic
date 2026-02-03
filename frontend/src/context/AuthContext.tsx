@@ -6,72 +6,73 @@ import api from "../api";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [isAuthorized, setIsAuthorized] = useState(null);
+  const [user, setUser] = useState(null);
+  const [isAuthorized, setIsAuthorized] = useState(null);
 
-    useEffect(() => {
-        auth().catch(() => setIsAuthorized(false));
+  useEffect(() => {
+    auth().catch(() => setIsAuthorized(false));
 
-        if (localStorage.getItem(CURRENT_USER)) {
-            setUser(JSON.parse(localStorage.getItem(CURRENT_USER)))
-        }
-    }, []);
+    if (localStorage.getItem(CURRENT_USER)) {
+      setUser(JSON.parse(localStorage.getItem(CURRENT_USER)));
+    }
+  }, []);
 
-    const refreshToken = async () => {
-        const refreshToken = localStorage.getItem(REFRESH_TOKEN);
+  const refreshToken = async () => {
+    const refreshToken = localStorage.getItem(REFRESH_TOKEN);
 
-        try {
-            const res = await api.post("/api/token/refresh/", {
-                refresh: refreshToken,
-            });
+    try {
+      const res = await api.post("/api/token/refresh/", {
+        refresh: refreshToken,
+      });
 
-            if (res.status === 200) {
-                localStorage.setItem(ACCESS_TOKEN, res.data.access);
-                setIsAuthorized(true);
-            } 
-            // If the refresh token is expired
-            else {
-                setIsAuthorized(false);
-            }
-        } catch (error) {
-            console.log(error);
-            setIsAuthorized(false);
-        }
-    };
+      if (res.status === 200) {
+        localStorage.setItem(ACCESS_TOKEN, res.data.access);
+        setIsAuthorized(true);
+      }
+      // If the refresh token is expired
+      else {
+        setIsAuthorized(false);
+      }
+    } catch (error) {
+      console.log(error);
+      setIsAuthorized(false);
+    }
+  };
 
-    const auth = async () => {
-        const token = localStorage.getItem(ACCESS_TOKEN);
+  const auth = async () => {
+    const token = localStorage.getItem(ACCESS_TOKEN);
 
-        // If the user has not logged in yet
-        if (!token) {
-            setIsAuthorized(false);
-            return;
-        }
+    // If the user has not logged in yet
+    if (!token) {
+      setIsAuthorized(false);
+      return;
+    }
 
-        const decoded = jwtDecode(token);
-        const now = Date.now() / 1000;
+    const decoded = jwtDecode(token);
+    const now = Date.now() / 1000;
 
-        // If the access token expired
-        if (decoded.exp < now) {
-            await refreshToken();
-        } 
-        else {
-            setIsAuthorized(true);
-        }
-    };
+    // If the access token expired
+    if (decoded.exp < now) {
+      await refreshToken();
+    } else {
+      setIsAuthorized(true);
+    }
+  };
 
-    return (
-        <AuthContext.Provider value={{ 
-            isAuthorized, 
-            setIsAuthorized,
-            user,
-            setUser,
-            auth,
-            refreshToken
-        }}>
-            {children}
-        </AuthContext.Provider>
-    );
+  return (
+    <AuthContext.Provider
+      value={{
+        isAuthorized,
+        setIsAuthorized,
+        user,
+        setUser,
+        auth,
+        refreshToken,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 // Custom hook to use auth context
