@@ -1,23 +1,23 @@
-from django.db.models.signals import post_save, m2m_changed
+from django.contrib.auth import get_user_model
+from django.db.models.signals import post_save
 from django.dispatch import receiver
+
+from common.constants import NOTIFICATION_TYPE_TASK, TASK_STATUS_DONE
 
 from .context import get_current_user
 from .utils import (
-    create_notification,
-    create_task_notification,
-    create_project_notification,
     create_chat_notification,
     create_event_notification,
+    create_notification,
+    create_project_notification,
+    create_task_notification,
 )
 
 
 @receiver(post_save, sender="tasks.Task")
 def handle_task_save(sender, instance, created, **kwargs):
-    from django.contrib.auth import get_user_model
-
     current_user = get_current_user()
 
-    User = get_user_model()
     if current_user and current_user.is_anonymous:
         return
 
@@ -32,14 +32,14 @@ def handle_task_save(sender, instance, created, **kwargs):
         if old_status and old_status != instance.status:
             for member in project.members.all():
                 if member != current_user:
-                    if instance.status == "done":
+                    if instance.status == TASK_STATUS_DONE:
                         create_task_notification(member, instance, "completed")
                     else:
                         create_notification(
                             recipient=member,
                             title="タスク状態変更",
                             message=f"タスク『{instance.name}』の状態が変更されました",
-                            notification_type="task",
+                            notification_type=NOTIFICATION_TYPE_TASK,
                             related_object_id=str(instance.task_id),
                         )
 
@@ -61,7 +61,7 @@ def handle_task_comment_save(sender, instance, created, **kwargs):
                 recipient=assigned_user,
                 title="新しいコメント",
                 message=f"タスク『{task.name}』に新しいコメントが追加されました",
-                notification_type="task",
+                notification_type=NOTIFICATION_TYPE_TASK,
                 related_object_id=str(task.task_id),
             )
 
@@ -121,18 +121,16 @@ def handle_task_assigned_users_changed(
         return
 
     if action == "post_add" and not reverse:
-        from django.contrib.auth import get_user_model
-
         task = instance
-        User = get_user_model()
-        newly_assigned_users = User.objects.filter(pk__in=pk_set)
+        user_model = get_user_model()
+        newly_assigned_users = user_model.objects.filter(pk__in=pk_set)
         for user in newly_assigned_users:
             if user != current_user:
                 create_notification(
                     recipient=user,
                     title="タスク割り当て",
                     message=f"タスク『{task.name}』があなたに割り当てられました",
-                    notification_type="task",
+                    notification_type=NOTIFICATION_TYPE_TASK,
                     related_object_id=str(task.task_id),
                 )
 
@@ -144,10 +142,8 @@ def handle_project_members_changed(instance, action, reverse, model, pk_set, **k
 
     if action == "post_add" and not reverse:
         project = instance
-        from django.contrib.auth import get_user_model
-
-        User = get_user_model()
-        new_members = User.objects.filter(pk__in=pk_set)
+        user_model = get_user_model()
+        new_members = user_model.objects.filter(pk__in=pk_set)
         for member in new_members:
             if member != current_user:
                 create_project_notification(member, project, "member_added")

@@ -1,0 +1,157 @@
+import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+
+import api from "../api";
+import { APP_NAME } from "../constants";
+import { useAuth } from "../context/AuthContext";
+
+function Login() {
+  const { setIsAuthorized, setUser } = useAuth();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const res = await api.post("/api/auth/login/", { email, password });
+
+      setIsAuthorized(true);
+      setUser(res.data.user);
+
+      void navigate("/");
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: { message?: string } } };
+      alert(
+        axiosError.response?.data?.message || "メールアドレス、またはパスワードは正しくありません",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <div className="bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="bg-blue-600 py-6 text-white">
+            <h1 className="text-4xl font-bold mb-3 text-center">{APP_NAME}</h1>
+            <p className="text-lg text-center font-semibold">
+              プロジェクトを管理するにはログインしてください
+            </p>
+          </div>
+
+          <div className="p-10">
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              <div>
+                <label htmlFor="email" className="block text-md font-bold text-gray-700 mb-3">
+                  メールアドレス
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-4">
+                    <i className="fa-solid fa-envelope text-gray-400 text-lg"></i>
+                  </span>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    placeholder="example@gmail.com"
+                    className="pl-12 w-full px-4 py-2 rounded-lg
+                                        border border-gray-300"
+                    ref={inputRef}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-md font-bold text-gray-700 mb-3">
+                  パスワード
+                </label>
+                <div className="relative mb-3">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-4">
+                    <svg className="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0
+                                            01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                        clipRule="evenodd"
+                      ></path>
+                    </svg>
+                  </span>
+                  <input
+                    id="password"
+                    type={passwordVisible ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    placeholder="6文字以上"
+                    className="pl-12 w-full px-4 py-2 rounded-lg border border-gray-300"
+                  />
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                    <button
+                      type="button"
+                      className="text-gray-400 hover:text-gray-500 
+                                            cursor-pointer focus:outline-none"
+                      onClick={() => setPasswordVisible((prev) => !prev)}
+                    >
+                      {passwordVisible ? (
+                        <i className="fa-solid fa-eye-slash text-lg"></i>
+                      ) : (
+                        <i className="fa-solid fa-eye text-lg"></i>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <Link to="#" className="text-md font-bold text-blue-600 hover:underline">
+                  パスワードを忘れた？
+                </Link>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-blue-600 text-lg text-white py-2.5 px-4 
+                            rounded-lg font-extrabold hover:scale-105 cursor-pointer
+                            transition ease-in-out duration-300 shadow-md"
+              >
+                ログイン
+              </button>
+            </form>
+
+            <p className="mt-6 text-center text-md font-semibold">
+              アカウントをお持ちではありませんか？
+              <Link
+                to="/register"
+                className="ml-2 font-semibold text-blue-600
+                            underline hover:text-primary-500"
+              >
+                新規登録へ
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default Login;

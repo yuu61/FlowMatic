@@ -1,12 +1,12 @@
-import json
-from channels.testing import WebsocketCommunicator
 from channels.db import database_sync_to_async
-from django.test import TestCase
+from channels.testing import WebsocketCommunicator
 from django.contrib.auth import get_user_model
+from django.test import TestCase
+
 from rest_framework_simplejwt.tokens import AccessToken
 
-from notifications.models import Notification
 from backend.asgi import application as ws_application
+from notifications.models import Notification
 
 User = get_user_model()
 
@@ -63,7 +63,7 @@ class NotificationConsumerTest(TestCase):
         """認証済みユーザーは接続が許可されること"""
         user = await create_user("testuser", "test@example.com", "testpass123")
         token = AccessToken.for_user(user)
-        url = f"/ws/notifications/?token={str(token)}"
+        url = f"/ws/notifications/?token={token!s}"
         communicator = WebsocketCommunicator(ws_application, url)
         connected, _ = await communicator.connect()
         self.assertTrue(connected)
@@ -83,7 +83,7 @@ class NotificationConsumerTest(TestCase):
             )
 
         token = AccessToken.for_user(user)
-        url = f"/ws/notifications/?token={str(token)}"
+        url = f"/ws/notifications/?token={token!s}"
         communicator = WebsocketCommunicator(ws_application, url)
         connected, _ = await communicator.connect()
         self.assertTrue(connected)
@@ -111,7 +111,7 @@ class NotificationConsumerTest(TestCase):
         self.assertEqual(unread_count, 2)
 
         token = AccessToken.for_user(user)
-        url = f"/ws/notifications/?token={str(token)}"
+        url = f"/ws/notifications/?token={token!s}"
         communicator = WebsocketCommunicator(ws_application, url)
         connected, _ = await communicator.connect()
         self.assertTrue(connected)
@@ -130,19 +130,17 @@ class NotificationConsumerTest(TestCase):
         )
 
         token = AccessToken.for_user(user)
-        url = f"/ws/notifications/?token={str(token)}"
+        url = f"/ws/notifications/?token={token!s}"
         communicator = WebsocketCommunicator(ws_application, url)
         connected, _ = await communicator.connect()
         self.assertTrue(connected)
 
         await communicator.receive_json_from()
 
-        await communicator.send_json_to(
-            {
-                "type": "mark_read",
-                "notification_id": notification.id,
-            }
-        )
+        await communicator.send_json_to({
+            "type": "mark_read",
+            "notification_id": notification.id,
+        })
 
         response = await communicator.receive_json_from()
         self.assertEqual(response["type"], "unread_count")
@@ -163,18 +161,16 @@ class NotificationConsumerTest(TestCase):
             )
 
         token = AccessToken.for_user(user)
-        url = f"/ws/notifications/?token={str(token)}"
+        url = f"/ws/notifications/?token={token!s}"
         communicator = WebsocketCommunicator(ws_application, url)
         connected, _ = await communicator.connect()
         self.assertTrue(connected)
 
         await communicator.receive_json_from()
 
-        await communicator.send_json_to(
-            {
-                "type": "mark_all_read",
-            }
-        )
+        await communicator.send_json_to({
+            "type": "mark_all_read",
+        })
 
         response = await communicator.receive_json_from()
         self.assertEqual(response["type"], "unread_count")
@@ -189,7 +185,7 @@ class NotificationConsumerTest(TestCase):
         """接続が正常に切断されること"""
         user = await create_user("testuser", "test@example.com", "testpass123")
         token = AccessToken.for_user(user)
-        url = f"/ws/notifications/?token={str(token)}"
+        url = f"/ws/notifications/?token={token!s}"
         communicator = WebsocketCommunicator(ws_application, url)
         connected, _ = await communicator.connect()
         self.assertTrue(connected)

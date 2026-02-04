@@ -5,7 +5,16 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from projects.models import Project
+from common.constants import (
+    DEFAULT_PAGE_SIZE,
+    ERROR_CANNOT_EDIT_OTHERS,
+    ERROR_NOT_ASSIGNED_TO_PROJECT,
+    ERROR_NOT_CHATROOM_MEMBER,
+    ERROR_PAGINATION_INTEGERS,
+    ERROR_PAGINATION_POSITIVE,
+)
+from common.mixins import ProjectMembershipMixin
+
 from .models import ChatRoom, Message
 from .serializers import (
     ChatRoomCreateSerializer,
@@ -16,16 +25,8 @@ from .serializers import (
 )
 
 
-class ProjectChatRoomListCreateView(APIView):
+class ProjectChatRoomListCreateView(ProjectMembershipMixin, APIView):
     permission_classes = [IsAuthenticated]
-
-    def _get_project(self, project_id: str) -> Project:
-        project = get_object_or_404(
-            Project.objects.prefetch_related("members"), project_id=project_id
-        )
-        if not project.members.filter(pk=self.request.user.pk).exists():
-            raise PermissionDenied("You are not assigned to this project.")
-        return project
 
     def get(self, request, project_id: str) -> Response:
         project = self._get_project(project_id)
@@ -55,7 +56,7 @@ class ChatRoomMessageListCreateView(APIView):
         )
 
         if not chatroom.members.filter(pk=self.request.user.pk).exists():
-            raise PermissionDenied("You are not a member of this chat room.")
+            raise PermissionDenied(ERROR_NOT_CHATROOM_MEMBER)
 
         return chatroom
 
@@ -64,16 +65,16 @@ class ChatRoomMessageListCreateView(APIView):
 
         try:
             page = int(request.query_params.get("page", "1"))
-            per_page = int(request.query_params.get("per_page", "20"))
+            per_page = int(request.query_params.get("per_page", str(DEFAULT_PAGE_SIZE)))
         except ValueError:
             return Response(
-                {"detail": "page and per_page must be integers."},
+                {"detail": ERROR_PAGINATION_INTEGERS},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         if page < 1 or per_page < 1:
             return Response(
-                {"detail": "page and per_page must be greater than zero."},
+                {"detail": ERROR_PAGINATION_POSITIVE},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -85,13 +86,11 @@ class ChatRoomMessageListCreateView(APIView):
 
         serializer = MessageSerializer(messages, many=True)
 
-        return Response(
-            {
-                "messages": serializer.data,
-                "page": page,
-                "per_page": per_page,
-            }
-        )
+        return Response({
+            "messages": serializer.data,
+            "page": page,
+            "per_page": per_page,
+        })
 
     def post(self, request, project_id: str, chatroom_id: str) -> Response:
         chatroom = self._get_chatroom(project_id, chatroom_id)
@@ -117,7 +116,7 @@ class ChatRoomDeleteView(APIView):
             ChatRoom.objects.select_related("project"), chatroom_id=chatroom_id
         )
         if not chatroom.project.members.filter(pk=request.user.pk).exists():
-            raise PermissionDenied("You are not assigned to this project.")
+            raise PermissionDenied(ERROR_NOT_ASSIGNED_TO_PROJECT)
         chatroom.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -134,43 +133,7 @@ class ChatRoomMessageDetailView(APIView):
         )
 
         if message.user != self.request.user:
-            raise PermissionDenied("You can only edit or delete your own messages.")
-
-        return message
-
-    def put(
-        self, request, project_id: str, chatroom_id: str, message_id: str
-    ) -> Response:
-        message = self._get_message(project_id, chatroom_id, message_id)
-
-        serializer = MessageUpdateSerializer(message, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        updated_message = serializer.save()
-
-        response_serializer = MessageSerializer(updated_message)
-        return Response(response_serializer.data)
-
-    def delete(
-        self, request, project_id: str, chatroom_id: str, message_id: str
-    ) -> Response:
-        message = self._get_message(project_id, chatroom_id, message_id)
-        message.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class ChatRoomMessageDetailView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def _get_message(self, project_id: str, chatroom_id: str, message_id: str):
-        message = get_object_or_404(
-            Message,
-            message_id=message_id,
-            chatroom__chatroom_id=chatroom_id,
-            chatroom__project__project_id=project_id,
-        )
-
-        if message.user != self.request.user:
-            raise PermissionDenied("You can only edit or delete your own messages.")
+            raise PermissionDenied(ERROR_CANNOT_EDIT_OTHERS.format(resource="messages"))
 
         return message
 

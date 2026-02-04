@@ -1,22 +1,14 @@
-from rest_framework import serializers
-from .models import Task, TaskRelation, TaskRelationType, TaskComment
 from django.contrib.auth import get_user_model
+from rest_framework import serializers
+
+from common.serializers import BaseUserSerializer
+
+from .models import Task, TaskComment, TaskRelation, TaskRelationType
 
 User = get_user_model()
 
-
-class AssignedUserSerializer(serializers.ModelSerializer):
-    user_id = serializers.IntegerField(source="pk")
-    name = serializers.CharField(source="username")
-    email = serializers.EmailField()
-    profile_picture = serializers.SerializerMethodField()
-
-    class Meta:
-        model = User
-        fields = ["user_id", "name", "email", "profile_picture"]
-
-    def get_profile_picture(self, obj):
-        return obj.profile_picture.url if obj.profile_picture else None
+# Alias for backward compatibility
+AssignedUserSerializer = BaseUserSerializer
 
 
 class TaskRelationInputSerializer(serializers.Serializer):
@@ -66,9 +58,9 @@ class TaskCreateSerializer(serializers.ModelSerializer):
         unique_user_ids = []
         for uid in assigned_user_ids:
             if uid in seen:
-                raise serializers.ValidationError(
-                    {"assigned_user_ids": "Duplicate IDs are not allowed."}
-                )
+                raise serializers.ValidationError({
+                    "assigned_user_ids": "Duplicate IDs are not allowed."
+                })
             seen.add(uid)
             unique_user_ids.append(uid)
 
@@ -103,7 +95,7 @@ class TaskCreateSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        assigned_user_ids = validated_data.pop("assigned_user_ids", [])
+        validated_data.pop("assigned_user_ids", [])
         parent_tasks = validated_data.pop("parent_relations", [])
         users = validated_data.pop("member_objects", [])
         validated_data.pop("parent_tasks", None)
@@ -227,27 +219,31 @@ class TaskUpdateSerializer(serializers.ModelSerializer):
         unique_user_ids = []
         for uid in assigned_user_ids:
             if uid in seen:
-                raise serializers.ValidationError(
-                    {"assigned_user_ids": "Duplicate IDs are not allowed."}
-                )
+                raise serializers.ValidationError({
+                    "assigned_user_ids": "Duplicate IDs are not allowed."
+                })
             seen.add(uid)
             unique_user_ids.append(uid)
 
-        users = list(User.objects.filter(pk__in=unique_user_ids)) if unique_user_ids else []
+        users = (
+            list(User.objects.filter(pk__in=unique_user_ids)) if unique_user_ids else []
+        )
         if len(users) != len(unique_user_ids):
-            raise serializers.ValidationError(
-                {"assigned_user_ids": "Some assigned_user_ids are invalid."}
-            )
+            raise serializers.ValidationError({
+                "assigned_user_ids": "Some assigned_user_ids are invalid."
+            })
 
         # Ensure assigned users are all in the project
         if users:
             assigned_user_pks = set(
-                project.members.filter(pk__in=unique_user_ids).values_list("pk", flat=True)
+                project.members.filter(pk__in=unique_user_ids).values_list(
+                    "pk", flat=True
+                )
             )
             if assigned_user_pks != set(unique_user_ids):
-                raise serializers.ValidationError(
-                    {"assigned_user_ids": "All assigned users must be assigned to the project."}
-                )
+                raise serializers.ValidationError({
+                    "assigned_user_ids": "All assigned users must be assigned to the project."
+                })
 
         attrs["member_objects"] = users
         return attrs
@@ -263,6 +259,17 @@ class TaskUpdateSerializer(serializers.ModelSerializer):
 
 
 class TaskResponseSerializer(serializers.ModelSerializer):
+    """Serializer for Task responses.
+
+    Note: For optimal performance, use the following prefetch on the queryset
+    to avoid N+1 queries:
+        Task.objects.prefetch_related(
+            'assigned_users',
+            'parents__parent_task',
+            'comments__user'
+        )
+    """
+
     project_id = serializers.UUIDField(source="project.project_id", read_only=True)
     users = AssignedUserSerializer(many=True, source="assigned_users", read_only=True)
     parent_tasks = serializers.SerializerMethodField()
@@ -285,8 +292,18 @@ class TaskResponseSerializer(serializers.ModelSerializer):
         ]
 
     def get_parent_tasks(self, obj: Task) -> list[dict]:
-        # related_name='parents' is on the child_task side, so we can iterate over obj.parents.all()
-        relations = obj.parents.select_related("parent_task").all()
+        """Get parent task relations.
+
+        Uses prefetched data if available. For optimal performance,
+        ensure prefetch_related('parents__parent_task') is used on the queryset.
+        """
+        # Check if parents are already prefetched
+        if "parents" in getattr(obj, "_prefetched_objects_cache", {}):
+            # Use prefetched data - no additional queries
+            relations = obj.parents.all()
+        else:
+            # Fall back to select_related for single object serialization
+            relations = obj.parents.select_related("parent_task").all()
         return [
             {
                 "task_id": str(rel.parent_task.task_id),
@@ -296,5 +313,16 @@ class TaskResponseSerializer(serializers.ModelSerializer):
         ]
 
     def get_comments(self, obj: Task) -> list[dict]:
-        comments = obj.comments.select_related("user").all()
+        """Get task comments.
+
+        Uses prefetched data if available. For optimal performance,
+        ensure prefetch_related('comments__user') is used on the queryset.
+        """
+        # Check if comments are already prefetched
+        if "comments" in getattr(obj, "_prefetched_objects_cache", {}):
+            # Use prefetched data - no additional queries
+            comments = obj.comments.all()
+        else:
+            # Fall back to select_related for single object serialization
+            comments = obj.comments.select_related("user").all()
         return TaskCommentResponseSerializer(comments, many=True).data

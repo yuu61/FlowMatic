@@ -1,7 +1,8 @@
 import uuid
-from django.db import models
+
 from django.conf import settings
-from django.db.models import Q, CheckConstraint
+from django.db import models
+from django.db.models import CheckConstraint, Q
 from django.utils import timezone
 
 
@@ -97,7 +98,7 @@ class TaskRelation(models.Model):
         unique_together = ("parent_task", "child_task")
         constraints = [
             CheckConstraint(
-                check=Q(
+                condition=Q(
                     relation_type__in=[
                         TaskRelationType.FINISH_TO_START,
                         TaskRelationType.FINISH_TO_FINISH,

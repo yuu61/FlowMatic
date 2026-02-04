@@ -1,17 +1,23 @@
-from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
 from rest_framework import status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.views import APIView
+
+from common.constants import (
+    DEFAULT_PAGE_SIZE,
+    ERROR_NOT_ASSIGNED_TO_PROJECT,
+    ERROR_PAGINATION_INTEGERS,
+    ERROR_PAGINATION_POSITIVE,
+)
 
 from .models import Project
 from .serializers import (
-    ProjectResponseSerializer,
-    ProjectListSerializer,
     ProjectCreateSerializer,
-    MemberSerializer,
+    ProjectListSerializer,
+    ProjectResponseSerializer,
 )
 
 User = get_user_model()
@@ -31,7 +37,8 @@ class ProjectListCreateView(APIView):
                 Project.objects.prefetch_related("tasks").all().order_by("-start_date")
             )
         return (
-            Project.objects.prefetch_related("tasks")
+            Project.objects
+            .prefetch_related("tasks")
             .filter(members=user)
             .order_by("-start_date")
         )
@@ -41,28 +48,30 @@ class ProjectListCreateView(APIView):
             page = int(
                 request.query_params.get("p", request.query_params.get("page", "1"))
             )
-            per_page = int(request.query_params.get("per_page", "20"))
+            per_page = int(request.query_params.get("per_page", str(DEFAULT_PAGE_SIZE)))
         except ValueError:
             return Response(
-                {"detail": "p and per_page must be integers."},
+                {"detail": ERROR_PAGINATION_INTEGERS},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         if page < 1 or per_page < 1:
             return Response(
-                {"detail": "p and per_page must be greater than zero."},
+                {"detail": ERROR_PAGINATION_POSITIVE},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        queryset = self._get_queryset_for_user().order_by("-start_date")
+        queryset = self._get_queryset_for_user()
         start = (page - 1) * per_page
         end = start + per_page
         projects = list(queryset[start:end])
 
         serializer = ProjectListSerializer(projects, many=True)
-        return Response(
-            {"projects": serializer.data, "page": page, "per_page": per_page}
-        )
+        return Response({
+            "projects": serializer.data,
+            "page": page,
+            "per_page": per_page,
+        })
 
     def post(self, request, *args, **kwargs):
         serializer = ProjectCreateSerializer(
@@ -92,8 +101,7 @@ class ProjectDetailView(APIView):
     def _assert_assigned_or_staff(self, project: Project):
         user = self.request.user
         if not (project.members.filter(pk=user.pk).exists() or user.is_staff):
-            raise PermissionDenied("You are not assigned to this project.")
-            raise PermissionDenied("You are not assigned to this project.")
+            raise PermissionDenied(ERROR_NOT_ASSIGNED_TO_PROJECT)
 
     def get(self, request, project_id: str) -> Response:
         project = self._get_project(project_id)

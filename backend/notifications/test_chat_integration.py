@@ -1,20 +1,13 @@
-from django.test import TestCase
 from django.contrib.auth import get_user_model
-from rest_framework.test import APITestCase
 from rest_framework import status
-from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework.test import APITestCase
 
-from projects.models import Project
-from chat.models import ChatRoom, Message
+from chat.models import ChatRoom
 from notifications.models import Notification
+from notifications.test_utils import get_auth_headers
+from projects.models import Project
 
 User = get_user_model()
-
-
-def get_auth_headers(user):
-    """ユーザーのJWTトークンを使用して認証ヘッダーを生成"""
-    token = AccessToken.for_user(user)
-    return {"HTTP_AUTHORIZATION": f"Bearer {token}"}
 
 
 class ChatNotificationIntegrationTest(APITestCase):
@@ -36,8 +29,9 @@ class ChatNotificationIntegrationTest(APITestCase):
         )
 
         # テストプロジェクト作成
-        from django.utils import timezone
         from datetime import timedelta
+
+        from django.utils import timezone
 
         self.project = Project.objects.create(
             title="テストプロジェクト",
@@ -272,20 +266,33 @@ class ChatNotificationIntegrationTest(APITestCase):
             notification.message, "user2さんから新しいメッセージが届いています"
         )
 
-    def test_empty_message_notification(self):
-        """空メッセージでも通知が送信されること"""
+    def test_whitespace_only_message_rejected(self):
+        """空白のみのメッセージはバリデーションで拒否されること"""
         headers = get_auth_headers(self.user1)
-        message_data = {"content": ""}
 
-        # 空メッセージはバリデーションで弾かれる可能性があるため、最小のメッセージでテスト
-        message_data = {"content": " "}  # スペースのみ
+        # 空メッセージは拒否される
+        message_data = {"content": ""}
         response = self.client.post(
             self.messages_url, message_data, format="json", **headers
         )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-        # バリデーション通過しない場合もあるので、成功した場合のみ通知を確認
-        if response.status_code == status.HTTP_201_CREATED:
-            notifications = Notification.objects.filter(
-                notification_type="chat", title="新しいメッセージ"
-            )
-            self.assertEqual(notifications.count(), 2)  # user2とuser3に通知
+        # スペースのみのメッセージも拒否される
+        message_data = {"content": " "}
+        response = self.client.post(
+            self.messages_url, message_data, format="json", **headers
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # 複数スペース・タブ・改行のみのメッセージも拒否される
+        message_data = {"content": "   \t\n  "}
+        response = self.client.post(
+            self.messages_url, message_data, format="json", **headers
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # 通知が作成されていないことを確認
+        notifications = Notification.objects.filter(
+            notification_type="chat", title="新しいメッセージ"
+        )
+        self.assertEqual(notifications.count(), 0)

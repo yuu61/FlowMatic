@@ -6,9 +6,9 @@ class NotificationsConfig(AppConfig):
     name = "notifications"
 
     def ready(self):
-        import notifications.signals
-
         from django.db.models.signals import m2m_changed
+
+        import notifications.signals
         from projects.models import Project
 
         m2m_changed.connect(

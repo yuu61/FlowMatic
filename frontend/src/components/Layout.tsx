@@ -1,0 +1,151 @@
+import { useEffect, useRef, useState } from "react";
+import { NavLink, Outlet } from "react-router-dom";
+
+import { APP_NAME } from "../constants";
+import { useAuth } from "../context/AuthContext";
+import { useProject } from "../context/ProjectContext";
+
+function Layout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const { projects, currentProject, handleProjectChange, loading } = useProject();
+  const { logout } = useAuth();
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    if (!window.confirm("本当にログアウトしますか？")) return;
+
+    await logout();
+    window.location.href = "/login";
+  };
+
+  if (loading) return <div className="p-6 text-gray-600">Loading projects...</div>;
+
+  const menuItems = [
+    { to: "/", icon: "fas fa-tachometer-alt", label: "ダッシュボード" },
+    { to: "/project", icon: "fas fa-project-diagram", label: "プロジェクト" },
+    { to: "/task", icon: "fas fa-tasks", label: "タスク" },
+    { to: "/files", icon: "fas fa-file", label: "共有ファイル" },
+    {
+      to: "/gantt-chart",
+      icon: "fas fa-chart-gantt",
+      label: "タイムライン",
+    },
+    { to: "/chat", icon: "fas fa-comments", label: "チャット" },
+    { to: "/calendar", icon: "fas fa-calendar-alt", label: "カレンダー" },
+    { to: "/account", icon: "fas fa-gear", label: "アカウント設定" },
+  ];
+
+  return (
+    <div className="flex min-h-screen bg-gray-100 text-gray-900">
+      {/* Overlay for mobile */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-30 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              setSidebarOpen(false);
+            }
+          }}
+          role="button"
+          tabIndex={0}
+        ></div>
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`fixed top-0 left-0 h-full w-64 bg-gradient-to-r from-blue-600 via-blue-800 to-blue-900 text-white flex flex-col shadow-xl z-40 transform transition-transform duration-300 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        }`}
+      >
+        <div className="p-5 hidden md:block text-3xl font-extrabold tracking-wide border-b border-blue-400">
+          {APP_NAME}
+        </div>
+
+        <nav className="flex-1 overflow-y-auto p-4 space-y-4 md:space-y-3">
+          {menuItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.to === "/"}
+              onClick={() => setSidebarOpen(false)}
+              className={({ isActive }) =>
+                `flex items-center gap-6 p-3 rounded-lg text-xl font-bold transition-all duration-200 hover:bg-blue-500/50 hover:translate-x-1 ${
+                  isActive ? "bg-blue-400/60 shadow-inner" : "text-blue-100"
+                }`
+              }
+            >
+              <i className={`${item.icon} text-xl`}></i>
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
+        </nav>
+
+        <button
+          onClick={handleLogout}
+          className="m-4 mt-auto p-3 bg-red-600 hover:bg-red-700 text-white text-lg hover:cursor-pointer
+          font-semibold rounded-lg shadow-md transition-all duration-200"
+        >
+          <i className="fa-solid fa-right-from-bracket mr-2"></i>
+          ログアウト
+        </button>
+      </aside>
+
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col md:ml-64 transition-all duration-300">
+        {/* Mobile Header (Blue Bar) */}
+        <header className="bg-gradient-to-r from-blue-600 via-blue-800 to-blue-900 text-white flex items-center justify-between p-4 shadow-md md:hidden sticky top-0 z-40">
+          <div className="flex items-center gap-3">
+            <button
+              className="p-2 rounded hover:bg-blue-500/50 hover:cursor-pointer"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+            >
+              <i className="fas fa-bars text-2xl"></i>
+            </button>
+            <h1 className="text-2xl font-bold tracking-wide">{APP_NAME}</h1>
+          </div>
+          <div>
+            <i className="fa-solid fa-bell text-3xl mr-2"></i>
+          </div>
+        </header>
+        {projects && projects.length > 0 && (
+          <header className="bg-white shadow-sm flex items-center p-4 sticky top-14 md:top-0 z-30">
+            <span className="text-lg font-bold mr-4">現在のプロジェクト：</span>
+            <select
+              value={currentProject?.project_id || ""}
+              onChange={(e) => handleProjectChange(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-lg bg-white hover:cursor-pointer"
+            >
+              {projects.map((project) => (
+                <option key={project.project_id} value={project.project_id}>
+                  {project.title}
+                </option>
+              ))}
+            </select>
+          </header>
+        )}
+
+        {/* Page Content */}
+        <main className="flex-1 p-6 bg-gray-50">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+}
+
+export default Layout;

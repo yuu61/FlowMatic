@@ -1,18 +1,20 @@
-from django.test import TestCase
-from django.contrib.auth import get_user_model
-from django.utils import timezone
-from rest_framework.test import APITestCase
-from rest_framework import status
 from uuid import uuid4
 
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+from django.utils import timezone
+from rest_framework import status
+from rest_framework.test import APITestCase
+
 from projects.models import Project
+
 from .models import (
     Task,
-    TaskRelation,
     TaskAssignedUser,
-    TaskStatus,
     TaskPriority,
+    TaskRelation,
     TaskRelationType,
+    TaskStatus,
 )
 
 User = get_user_model()

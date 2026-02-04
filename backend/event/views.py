@@ -1,16 +1,25 @@
+from datetime import datetime
+
 from django.shortcuts import get_object_or_404
 from rest_framework import status
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from projects.models import Project
+from common.constants import (
+    DEFAULT_PAGE_SIZE,
+    ERROR_NOT_ASSIGNED_TO_PROJECT,
+    ERROR_PAGINATION_INTEGERS,
+    ERROR_PAGINATION_POSITIVE,
+)
+from common.mixins import ProjectMembershipMixin
+
 from .models import Event
 from .serializers import EventCreateSerializer, EventResponseSerializer
 
 
-class ProjectEventListCreateView(APIView):
+class ProjectEventListCreateView(ProjectMembershipMixin, APIView):
     """
     GET /api/projects/{project_id}/events - プロジェクトのイベント一覧を取得
     POST /api/projects/{project_id}/events - 新しいeventを作成する
@@ -18,28 +27,17 @@ class ProjectEventListCreateView(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def _get_project(self, project_id: str) -> Project:
-        project = get_object_or_404(
-            Project.objects.prefetch_related("members"), project_id=project_id
-        )
-        if not project.members.filter(pk=self.request.user.pk).exists():
-            raise PermissionDenied("You are not assigned to this project.")
-        return project
-
     def get(self, request, project_id: str) -> Response:
         project = self._get_project(project_id)
         try:
             page = int(request.query_params.get("p", "1"))
-            per_page = int(request.query_params.get("per_page", "20"))
-        except ValueError:
-            return Response(
-                {"detail": "p and per_page must be integers."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            per_page = int(request.query_params.get("per_page", str(DEFAULT_PAGE_SIZE)))
+        except ValueError as err:
+            raise ValidationError(ERROR_PAGINATION_INTEGERS) from err
 
         if page < 1 or per_page < 1:
             return Response(
-                {"detail": "p and per_page must be greater than zero."},
+                {"detail": ERROR_PAGINATION_POSITIVE},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -51,27 +49,21 @@ class ProjectEventListCreateView(APIView):
 
         if start_date:
             try:
-                from datetime import datetime
-
                 start_dt = datetime.fromisoformat(start_date.replace("Z", "+00:00"))
                 events_qs = events_qs.filter(start_date__gte=start_dt)
-            except ValueError:
-                return Response(
-                    {"detail": "start_date must be a valid ISO 8601 datetime."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+            except ValueError as err:
+                raise ValidationError(
+                    "start_date must be a valid ISO 8601 datetime."
+                ) from err
 
         if end_date:
             try:
-                from datetime import datetime
-
                 end_dt = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
                 events_qs = events_qs.filter(end_date__lte=end_dt)
-            except ValueError:
-                return Response(
-                    {"detail": "end_date must be a valid ISO 8601 datetime."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+            except ValueError as err:
+                raise ValidationError(
+                    "end_date must be a valid ISO 8601 datetime."
+                ) from err
 
         start = (page - 1) * per_page
         end = start + per_page
@@ -110,7 +102,7 @@ class EventDetailView(APIView):
             project__project_id=project_id,
         )
         if not event.project.members.filter(pk=self.request.user.pk).exists():
-            raise PermissionDenied("You are not assigned to this project.")
+            raise PermissionDenied(ERROR_NOT_ASSIGNED_TO_PROJECT)
         return event
 
     def get(self, request, project_id: str, event_id: str) -> Response:
@@ -128,7 +120,7 @@ class EventDetailView(APIView):
         serializer.is_valid(raise_exception=True)
 
         # Update the event using the serializer's update method
-        updated_event = serializer.save()
+        serializer.save()
 
         response_serializer = EventResponseSerializer(event)
         return Response(response_serializer.data)

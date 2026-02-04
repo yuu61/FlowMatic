@@ -1,15 +1,22 @@
 import json
-from channels.generic.websocket import AsyncWebsocketConsumer
+
 from channels.db import database_sync_to_async
+from channels.generic.websocket import AsyncWebsocketConsumer
 from django.contrib.auth import get_user_model
 
-from .models import ChatRoom, ChatRoomUser, Message
+from common.constants import ERROR_INVALID_JSON
+
+from .models import ChatRoom, Message
 
 User = get_user_model()
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        if self.scope["user"].is_anonymous:
+            await self.close()
+            return
+
         self.project_id = self.scope["url_route"]["kwargs"]["project_id"]
         self.chatroom_id = self.scope["url_route"]["kwargs"]["chatroom_id"]
         self.room_group_name = f"chat_{self.chatroom_id}"
@@ -17,10 +24,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+        if hasattr(self, "room_group_name"):
+            await self.channel_layer.group_discard(
+                self.room_group_name, self.channel_name
+            )
 
     async def receive(self, text_data):
-        text_data_json = json.loads(text_data)
+        try:
+            text_data_json = json.loads(text_data)
+        except json.JSONDecodeError:
+            await self.send(
+                text_data=json.dumps({
+                    "type": "error",
+                    "message": ERROR_INVALID_JSON,
+                })
+            )
+            return
+
         message_type = text_data_json.get("type", "message")
 
         if message_type == "join_room":
@@ -44,23 +64,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         for message in messages:
             await self.send(
-                text_data=json.dumps(
-                    {
-                        "type": "message",
-                        "message": {
-                            "message_id": str(message.message_id),
-                            "chatroom_id": str(message.chatroom.chatroom_id),
-                            "user_id": message.user.pk,
-                            "name": message.user.username,
-                            "email": message.user.email,
-                            "profile_picture": message.user.profile_picture.url
-                            if message.user.profile_picture
-                            else None,
-                            "content": message.content,
-                            "timestamp": message.timestamp.isoformat(),
-                        },
-                    }
-                )
+                text_data=json.dumps({
+                    "type": "message",
+                    "message": self._format_message_dict(message),
+                })
             )
 
         await self.send(text_data=json.dumps({"type": "history_complete"}))
@@ -71,24 +78,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if not content or not content.strip():
             return
 
-        message = await self.save_message(content)
+        try:
+            message = await self.save_message(content)
+        except PermissionError as err:
+            await self.send(
+                text_data=json.dumps({"type": "error", "message": str(err)})
+            )
+            return
 
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 "type": "chat_message",
-                "message": {
-                    "message_id": str(message.message_id),
-                    "chatroom_id": str(message.chatroom.chatroom_id),
-                    "user_id": message.user.pk,
-                    "name": message.user.username,
-                    "email": message.user.email,
-                    "profile_picture": message.user.profile_picture.url
-                    if message.user.profile_picture
-                    else None,
-                    "content": message.content,
-                    "timestamp": message.timestamp.isoformat(),
-                },
+                "message": self._format_message_dict(message),
             },
         )
 
@@ -111,14 +113,27 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def user_typing(self, event):
         await self.send(
-            text_data=json.dumps(
-                {
-                    "type": "typing",
-                    "user_id": event["user_id"],
-                    "is_typing": event["is_typing"],
-                }
-            )
+            text_data=json.dumps({
+                "type": "typing",
+                "user_id": event["user_id"],
+                "is_typing": event["is_typing"],
+            })
         )
+
+    def _format_message_dict(self, message):
+        """Format a message object into a dictionary for JSON serialization."""
+        return {
+            "message_id": str(message.message_id),
+            "chatroom_id": str(message.chatroom.chatroom_id),
+            "user_id": message.user.pk,
+            "name": message.user.username,
+            "email": message.user.email,
+            "profile_picture": message.user.profile_picture.url
+            if message.user.profile_picture
+            else None,
+            "content": message.content,
+            "timestamp": message.timestamp.isoformat(),
+        }
 
     @database_sync_to_async
     def get_chatroom(self):
@@ -140,9 +155,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 chatroom_id=self.chatroom_id, project__project_id=self.project_id
             )
 
+            if not chatroom.members.filter(pk=self.scope["user"].pk).exists():
+                raise PermissionError("User is not a member of this chatroom")
+
             message = Message.objects.create(
                 chatroom=chatroom, user=self.scope["user"], content=content
             )
+        except ChatRoom.DoesNotExist as err:
+            raise ValueError("Invalid chatroom") from err
+        else:
             return message
-        except ChatRoom.DoesNotExist:
-            raise ValueError("Invalid chatroom")

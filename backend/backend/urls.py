@@ -1,24 +1,28 @@
-from django.contrib import admin
-from django.urls import path, include
-from api.views import *
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib import admin
+from django.urls import include, path
+
+from api.auth_views import (
+    AuthStatusView,
+    CookieLoginView,
+    CookieLogoutView,
+    CookieRefreshView,
+    CSRFTokenView,
+)
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-
+    path("admin/", admin.site.urls),
     # App-level routes
     path("api/", include("api.urls")),
-
     path("api/", include("event.urls")),
-
     path("api/", include("files.urls")),
-
-    # JWT authentication
-    path("api/token/", EmailLoginView.as_view(), name="get_token"),
-    path("api/token/refresh/", TokenRefreshView.as_view(), name="refresh"),
-
+    # Cookie-based JWT authentication
+    path("api/auth/login/", CookieLoginView.as_view(), name="auth-login"),
+    path("api/auth/refresh/", CookieRefreshView.as_view(), name="auth-refresh"),
+    path("api/auth/logout/", CookieLogoutView.as_view(), name="auth-logout"),
+    path("api/auth/status/", AuthStatusView.as_view(), name="auth-status"),
+    path("api/auth/csrf/", CSRFTokenView.as_view(), name="auth-csrf"),
     path("api-auth/", include("rest_framework.urls")),
 ]
 

@@ -1,9 +1,13 @@
-from django.urls import path
-from .views import *
-from django.urls import path, include
+from django.urls import include, path
+
+from .views import (
+    ChangePasswordView,
+    CreateUserView,
+    UserListView,
+    UserUpdateView,
+)
 
 urlpatterns = [
-    # App-level routes
     path("", include("projects.urls")),
     path("", include("tasks.urls")),
     path("", include("chat.urls")),

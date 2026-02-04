@@ -1,5 +1,5 @@
-from django.db import models
 from django.contrib.auth import get_user_model
+from django.db import models
 
 User = get_user_model()
 
@@ -25,6 +25,12 @@ class Notification(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(
+                fields=["recipient", "is_read", "-created_at"],
+                name="notif_recip_read_created_idx",
+            ),
+        ]
 
     def __str__(self):
         recipient_str = str(self.recipient)

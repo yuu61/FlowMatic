@@ -1,0 +1,125 @@
+[tool.ruff]
+# Ruff 0.14.14対応
+required-version = ">=0.14.0"
+target-version = "py312"
+line-length = 88
+preview = true  # 新しいルール（RUF067, RUF068など）を有効化
+
+# 除外ディレクトリ
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "migrations",
+    "staticfiles",
+    "media",
+]
+
+[tool.ruff.lint]
+select = [
+    # 基本ルール
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes
+    "I",      # isort
+    # コード品質
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "C90",    # mccabe (cyclomatic complexity)
+    "UP",     # pyupgrade
+    "SIM",    # flake8-simplify
+    "RUF",    # Ruff-specific rules
+    # Django
+    "DJ",     # flake8-django
+    # セキュリティ
+    "S",      # flake8-bandit (security)
+    # 命名
+    "A",      # flake8-builtins (shadowing)
+    "N",      # pep8-naming
+    # コードスメル
+    "ARG",    # flake8-unused-arguments
+    "ERA",    # eradicate (commented-out code)
+    "PIE",    # flake8-pie
+    "PL",     # Pylint
+    "RET",    # flake8-return
+    "RSE",    # flake8-raise
+    "TRY",    # tryceratops (exception handling)
+    # パフォーマンス
+    "PERF",   # Perflint
+    # デバッグ・print
+    "T10",    # flake8-debugger
+    "T20",    # flake8-print
+    # その他
+    "PTH",    # flake8-use-pathlib
+    "TID",    # flake8-tidy-imports
+    "DTZ",    # flake8-datetimez
+    "ICN",    # flake8-import-conventions
+    "LOG",    # flake8-logging
+    "G",      # flake8-logging-format
+]
+ignore = [
+    # フォーマッター管理
+    "E501",   # line too long (ruff formatが処理)
+    # Django/DRF固有の許容
+    "B008",   # function calls in defaults (DRFで一般的: Depends(), Query())
+    "RUF012", # mutable class attributes (Django Meta classでは誤検知)
+    # 日本語対応
+    "RUF002", # ambiguous unicode in docstrings
+    "RUF003", # ambiguous unicode in comments
+    # Pylint（過剰な警告を抑制）
+    "PLR0904", # too many public methods (テストクラスで許容)
+    "PLR0913", # too many arguments
+    "PLR2004", # magic value comparison
+    "PLR6301", # method could be static (Django/DRFオーバーライドで誤検知)
+    "PLW2901", # loop variable overwritten
+    "PLC0415", # import outside top-level (Django lazy importで必要)
+    # tryceratops（Djangoでは冗長）
+    "TRY003", # long exception message
+    "TRY400", # logging.exception in except
+    # セキュリティ（テストや意図的な使用）
+    "S101",   # assert used (テストで使用)
+    "S105",   # hardcoded password (設定ファイルで検出)
+    "S106",   # hardcoded password argument
+    # Django特有
+    "DJ001",  # null=True on CharField (意図的な設計の場合あり)
+    "DJ008",  # model __str__ method (一部モデルでは不要)
+    "DJ012",  # model ordering (意図的な構成)
+    # その他
+    "E402",   # module level import not at top (Django ASGI)
+    "ARG001", # unused function argument (Djangoシグナルで必要)
+    "ARG002", # unused method argument (DRFビューで必要)
+    "RET504", # unnecessary variable before return (可読性のため許容)
+]
+
+# 自動修正を許可するルール
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.pylint]
+max-args = 8
+max-branches = 12
+max-returns = 6
+max-statements = 50
+
+[tool.ruff.lint.isort]
+known-first-party = ["api", "backend", "chat", "event", "files", "memos", "notifications", "projects", "tasks"]
+section-order = ["future", "standard-library", "django", "third-party", "first-party", "local-folder"]
+
+[tool.ruff.lint.isort.sections]
+django = ["django", "rest_framework", "channels"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true      # docstring内のコード例を整形
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "backend.settings"
+python_files = ["test_*.py", "*_test.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"

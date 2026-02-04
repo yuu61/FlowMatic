@@ -2,13 +2,20 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from projects.models import Project
-from .models import ChatRoom, ChatRoomUser, Message
 
+from .models import ChatRoom, ChatRoomUser, Message
 
 User = get_user_model()
 
 
 class ChatRoomResponseSerializer(serializers.ModelSerializer):
+    """Serializer for ChatRoom responses.
+
+    Note: For optimal performance, use prefetch_related('members') on the queryset
+    when serializing multiple chat rooms to avoid N+1 queries.
+    Example: ChatRoom.objects.prefetch_related('members')
+    """
+
     project_id = serializers.UUIDField(source="project.project_id", read_only=True)
     members = serializers.SerializerMethodField()
 
@@ -17,6 +24,15 @@ class ChatRoomResponseSerializer(serializers.ModelSerializer):
         fields = ("chatroom_id", "project_id", "name", "members")
 
     def get_members(self, obj: ChatRoom) -> list[dict]:
+        """Get chat room members.
+
+        Uses prefetched data if available to avoid N+1 queries.
+        When iterating over members, ensure prefetch_related('members') is used
+        on the queryset for optimal performance with multiple chat rooms.
+        """
+        # Access prefetched members if available, otherwise this will query
+        # Note: Callers should use prefetch_related('members') on the queryset
+        members = obj.members.all()
         return [
             {
                 "user_id": member.pk,
@@ -26,7 +42,7 @@ class ChatRoomResponseSerializer(serializers.ModelSerializer):
                 if member.profile_picture
                 else None,
             }
-            for member in obj.members.all()
+            for member in members
         ]
 
 
@@ -82,9 +98,9 @@ class ChatRoomCreateSerializer(serializers.Serializer):
         name = validated_data.pop("name", "")
 
         chatroom = ChatRoom.objects.create(project=project, name=name)
-        ChatRoomUser.objects.bulk_create(
-            [ChatRoomUser(chatroom=chatroom, user=member) for member in members]
-        )
+        ChatRoomUser.objects.bulk_create([
+            ChatRoomUser(chatroom=chatroom, user=member) for member in members
+        ])
         chatroom.refresh_from_db()
         return chatroom
 
@@ -114,11 +130,15 @@ class MessageSerializer(serializers.ModelSerializer):
 
 
 class MessageCreateSerializer(serializers.ModelSerializer):
-    user_id = serializers.IntegerField(write_only=True, required=False)
+    """Serializer for creating chat messages.
+
+    Security Note: Always uses the authenticated user (request.user) as the
+    message author to prevent user impersonation attacks.
+    """
 
     class Meta:
         model = Message
-        fields = ["content", "user_id"]
+        fields = ["content"]
 
     default_error_messages = {
         "not_in_chatroom": "The user is not a member of this chat room.",
@@ -134,20 +154,8 @@ class MessageCreateSerializer(serializers.ModelSerializer):
             self.fail("blank_content")
         attrs["content"] = content
 
-        # Determine which user ID to use
-        user_id = attrs.pop("user_id", None)
-        if user_id:
-            # Use provided user_id (for compatibility)
-            try:
-                from django.contrib.auth import get_user_model
-
-                User = get_user_model()
-                user = User.objects.get(pk=user_id)
-            except User.DoesNotExist:
-                raise serializers.ValidationError({"user_id": "Invalid user ID."})
-        else:
-            # Use authenticated user
-            user = request.user
+        # Security: Always use authenticated user to prevent impersonation
+        user = request.user
 
         is_member = chatroom.members.filter(pk=user.pk).exists()
         if not is_member:
@@ -161,10 +169,11 @@ class MessageCreateSerializer(serializers.ModelSerializer):
         message = Message.objects.create(**validated_data)
         return message
 
+
 class MessageUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
-        fields = ["content"] # 編集できるのはメッセージ内容のみ
+        fields = ["content"]  # 編集できるのはメッセージ内容のみ
 
     def validate_content(self, value):
         if not value.strip():

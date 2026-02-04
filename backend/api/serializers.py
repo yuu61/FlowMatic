@@ -1,18 +1,27 @@
-from django.contrib.auth import get_user_model, authenticate, password_validation
+from django.contrib.auth import authenticate, get_user_model, password_validation
 from rest_framework import serializers
 
 User = get_user_model()
+
 
 class UserSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
-        fields = ["id", "username", "email", "password", "confirm_password", "profile_picture", "date_joined"]
+        fields = [
+            "id",
+            "username",
+            "email",
+            "password",
+            "confirm_password",
+            "profile_picture",
+            "date_joined",
+        ]
         extra_kwargs = {
             "password": {"write_only": True},
             "email": {"required": True},
-            "profile_picture": {"required": False},  # 👈 optional
+            "profile_picture": {"required": False},
             "date_joined": {"read_only": True},
         }
 
@@ -23,7 +32,9 @@ class UserSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         if data["password"] != data["confirm_password"]:
-            raise serializers.ValidationError({"confirm_password": "Passwords do not match."})
+            raise serializers.ValidationError({
+                "confirm_password": "Passwords do not match."
+            })
         return data
 
     def create(self, validated_data):
@@ -35,7 +46,8 @@ class UserSerializer(serializers.ModelSerializer):
             profile_picture=validated_data.get("profile_picture"),  # handles optional
         )
         return user
-    
+
+
 class UserReadSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -46,7 +58,8 @@ class UserReadSerializer(serializers.ModelSerializer):
             "profile_picture",
             "date_joined",
         ]
-    
+
+
 class UserUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -60,7 +73,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         # Only update fields that are actually in validated_data
         if "username" in validated_data:
             instance.username = validated_data["username"]
-        
+
         if "profile_picture" in validated_data:
             profile_picture = validated_data["profile_picture"]
             if profile_picture is None:
@@ -73,10 +86,11 @@ class UserUpdateSerializer(serializers.ModelSerializer):
                 if instance.profile_picture:
                     instance.profile_picture.delete(save=False)
                 instance.profile_picture = profile_picture
-        
+
         instance.save()
         return instance
-    
+
+
 class ChangePasswordSerializer(serializers.Serializer):
     current_password = serializers.CharField()
     new_password = serializers.CharField()
@@ -100,7 +114,7 @@ class ChangePasswordSerializer(serializers.Serializer):
         try:
             password_validation.validate_password(attrs["new_password"], user=user)
         except serializers.ValidationError as e:
-            raise serializers.ValidationError({"new_password": list(e.messages)})
+            raise serializers.ValidationError({"new_password": list(e.messages)}) from e
 
         return attrs
 
@@ -109,7 +123,8 @@ class ChangePasswordSerializer(serializers.Serializer):
         user.set_password(self.validated_data["new_password"])
         user.save()
         return user
-    
+
+
 class EmailLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
@@ -126,9 +141,7 @@ class EmailLoginSerializer(serializers.Serializer):
             })
 
         if not user.is_active:
-            raise serializers.ValidationError({
-                "message": "User account is disabled."
-            })
+            raise serializers.ValidationError({"message": "User account is disabled."})
 
         data["user"] = user
         return data

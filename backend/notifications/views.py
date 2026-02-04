@@ -1,6 +1,7 @@
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
 from .models import Notification
 from .serializers import NotificationSerializer
 
@@ -16,9 +17,11 @@ class NotificationListView(generics.ListAPIView):
 class NotificationMarkReadView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated]
 
-    def patch(self, request, id):
+    def patch(self, request, notification_id):
         try:
-            notification = Notification.objects.get(id=id, recipient=request.user)
+            notification = Notification.objects.get(
+                id=notification_id, recipient=request.user
+            )
             notification.is_read = True
             notification.save()
             serializer = NotificationSerializer(notification)

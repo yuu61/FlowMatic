@@ -1,8 +1,8 @@
-# projects/models.py
 import uuid
-from django.db import models
+
 from django.conf import settings
-from django.db.models import Q, CheckConstraint, F
+from django.db import models
+from django.db.models import CheckConstraint, F, Q
 
 
 class Project(models.Model):
@@ -21,9 +21,6 @@ class Project(models.Model):
     status = models.CharField(max_length=20, choices=status_choices, default="planning")
 
     members = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True)
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
     def __str__(self):
         return self.title

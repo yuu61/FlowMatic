@@ -1,19 +1,12 @@
-from django.test import TestCase
 from django.contrib.auth import get_user_model
-from rest_framework.test import APITestCase
 from rest_framework import status
-from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework.test import APITestCase
 
-from projects.models import Project
 from notifications.models import Notification
+from notifications.test_utils import get_auth_headers
+from projects.models import Project
 
 User = get_user_model()
-
-
-def get_auth_headers(user):
-    """ユーザーのJWTトークンを使用して認証ヘッダーを生成"""
-    token = AccessToken.for_user(user)
-    return {"HTTP_AUTHORIZATION": f"Bearer {token}"}
 
 
 class ProjectsNotificationIntegrationTest(APITestCase):
@@ -79,8 +72,9 @@ class ProjectsNotificationIntegrationTest(APITestCase):
     def test_project_update_sends_notifications_to_all_members_except_updater(self):
         """プロジェクト更新時、更新者以外の全メンバーに通知が送られること"""
         # プロジェクトを作成
-        from django.utils import timezone
         from datetime import timedelta
+
+        from django.utils import timezone
 
         project = Project.objects.create(
             title="更新対象プロジェクト",
@@ -120,8 +114,9 @@ class ProjectsNotificationIntegrationTest(APITestCase):
     def test_project_put_update_sends_notifications(self):
         """PUTリクエストによるプロジェクト更新でも通知が送られること"""
         # プロジェクトを作成
-        from django.utils import timezone
         from datetime import timedelta
+
+        from django.utils import timezone
 
         project = Project.objects.create(
             title="PUT更新プロジェクト",
@@ -190,8 +185,9 @@ class ProjectsNotificationIntegrationTest(APITestCase):
     def test_project_update_notification_uses_japanese_language(self):
         """プロジェクト更新通知が日本語で表示されること"""
         # プロジェクトを作成
-        from django.utils import timezone
         from datetime import timedelta
+
+        from django.utils import timezone
 
         project = Project.objects.create(
             title="更新前日本語名",
@@ -223,8 +219,9 @@ class ProjectsNotificationIntegrationTest(APITestCase):
     def test_multiple_project_updates_create_multiple_notifications(self):
         """複数回のプロジェクト更新で複数の通知が作成されること"""
         # プロジェクトを作成
-        from django.utils import timezone
         from datetime import timedelta
+
+        from django.utils import timezone
 
         project = Project.objects.create(
             title="多重更新プロジェクト",
@@ -288,8 +285,9 @@ class ProjectsNotificationIntegrationTest(APITestCase):
     def test_project_update_related_object_id(self):
         """プロジェクト更新時のrelated_object_idが正しく設定されること"""
         # プロジェクトを作成
-        from django.utils import timezone
         from datetime import timedelta
+
+        from django.utils import timezone
 
         project = Project.objects.create(
             title="ID確認プロジェクト",
@@ -316,8 +314,9 @@ class ProjectsNotificationIntegrationTest(APITestCase):
     def test_project_creator_notified_when_other_updates(self):
         """他のユーザーがプロジェクトを更新した場合、作成者に通知が送られること"""
         # user1がプロジェクトを作成
-        from django.utils import timezone
         from datetime import timedelta
+
+        from django.utils import timezone
 
         project = Project.objects.create(
             title="作成者通知プロジェクト",
