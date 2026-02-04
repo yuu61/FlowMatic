@@ -1,75 +1,58 @@
 import api from "../api";
+import { API_BASE_URL } from "../constants";
 import type { ProjectFile } from "../types";
+import { apiWrapper } from "../utils/apiWrapper";
 
 export interface FileUploadData {
   file: File;
   name?: string;
 }
 
-export async function getProjectFiles(projectId: string): Promise<ProjectFile[]> {
-  try {
-    const res = await api.get(`/api/projects/${projectId}/files/`);
-    return res.data;
-  } catch (err) {
-    console.error("Get Files Error:", err);
-    throw err;
-  }
+export function getProjectFiles(projectId: string): Promise<ProjectFile[]> {
+  return apiWrapper(() => api.get(`/api/projects/${projectId}/files/`), "Get project files");
 }
 
-export async function uploadProjectFile(
-  projectId: string,
-  data: FileUploadData,
-): Promise<ProjectFile> {
-  try {
-    const formData = new FormData();
-    formData.append("file", data.file);
+export function uploadProjectFile(projectId: string, data: FileUploadData): Promise<ProjectFile> {
+  const formData = new FormData();
+  formData.append("file", data.file);
 
-    if (data.name) formData.append("name", data.name);
+  if (data.name) formData.append("name", data.name);
 
-    const res = await api.post(`/api/projects/${projectId}/files/`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-
-    return res.data;
-  } catch (err) {
-    console.error("Upload File Error:", err);
-    throw err;
-  }
+  return apiWrapper(
+    () =>
+      api.post(`/api/projects/${projectId}/files/`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      }),
+    "Upload file",
+  );
 }
 
 export async function deleteProjectFile(projectId: string, fileId: string): Promise<void> {
-  try {
-    await api.delete(`/api/projects/${projectId}/files/${fileId}/`);
-  } catch (err) {
-    console.error("Delete File Error:", err);
-    throw err;
-  }
+  await apiWrapper(() => api.delete(`/api/projects/${projectId}/files/${fileId}/`), "Delete file");
 }
 
 export async function downloadProjectFile(fileUrl: string, fileName: string): Promise<void> {
-  try {
-    const baseURL = import.meta.env["VITE_API_URL"] || "http://localhost:8000";
-    const fullUrl = fileUrl.startsWith("http") ? fileUrl : `${baseURL}/${fileUrl}`;
+  const fullUrl = fileUrl.startsWith("http") ? fileUrl : `${API_BASE_URL}/${fileUrl}`;
 
-    const response = await api.get(fullUrl, {
-      responseType: "blob",
-    });
+  const response = await apiWrapper<Blob>(
+    () =>
+      api.get(fullUrl, {
+        responseType: "blob",
+      }),
+    "Download file",
+  );
 
-    const blob = new Blob([response.data], {
-      type: response.headers["content-type"] || "application/octet-stream",
-    });
+  const blob = new Blob([response], {
+    type: "application/octet-stream",
+  });
 
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
 
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-  } catch (err) {
-    console.error("Download File Error:", err);
-    throw err;
-  }
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
 }

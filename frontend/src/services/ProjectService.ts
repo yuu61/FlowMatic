@@ -1,5 +1,6 @@
 import api from "../api";
 import type { Project } from "../types";
+import { apiWrapper } from "../utils/apiWrapper";
 
 export interface ProjectFormData {
   title: string;
@@ -11,45 +12,26 @@ export interface ProjectFormData {
   members?: number[];
 }
 
-export async function createProject(projectData: ProjectFormData): Promise<Project> {
-  try {
-    const response = await api.post("/api/projects/", projectData);
-    return response.data;
-  } catch (error) {
-    console.error("API Error:", error);
-    throw error;
-  }
+interface ProjectsResponse {
+  projects: Project[];
+}
+
+export function createProject(projectData: ProjectFormData): Promise<Project> {
+  return apiWrapper(() => api.post("/api/projects/", projectData), "Create project");
 }
 
 export async function getProjects(): Promise<Project[]> {
-  try {
-    const response = await api.get("/api/projects/");
-    return response.data.projects;
-  } catch (error) {
-    console.error("API Error:", error);
-    throw error;
-  }
+  const data = await apiWrapper<ProjectsResponse>(() => api.get("/api/projects/"), "Get projects");
+  return data.projects;
 }
 
-export async function getProjectById(projectId: string): Promise<Project> {
-  try {
-    const response = await api.get(`/api/projects/${projectId}/`);
-    return response.data;
-  } catch (error) {
-    console.error("API Error:", error);
-    throw error;
-  }
+export function getProjectById(projectId: string): Promise<Project> {
+  return apiWrapper(() => api.get(`/api/projects/${projectId}/`), "Get project by ID");
 }
 
-export async function updateProject(
+export function updateProject(
   projectId: string,
   projectData: Partial<ProjectFormData>,
 ): Promise<Project> {
-  try {
-    const response = await api.put(`/api/projects/${projectId}/`, projectData);
-    return response.data;
-  } catch (error) {
-    console.error("API Error:", error);
-    throw error;
-  }
+  return apiWrapper(() => api.put(`/api/projects/${projectId}/`, projectData), "Update project");
 }

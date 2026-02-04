@@ -121,7 +121,9 @@ export interface Chatroom {
   chatroom_id: string;
   project_id: string;
   name: string;
-  members: number[];
+  description?: string;
+  created_at?: string;
+  members?: number[];
 }
 
 export interface ChatMessage {

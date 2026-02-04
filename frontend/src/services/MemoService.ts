@@ -1,45 +1,26 @@
 import api from "../api";
 import type { Memo, MemoFormData } from "../types";
+import { apiWrapper } from "../utils/apiWrapper";
 
-export async function createMemo(projectId: string, memoData: MemoFormData): Promise<Memo> {
-  try {
-    const response = await api.post(`/api/projects/${projectId}/memos/`, memoData);
-    return response.data;
-  } catch (error) {
-    console.error("Create Memo API Error:", error);
-    throw error;
-  }
+export function createMemo(projectId: string, memoData: MemoFormData): Promise<Memo> {
+  return apiWrapper(() => api.post(`/api/projects/${projectId}/memos/`, memoData), "Create memo");
 }
 
-export async function getMemos(projectId: string): Promise<Memo[]> {
-  try {
-    const response = await api.get(`/api/projects/${projectId}/memos/`);
-    return response.data;
-  } catch (error) {
-    console.error("Get Memos API Error:", error);
-    throw error;
-  }
+export function getMemos(projectId: string): Promise<Memo[]> {
+  return apiWrapper(() => api.get(`/api/projects/${projectId}/memos/`), "Get memos");
 }
 
-export async function updateMemo(
+export function updateMemo(
   projectId: string,
   memoId: string,
   memoData: Partial<MemoFormData>,
 ): Promise<Memo> {
-  try {
-    const response = await api.patch(`/api/projects/${projectId}/memos/${memoId}/`, memoData);
-    return response.data;
-  } catch (error) {
-    console.error("Update Memo API Error:", error);
-    throw error;
-  }
+  return apiWrapper(
+    () => api.patch(`/api/projects/${projectId}/memos/${memoId}/`, memoData),
+    "Update memo",
+  );
 }
 
 export async function deleteMemo(projectId: string, memoId: string): Promise<void> {
-  try {
-    await api.delete(`/api/projects/${projectId}/memos/${memoId}/`);
-  } catch (error) {
-    console.error("Delete Memo API Error:", error);
-    throw error;
-  }
+  await apiWrapper(() => api.delete(`/api/projects/${projectId}/memos/${memoId}/`), "Delete memo");
 }
