@@ -1,56 +1,83 @@
-# セットアップ手順
+# FlowMatic
 
-## 1. リポジトリをクローン
-git clone https://github.com/KaungSetLinn/FlowMatic.git
-
-# プロジェクト構造
+## プロジェクト構造
 
 ![Project Structure](./frontend/public/images/project_structure.png)
 
+## セットアップ手順
 
-## 2. 仮想環境の作成（プロジェクトルート）
+### 1. リポジトリをクローン
 
-(新規コマンドプロンプトを開いて)
+```bash
+git clone https://github.com/KaungSetLinn/FlowMatic.git
+```
+
+### 2. 仮想環境の作成（プロジェクトルート）
+
+仮想環境の作成と有効化
+
+```bash
 cd C:\FlowMatic
-
-# 仮想環境を作成
 python -m venv venv
 
-# 仮想環境を有効化
 # Mac/Linux
 source venv/bin/activate
 # Windows
 venv\Scripts\activate
+```
 
+### 3. バックエンドセットアップ
 
-## 3. バックエンドセットアップ
+```bash
 cd backend
-
-# 必要パッケージをインストール
 pip install -r requirements.txt
+pip install -r requirements-dev.txt
 
-# 環境変数ファイルをコピーして編集
 copy .env.example .env
-
-# マイグレーションを実行
 python manage.py migrate
 
-# 開発サーバーを起動（ASGIサーバー - WebSocket対応）
 daphne backend.asgi:application
+```
 
+### 4. フロントエンドセットアップ
 
-## 4. フロントエンドセットアップ
+新規コマンドプロンプトを開いて:
 
-(新規コマンドプロンプトを開いて)
-cd C:\ProjectManagementGroupware
-
+```bash
 cd frontend
-
-# 依存パッケージをインストール
 npm install
 
-# 環境変数ファイルをコピーして編集
 copy .env.example .env
 
-# 開発サーバーを起動
 npm run dev
+```
+
+## コマンドリスト
+
+### バックエンド（backend/）
+
+| コマンド | 説明 |
+|---------|------|
+| `pip install -r requirements.txt` | 本番用パッケージをインストール |
+| `pip install -r requirements-dev.txt` | 開発用パッケージをインストール |
+| `python manage.py migrate` | マイグレーションを実行 |
+| `python manage.py makemigrations` | マイグレーションファイルを作成 |
+| `python manage.py createsuperuser` | 管理者ユーザーを作成 |
+| `python manage.py test` | テストを実行 |
+| `daphne backend.asgi:application` | ASGIサーバーを起動（WebSocket対応） |
+| `python -m ruff check .` | リントチェック |
+| `python -m ruff check . --fix` | リントエラーを自動修正 |
+| `python -m ruff format .` | コードをフォーマット |
+
+### フロントエンド（frontend/）
+
+| コマンド | 説明 |
+|---------|------|
+| `npm install` | 依存パッケージをインストール |
+| `npm run dev` | 開発サーバーを起動 |
+| `npm run build` | 本番用ビルド |
+| `npm run preview` | ビルド結果をプレビュー |
+| `npm run lint` | ESLintでリントチェック |
+| `npm run typecheck` | TypeScript型チェック |
+| `npm run format` | Prettierでコードをフォーマット |
+| `npm run format:check` | フォーマットチェック（修正なし） |
