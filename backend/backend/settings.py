@@ -45,9 +45,7 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 AUTH_USER_MODEL = "api.User"
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": (
-        "api.authentication.CookieJWTAuthentication",
-    ),
+    "DEFAULT_AUTHENTICATION_CLASSES": ("api.authentication.CookieJWTAuthentication",),
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
