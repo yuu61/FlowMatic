@@ -2,6 +2,7 @@
 # Python / Django
 # ----------------------------
 venv/
+.venv/
 __pycache__/
 *.pyc
 *.pyo
@@ -12,6 +13,16 @@ db.sqlite3
 # Django collected static & media files
 backend/media/
 
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Type checking & Linting cache
+.mypy_cache/
+.ruff_cache/
+
 # Local settings
 *.log
 
@@ -21,6 +32,10 @@ backend/media/
 node_modules/
 dist/
 build/
+
+# Cache & Build artifacts
+.eslintcache
+*.tsbuildinfo
 
 # React environment files
 .env.local
@@ -38,7 +53,17 @@ build/
 # ----------------------------
 .DS_Store
 Thumbs.db
-.vscode/
-.idea/
 *.swp
+*.bak
+*.tmp
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# Claude Code
 .claude/
