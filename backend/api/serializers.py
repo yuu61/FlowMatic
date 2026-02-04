@@ -32,9 +32,9 @@ class UserSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         if data["password"] != data["confirm_password"]:
-            raise serializers.ValidationError(
-                {"confirm_password": "Passwords do not match."}
-            )
+            raise serializers.ValidationError({
+                "confirm_password": "Passwords do not match."
+            })
         return data
 
     def create(self, validated_data):
@@ -105,16 +105,16 @@ class ChangePasswordSerializer(serializers.Serializer):
     def validate(self, attrs):
         # Check if new password matches confirmation
         if attrs["new_password"] != attrs["confirm_password"]:
-            raise serializers.ValidationError(
-                {"confirm_password": "新しいパスワードが一致しません。"}
-            )
+            raise serializers.ValidationError({
+                "confirm_password": "新しいパスワードが一致しません。"
+            })
 
         # Validate new password using Django's built-in validators
         user = self.context["request"].user
         try:
             password_validation.validate_password(attrs["new_password"], user=user)
         except serializers.ValidationError as e:
-            raise serializers.ValidationError({"new_password": list(e.messages)})
+            raise serializers.ValidationError({"new_password": list(e.messages)}) from e
 
         return attrs
 
@@ -136,9 +136,9 @@ class EmailLoginSerializer(serializers.Serializer):
         user = authenticate(username=email, password=password)
 
         if user is None:
-            raise serializers.ValidationError(
-                {"message": "メールアドレス、またはパスワードは正しくありません"}
-            )
+            raise serializers.ValidationError({
+                "message": "メールアドレス、またはパスワードは正しくありません"
+            })
 
         if not user.is_active:
             raise serializers.ValidationError({"message": "User account is disabled."})

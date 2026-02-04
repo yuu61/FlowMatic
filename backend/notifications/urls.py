@@ -9,7 +9,7 @@ from .views import (
 urlpatterns = [
     path("notifications/", NotificationListView.as_view(), name="notification-list"),
     path(
-        "notifications/<str:id>/mark_read/",
+        "notifications/<str:notification_id>/mark_read/",
         NotificationMarkReadView.as_view(),
         name="notification-mark-read",
     ),

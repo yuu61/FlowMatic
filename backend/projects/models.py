@@ -23,9 +23,6 @@ class Project(models.Model):
 
     members = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def __str__(self):
         return self.title
 

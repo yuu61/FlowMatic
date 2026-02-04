@@ -2,18 +2,11 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from rest_framework_simplejwt.tokens import AccessToken
-
 from notifications.models import Notification
+from notifications.test_utils import get_auth_headers
 from projects.models import Project
 
 User = get_user_model()
-
-
-def get_auth_headers(user):
-    """ユーザーのJWTトークンを使用して認証ヘッダーを生成"""
-    token = AccessToken.for_user(user)
-    return {"HTTP_AUTHORIZATION": f"Bearer {token}"}
 
 
 class ProjectsNotificationIntegrationTest(APITestCase):

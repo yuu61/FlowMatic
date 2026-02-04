@@ -20,11 +20,7 @@ import backend.routing
 
 from .auth_middleware import JWTAuthMiddleware
 
-application = ProtocolTypeRouter(
-    {
-        "http": django_asgi_app,
-        "websocket": JWTAuthMiddleware(
-            URLRouter(backend.routing.websocket_urlpatterns)
-        ),
-    }
-)
+application = ProtocolTypeRouter({
+    "http": django_asgi_app,
+    "websocket": JWTAuthMiddleware(URLRouter(backend.routing.websocket_urlpatterns)),
+})

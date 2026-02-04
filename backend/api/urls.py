@@ -1,6 +1,11 @@
 from django.urls import include, path
 
-from .views import *
+from .views import (
+    ChangePasswordView,
+    CreateUserView,
+    UserListView,
+    UserUpdateView,
+)
 
 urlpatterns = [
     # App-level routes

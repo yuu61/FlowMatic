@@ -70,8 +70,8 @@ class EventAPITest(APITestCase):
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn("event_id", response.data)
-        for key in data:
-            self.assertEqual(response.data[key], data[key])
+        for key, value in data.items():
+            self.assertEqual(response.data[key], value)
 
     def test_non_member_cannot_create_event(self):
         project = self.create_project_helper()
@@ -117,7 +117,7 @@ class EventAPITest(APITestCase):
             project, start="2024-01-01T09:00:00Z", end="2024-01-01T10:00:00Z"
         )
 
-        event2 = self.create_event_helper(
+        self.create_event_helper(
             project, start="2024-02-01T09:00:00Z", end="2024-02-01T10:00:00Z"
         )
         url = (
@@ -153,8 +153,8 @@ class EventAPITest(APITestCase):
         }
         response = self.client.put(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        for key in data:
-            self.assertEqual(response.data[key], data[key])
+        for key, value in data.items():
+            self.assertEqual(response.data[key], value)
 
     def test_delete_event(self):
         project = self.create_project_helper()

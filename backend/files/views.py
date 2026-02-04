@@ -1,10 +1,12 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from common.constants import ERROR_NOT_PROJECT_MEMBER
 from projects.models import Project
 
 from .models import ProjectFile
@@ -17,16 +19,16 @@ class ProjectFileListCreateView(APIView):
 
     def get(self, request, project_id):
         project = get_object_or_404(Project, project_id=project_id)
+        if not project.members.filter(pk=request.user.pk).exists():
+            raise PermissionDenied(ERROR_NOT_PROJECT_MEMBER)
         files = ProjectFile.objects.filter(project=project).order_by("-uploaded_at")
         serializer = ProjectFileSerializer(files, many=True)
         return Response(serializer.data)
 
     def post(self, request, project_id):
-        # Debug logging
-        print("Request FILES:", request.FILES)
-        print("Request DATA:", request.data)
-
         project = get_object_or_404(Project, project_id=project_id)
+        if not project.members.filter(pk=request.user.pk).exists():
+            raise PermissionDenied(ERROR_NOT_PROJECT_MEMBER)
 
         # Create a mutable copy of request.data
         data = request.data.copy()
@@ -40,8 +42,6 @@ class ProjectFileListCreateView(APIView):
             serializer.save(project=project, uploader=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        # Better error logging
-        print("Serializer errors:", serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -49,6 +49,9 @@ class ProjectFileDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, project_id, file_id):
+        project = get_object_or_404(Project, project_id=project_id)
+        if not project.members.filter(pk=request.user.pk).exists():
+            raise PermissionDenied(ERROR_NOT_PROJECT_MEMBER)
         file_obj = get_object_or_404(
             ProjectFile, project_id=project_id, file_id=file_id
         )

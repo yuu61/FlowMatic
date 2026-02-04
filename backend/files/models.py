@@ -18,3 +18,9 @@ class ProjectFile(models.Model):
 
     def __str__(self):
         return self.name
+
+    def delete(self, *args, **kwargs):
+        # ストレージから実際のファイルを削除
+        if self.file:
+            self.file.delete(save=False)
+        super().delete(*args, **kwargs)

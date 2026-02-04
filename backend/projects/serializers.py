@@ -2,29 +2,55 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
+from common.constants import TASK_STATUS_DONE
+from common.serializers import BaseUserSerializer
+
 from .models import Project
 
-TASK_STATUS_DONE = "done"
 User = get_user_model()
 
-
-class MemberSerializer(serializers.ModelSerializer):
-    user_id = serializers.IntegerField(source="pk")
-    name = serializers.CharField(source="username")
-    email = serializers.EmailField()
-    profile_picture = serializers.SerializerMethodField()
-
-    class Meta:
-        model = User
-        fields = ["user_id", "name", "email", "profile_picture"]
-
-    def get_profile_picture(self, obj):
-        return obj.profile_picture.url if obj.profile_picture else None
+# Alias for backward compatibility
+MemberSerializer = BaseUserSerializer
 
 
-class ProjectListSerializer(serializers.ModelSerializer):
+class ProjectProgressMixin:
+    """Mixin providing get_progress method for project serializers.
+
+    Note: For optimal performance, use prefetch_related('tasks') on the queryset
+    when serializing multiple projects to avoid N+1 queries.
+    """
+
+    def get_progress(self, obj):
+        """Calculate project progress as percentage of completed tasks.
+
+        If tasks are prefetched, uses the cached data to avoid additional queries.
+        Otherwise, uses a single aggregated query for efficiency.
+        """
+        # Check if tasks are already prefetched to avoid additional queries
+        if "tasks" in getattr(obj, "_prefetched_objects_cache", {}):
+            # Use prefetched data - no additional queries
+            tasks = obj.tasks.all()
+            total_tasks = len(tasks)
+            if total_tasks == 0:
+                return 0
+            completed_tasks = sum(1 for t in tasks if t.status == TASK_STATUS_DONE)
+            return int((completed_tasks / total_tasks) * 100)
+
+        # Not prefetched - use single aggregated query instead of two separate queries
+        from django.db.models import Count, Q
+
+        aggregated = obj.tasks.aggregate(
+            total=Count("task_id"),
+            completed=Count("task_id", filter=Q(status=TASK_STATUS_DONE)),
+        )
+        total_tasks = aggregated["total"]
+        if total_tasks == 0:
+            return 0
+        return int((aggregated["completed"] / total_tasks) * 100)
+
+
+class ProjectListSerializer(ProjectProgressMixin, serializers.ModelSerializer):
     members = MemberSerializer(many=True, read_only=True)
-
     progress = serializers.SerializerMethodField()
 
     class Meta:
@@ -40,19 +66,8 @@ class ProjectListSerializer(serializers.ModelSerializer):
             "members",
         ]
 
-    def get_progress(self, obj):
-        tasks = obj.tasks.all()
-        total_tasks = tasks.count()
 
-        if total_tasks == 0:
-            return 0
-
-        completed_tasks = tasks.filter(status=TASK_STATUS_DONE).count()
-
-        return int((completed_tasks / total_tasks) * 100)
-
-
-class ProjectResponseSerializer(serializers.ModelSerializer):
+class ProjectResponseSerializer(ProjectProgressMixin, serializers.ModelSerializer):
     members = MemberSerializer(many=True, read_only=True)
     progress = serializers.SerializerMethodField()
 
@@ -69,16 +84,6 @@ class ProjectResponseSerializer(serializers.ModelSerializer):
             "members",
         ]
         read_only_fields = ["project_id"]
-
-    def get_progress(self, obj):
-        tasks = obj.tasks.all()
-        total_tasks = tasks.count()
-
-        if total_tasks == 0:
-            return 0
-
-        completed_tasks = tasks.filter(status=TASK_STATUS_DONE).count()
-        return int((completed_tasks / total_tasks) * 100)
 
 
 class ProjectCreateSerializer(serializers.Serializer):

@@ -35,9 +35,10 @@ class ProjectFileSerializer(serializers.ModelSerializer):
             size_bytes = obj.file.size
             if size_bytes < 1024:
                 return f"{size_bytes}B"
-            elif size_bytes < 1024 * 1024:
+            if size_bytes < 1024 * 1024:
                 return f"{size_bytes / 1024:.1f}KB"
-            else:
-                return f"{size_bytes / (1024 * 1024):.1f}MB"
-        except:
+            return f"{size_bytes / (1024 * 1024):.1f}MB"
+        except (FileNotFoundError, OSError, ValueError):
+            # ファイルがストレージに存在しない、アクセスエラー、
+            # またはファイルが閉じられている場合
             return "0KB"

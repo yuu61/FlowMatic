@@ -137,12 +137,10 @@ class NotificationConsumerTest(TestCase):
 
         await communicator.receive_json_from()
 
-        await communicator.send_json_to(
-            {
-                "type": "mark_read",
-                "notification_id": notification.id,
-            }
-        )
+        await communicator.send_json_to({
+            "type": "mark_read",
+            "notification_id": notification.id,
+        })
 
         response = await communicator.receive_json_from()
         self.assertEqual(response["type"], "unread_count")
@@ -170,11 +168,9 @@ class NotificationConsumerTest(TestCase):
 
         await communicator.receive_json_from()
 
-        await communicator.send_json_to(
-            {
-                "type": "mark_all_read",
-            }
-        )
+        await communicator.send_json_to({
+            "type": "mark_all_read",
+        })
 
         response = await communicator.receive_json_from()
         self.assertEqual(response["type"], "unread_count")

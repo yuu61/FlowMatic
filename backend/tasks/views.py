@@ -5,7 +5,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from projects.models import Project
+from common.constants import ERROR_NOT_ASSIGNED_TO_PROJECT
+from common.mixins import ProjectMembershipMixin
 
 from .models import Task
 from .serializers import (
@@ -18,7 +19,7 @@ from .serializers import (
 )
 
 
-class TaskListCreateView(APIView):
+class TaskListCreateView(ProjectMembershipMixin, APIView):
     """GET/POST /api/projects/{project_id}/tasks - List and create tasks for the project.
 
     Permissions: authenticated user assigned to the project.
@@ -26,18 +27,11 @@ class TaskListCreateView(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def _get_project(self, project_id):
-        project = get_object_or_404(
-            Project.objects.prefetch_related("members"), project_id=project_id
-        )
-        if not project.members.filter(pk=self.request.user.pk).exists():
-            raise PermissionDenied("You are not assigned to this project.")
-        return project
-
     def get(self, request, project_id):
         project = self._get_project(project_id)
         tasks = (
-            Task.objects.filter(project=project)
+            Task.objects
+            .filter(project=project)
             .select_related("project")
             .prefetch_related(
                 "assigned_users", "parents__parent_task", "comments__user"
@@ -59,21 +53,13 @@ class TaskListCreateView(APIView):
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
 
-class TaskCommentCreateView(APIView):
+class TaskCommentCreateView(ProjectMembershipMixin, APIView):
     """POST /api/projects/{project_id}/tasks/{task_id}/comments - Create a comment for a task.
 
     Permissions: authenticated user assigned to the project.
     """
 
     permission_classes = [IsAuthenticated]
-
-    def _get_project(self, project_id):
-        project = get_object_or_404(
-            Project.objects.prefetch_related("members"), project_id=project_id
-        )
-        if not project.members.filter(pk=self.request.user.pk).exists():
-            raise PermissionDenied("You are not assigned to this project.")
-        return project
 
     def _get_task(self, project, task_id):
         task = get_object_or_404(Task, task_id=task_id, project=project)
@@ -106,18 +92,17 @@ class TaskCommentListView(APIView):
             task_id=task_id,
         )
         if not task.project.members.filter(pk=self.request.user.pk).exists():
-            raise PermissionDenied("You are not assigned to this project.")
+            raise PermissionDenied(ERROR_NOT_ASSIGNED_TO_PROJECT)
         return task
 
+    def get(self, request, task_id):
+        task = self._get_task(task_id)
+        comments = task.comments.select_related("user").all()
+        serializer = TaskCommentListSerializer(comments, many=True)
+        return Response({"comments": serializer.data}, status=status.HTTP_200_OK)
 
-def get(self, request, task_id):
-    task = self._get_task(task_id)
-    comments = task.comments.select_related("user").all()
-    serializer = TaskCommentListSerializer(comments, many=True)
-    return Response({"comments": serializer.data}, status=status.HTTP_200_OK)
 
-
-class TaskDetailView(APIView):
+class TaskDetailView(ProjectMembershipMixin, APIView):
     """GET/PUT/PATCH /api/projects/{project_id}/tasks/{task_id} - Get, update, and delete a task.
 
     Permissions: authenticated user assigned to the project.
@@ -125,21 +110,26 @@ class TaskDetailView(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def _get_project(self, project_id):
-        project = get_object_or_404(
-            Project.objects.prefetch_related("members"), project_id=project_id
-        )
-        if not project.members.filter(pk=self.request.user.pk).exists():
-            raise PermissionDenied("You are not assigned to this project.")
-        return project
+    def _get_task(self, project, task_id, prefetch_for_response=False):
+        """Get a task by ID within a project.
 
-    def _get_task(self, project, task_id):
-        task = get_object_or_404(Task, task_id=task_id, project=project)
+        Args:
+            project: The project the task belongs to.
+            task_id: The task's UUID.
+            prefetch_for_response: If True, prefetch related data for serialization
+                                   to avoid N+1 queries.
+        """
+        queryset = Task.objects.filter(project=project)
+        if prefetch_for_response:
+            queryset = queryset.prefetch_related(
+                "assigned_users", "parents__parent_task", "comments__user"
+            )
+        task = get_object_or_404(queryset, task_id=task_id)
         return task
 
     def get(self, request, project_id, task_id):
         project = self._get_project(project_id)
-        task = self._get_task(project, task_id)
+        task = self._get_task(project, task_id, prefetch_for_response=True)
         serializer = TaskResponseSerializer(task)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

@@ -5,8 +5,14 @@ from rest_framework.views import APIView
 
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import *
-from .serializers import *
+from .models import User
+from .serializers import (
+    ChangePasswordSerializer,
+    EmailLoginSerializer,
+    UserReadSerializer,
+    UserSerializer,
+    UserUpdateSerializer,
+)
 
 
 # Create your views here.
@@ -66,7 +72,7 @@ class UserUpdateView(generics.UpdateAPIView):
 
     # Optional: return updated user data with read serializer
     def patch(self, request, *args, **kwargs):
-        response = super().patch(request, *args, **kwargs)
+        super().patch(request, *args, **kwargs)
         user_data = UserReadSerializer(request.user, context={"request": request}).data
         return Response(user_data)
 

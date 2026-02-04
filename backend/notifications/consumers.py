@@ -4,6 +4,8 @@ from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.contrib.auth import get_user_model
 
+from common.constants import ERROR_INVALID_JSON
+
 from .models import Notification
 from .serializers import NotificationSerializer
 
@@ -38,7 +40,17 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         if self.scope["user"].is_anonymous:
             return
 
-        text_data_json = json.loads(text_data)
+        try:
+            text_data_json = json.loads(text_data)
+        except json.JSONDecodeError:
+            await self.send(
+                text_data=json.dumps({
+                    "type": "error",
+                    "message": ERROR_INVALID_JSON,
+                })
+            )
+            return
+
         message_type = text_data_json.get("type", "")
 
         if message_type == "mark_read":
@@ -65,13 +77,11 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         serializer = NotificationSerializer(notifications, many=True)
 
         await self.send(
-            text_data=json.dumps(
-                {
-                    "type": "recent_notifications",
-                    "notifications": serializer.data,
-                    "unread_count": unread_count,
-                }
-            )
+            text_data=json.dumps({
+                "type": "recent_notifications",
+                "notifications": serializer.data,
+                "unread_count": unread_count,
+            })
         )
 
     async def notification_created(self, event):
@@ -79,23 +89,19 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         unread_count = event["unread_count"]
 
         await self.send(
-            text_data=json.dumps(
-                {
-                    "type": "notification",
-                    "notification": notification_data,
-                    "unread_count": unread_count,
-                }
-            )
+            text_data=json.dumps({
+                "type": "notification",
+                "notification": notification_data,
+                "unread_count": unread_count,
+            })
         )
 
     async def send_unread_count(self, unread_count):
         await self.send(
-            text_data=json.dumps(
-                {
-                    "type": "unread_count",
-                    "unread_count": unread_count,
-                }
-            )
+            text_data=json.dumps({
+                "type": "unread_count",
+                "unread_count": unread_count,
+            })
         )
 
     @database_sync_to_async
@@ -119,6 +125,12 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             notification.is_read = True
             notification.save()
         except Notification.DoesNotExist:
+            # 通知が存在しない場合は静かに無視する
+            # これは以下の正当なケースで発生しうる:
+            # - 通知が既に削除されている
+            # - 別のタブ/デバイスで既に処理された
+            # - 無効なIDがクライアントから送信された
+            # エラーをクライアントに返す必要はない
             pass
 
     @database_sync_to_async

@@ -1,19 +1,14 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
+from common.serializers import BaseUserSerializer
+
 from .models import ProjectMemo
 
 User = get_user_model()
 
-
-class MemoUserSerializer(serializers.ModelSerializer):
-    name = serializers.CharField(source="username", read_only=True)
-    user_id = serializers.PrimaryKeyRelatedField(source="pk", read_only=True)
-
-    class Meta:
-        model = User
-
-        fields = ["user_id", "name", "email", "profile_picture"]
+# Alias for backward compatibility
+MemoUserSerializer = BaseUserSerializer
 
 
 class ProjectMemoSerializer(serializers.ModelSerializer):

@@ -5,19 +5,12 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from rest_framework_simplejwt.tokens import AccessToken
-
 from event.models import Event
 from notifications.models import Notification
+from notifications.test_utils import get_auth_headers
 from projects.models import Project
 
 User = get_user_model()
-
-
-def get_auth_headers(user):
-    """ユーザーのJWTトークンを使用して認証ヘッダーを生成"""
-    token = AccessToken.for_user(user)
-    return {"HTTP_AUTHORIZATION": f"Bearer {token}"}
 
 
 class EventNotificationIntegrationTest(APITestCase):

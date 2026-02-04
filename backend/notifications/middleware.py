@@ -1,4 +1,5 @@
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.exceptions import AuthenticationFailed, InvalidToken
 
 from .context import clear_current_user, set_current_user
 
@@ -18,7 +19,9 @@ class NotificationMiddleware:
                     auth_result = self.jwt_auth.authenticate(request)
                     if auth_result is not None:
                         user = auth_result[0]
-                except Exception:
+                except (InvalidToken, AuthenticationFailed):
+                    # トークンが無効/期限切れ、または認証処理失敗時は
+                    # 匿名ユーザーとして続行
                     pass
 
         set_current_user(user)

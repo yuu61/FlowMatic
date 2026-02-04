@@ -2,6 +2,13 @@ from channels.layers import get_channel_layer
 
 from asgiref.sync import async_to_sync
 
+from common.constants import (
+    NOTIFICATION_TYPE_CHAT,
+    NOTIFICATION_TYPE_EVENT,
+    NOTIFICATION_TYPE_PROJECT,
+    NOTIFICATION_TYPE_TASK,
+)
+
 from .models import Notification
 from .serializers import NotificationSerializer
 
@@ -69,7 +76,7 @@ def create_task_notification(recipient, task, action="created"):
         recipient=recipient,
         title="タスク通知",
         message=action_messages.get(action, f"タスク『{task.name}』が変更されました"),
-        notification_type="task",
+        notification_type=NOTIFICATION_TYPE_TASK,
         related_object_id=str(task.task_id),
     )
 
@@ -95,7 +102,7 @@ def create_project_notification(recipient, project, action="updated"):
         message=action_messages.get(
             action, f"プロジェクト『{project.title}』が変更されました"
         ),
-        notification_type="project",
+        notification_type=NOTIFICATION_TYPE_PROJECT,
         related_object_id=str(project.project_id),
     )
 
@@ -109,13 +116,11 @@ def create_chat_notification(recipient, message, sender):
         message: Message object or content
         sender: User who sent the message
     """
-    message_content = message.content if hasattr(message, "content") else str(message)
-
     return create_notification(
         recipient=recipient,
         title="新しいメッセージ",
         message=f"{sender.username}さんから新しいメッセージが届いています",
-        notification_type="chat",
+        notification_type=NOTIFICATION_TYPE_CHAT,
         related_object_id=str(message.message_id)
         if hasattr(message, "message_id")
         else None,
@@ -142,7 +147,7 @@ def create_event_notification(recipient, event, action="created"):
         message=action_messages.get(
             action, f"イベント『{event.title}』が変更されました"
         ),
-        notification_type="event",
+        notification_type=NOTIFICATION_TYPE_EVENT,
         related_object_id=str(event.event_id),
     )
 
@@ -164,6 +169,6 @@ def create_chatroom_notification(recipient, chatroom, action="created"):
         recipient=recipient,
         title="チャットルーム通知",
         message=action_messages.get(action, "チャットルームが変更されました"),
-        notification_type="chat",
+        notification_type=NOTIFICATION_TYPE_CHAT,
         related_object_id=str(chatroom.chatroom_id),
     )
