@@ -32,10 +32,7 @@ type SortKey = "name" | "uploader" | "date" | "size" | null;
 
 const Files = () => {
   const { user } = useAuth();
-  // ✅ 表示モード切り替え
   const [viewMode, setViewMode] = useState<"list" | "card">("list");
-
-  // ✅ ソート設定
   const [sortKey, setSortKey] = useState<SortKey>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
@@ -66,7 +63,6 @@ const Files = () => {
     if (!currentProject) return;
     try {
       await uploadProjectFile(currentProject.project_id, { file });
-      // then refresh file list
       void loadFiles();
     } catch (error) {
       console.error("Upload failed:", error);
@@ -83,14 +79,12 @@ const Files = () => {
     }
   };
 
-  // ✅ 削除処理
   const handleDelete = async (file: ProjectFile) => {
     if (!window.confirm(`${file.name} を削除してもいいですか?`)) return;
 
     try {
       if (!currentProject) return;
       await deleteProjectFile(currentProject.project_id, file.id);
-      // Refresh file list
       await loadFiles();
     } catch (error) {
       console.error("Delete failed:", error);
@@ -103,7 +97,6 @@ const Files = () => {
     return imageExtensions.some((ext) => name.toLowerCase().endsWith(ext));
   };
 
-  // ✅ ファイルタイプに応じたFontAwesomeアイコンとカラー
   const getFileIconData = (name: string): { icon: IconDefinition; color: string } => {
     if (name.endsWith(".pdf")) return { icon: faFilePdf, color: "text-red-500" };
     if (isImageFile(name)) return { icon: faFileImage, color: "text-blue-500" };
@@ -112,19 +105,15 @@ const Files = () => {
     return { icon: faFile, color: "text-gray-500" };
   };
 
-  // ✅ ソート処理
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
-      // 同じ列をクリックした場合は昇順/降順を切り替え
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
-      // 新しい列の場合は昇順から開始
       setSortKey(key);
       setSortOrder("asc");
     }
   };
 
-  // ✅ サイズを数値に変換(ソート用)
   const parseSize = (sizeStr: string): number => {
     const num = parseFloat(sizeStr);
     if (sizeStr.includes("MB")) return num * 1024;
@@ -132,7 +121,6 @@ const Files = () => {
     return num; // KB
   };
 
-  // ✅ ソート済みファイルリスト
   const sortedFiles = useMemo(() => {
     return [...files].sort((a, b) => {
       if (!sortKey) return 0;
@@ -153,7 +141,6 @@ const Files = () => {
     });
   }, [files, sortKey, sortOrder]);
 
-  // プロジェクトが存在しない、または選択されていない場合
   if (!projects || projects.length === 0 || !currentProject) {
     return (
       <ProjectRequired
@@ -172,12 +159,10 @@ const Files = () => {
 
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 bg-gray-50 min-h-screen">
-      {/* ✅ ヘッダー */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <h1 className="text-2xl sm:text-4xl font-bold text-gray-800">共有ファイル</h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
-          {/* ✅ 表示切替(グループ化) */}
           <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
             <button
               onClick={() => setViewMode("list")}
@@ -208,7 +193,6 @@ const Files = () => {
             </button>
           </div>
 
-          {/* ✅ アップロード(強調) */}
           <input type="file" className="hidden" id="fileUpload" onChange={handleUpload} />
           <label
             htmlFor="fileUpload"
@@ -221,12 +205,8 @@ const Files = () => {
         </div>
       </div>
 
-      {/* =========================
-          ✅ リスト(テーブル)表示 - Responsive Table
-      ========================= */}
       {viewMode === "list" && (
         <div className="bg-white shadow-lg rounded-xl overflow-hidden">
-          {/* Scrollable container for mobile */}
           <div className="overflow-x-auto">
             <table className="w-full border-collapse min-w-[640px]">
               <thead className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 text-white">
@@ -369,9 +349,6 @@ const Files = () => {
         </div>
       )}
 
-      {/* =========================
-          ✅ カード表示
-      ========================= */}
       {viewMode === "card" && (
         <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2">
           {files.map((file) => {
@@ -383,7 +360,6 @@ const Files = () => {
                 key={file.id}
                 className="bg-white p-4 sm:p-5 rounded-xl shadow hover:shadow-lg transition-all border flex flex-col justify-between"
               >
-                {/* Top: Icon/Image + File name */}
                 <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
                   <div className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 flex items-center justify-center">
                     {isImage && file.url ? (
@@ -392,7 +368,6 @@ const Files = () => {
                         alt={file.name}
                         className="w-full h-full object-cover rounded border border-gray-200"
                         onError={(e) => {
-                          // Fallback to icon if image fails to load
                           const target = e.target as HTMLElement;
                           target.style.display = "none";
                           (target.nextSibling as HTMLElement).style.display = "flex";
@@ -425,7 +400,6 @@ const Files = () => {
                   </div>
                 </div>
 
-                {/* Middle: Uploader & Date */}
                 <div className="flex justify-between text-sm sm:text-xl font-bold text-gray-700 mb-3 sm:mb-4">
                   <span className="flex items-center gap-2">
                     {file.uploader?.profile_picture ? (
@@ -445,7 +419,6 @@ const Files = () => {
                   <span>📅 {file.date}</span>
                 </div>
 
-                {/* Bottom: Actions */}
                 <div className="flex justify-end gap-2 mt-auto">
                   <button
                     onClick={() => void handleDownload(file)}

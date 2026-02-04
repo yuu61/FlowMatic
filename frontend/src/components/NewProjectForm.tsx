@@ -1,4 +1,3 @@
-// NewProjectForm.tsx
 import { faCircleXmark, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { ja } from "date-fns/locale";
@@ -104,10 +103,8 @@ export default function NewProjectForm() {
     };
 
     try {
-      // Create the project
       const newProject = await createProject(submitData);
 
-      // Create a chatroom for the new project
       try {
         const chatroomData = {
           name: `${newProject.title} - チャットルーム`,
@@ -119,15 +116,12 @@ export default function NewProjectForm() {
         console.error("Error creating chatroom:", chatroomError);
         const axiosError = chatroomError as { response?: { data?: unknown } };
         console.error("Chatroom error details:", axiosError.response?.data);
-        // Note: Project was created successfully, only chatroom creation failed
         alert("プロジェクトは作成されましたが、チャットルームの作成に失敗しました");
       }
 
-      // ✅ Update projects list
       const updatedProjects = [...projects, newProject];
       setProjects(updatedProjects);
 
-      // ✅ Set as current project directly and update localStorage
       setCurrentProject(newProject);
       localStorage.setItem(CURRENT_PROJECT_ID, newProject.project_id);
 
@@ -158,7 +152,6 @@ export default function NewProjectForm() {
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* タイトル */}
           <div>
             <label htmlFor="title" className="block text-xl font-bold mb-3">
               タイトル
@@ -176,7 +169,6 @@ export default function NewProjectForm() {
             />
           </div>
 
-          {/* 説明 */}
           <div>
             <label htmlFor="description" className="block text-xl font-bold mb-3">
               説明
@@ -193,7 +185,6 @@ export default function NewProjectForm() {
             />
           </div>
 
-          {/* 開始日 */}
           <div>
             <label htmlFor="startDate" className="block text-xl font-bold mb-3">
               開始日
@@ -201,7 +192,9 @@ export default function NewProjectForm() {
             <DatePicker
               id="startDate"
               selected={formData.startDate}
-              onChange={(date: Date | null) => setFormData((prev) => ({ ...prev, startDate: date }))}
+              onChange={(date: Date | null) =>
+                setFormData((prev) => ({ ...prev, startDate: date }))
+              }
               showTimeSelect
               timeFormat="HH:mm"
               timeIntervals={15}
@@ -213,7 +206,6 @@ export default function NewProjectForm() {
             />
           </div>
 
-          {/* 締切 */}
           <div>
             <label htmlFor="deadline" className="block text-xl font-bold mb-3">
               締切日
@@ -234,7 +226,6 @@ export default function NewProjectForm() {
             />
           </div>
 
-          {/* ステータス */}
           <div>
             <label htmlFor="status" className="block text-xl font-bold mb-3">
               ステータス
@@ -254,13 +245,11 @@ export default function NewProjectForm() {
             </select>
           </div>
 
-          {/* メンバー選択 */}
           <div>
             <label htmlFor="member-search" className="block text-xl font-bold mb-3">
               メンバー
             </label>
 
-            {/* Search box */}
             <div className="mb-4">
               <input
                 type="text"
@@ -272,7 +261,6 @@ export default function NewProjectForm() {
               />
             </div>
 
-            {/* Search results */}
             {searchQuery && filteredMembers.length > 0 && (
               <div className="mb-4 border border-gray-200 rounded-lg overflow-hidden shadow-lg">
                 <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
@@ -336,7 +324,6 @@ export default function NewProjectForm() {
               </div>
             )}
 
-            {/* No results */}
             {searchQuery && filteredMembers.length === 0 && (
               <div className="mb-4 p-4 text-center font-bold text-gray-500 bg-gray-50 rounded-lg">
                 <div className="text-xl mb-1">メンバーが見つかりません</div>
@@ -344,7 +331,6 @@ export default function NewProjectForm() {
               </div>
             )}
 
-            {/* Selected members */}
             <div className="mb-4">
               <div className="flex justify-between items-center mb-3">
                 <h3 className="text-lg font-semibold text-gray-700">
@@ -409,7 +395,6 @@ export default function NewProjectForm() {
             </div>
           </div>
 
-          {/* 送信 */}
           <div className="flex justify-end">
             <button
               type="submit"

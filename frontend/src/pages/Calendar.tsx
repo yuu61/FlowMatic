@@ -26,10 +26,8 @@ import type { EventColor, Task, TaskPriority, TaskStatus } from "../types";
 import { formatDateJP, formatUTC, isDeadlineNear } from "../utils/dateUtils";
 dayjs.extend(utc);
 
-// ========== Constants ==========
 const CALENDAR_RESIZE_DELAY_MS = 500;
 
-// ========== Type Definitions ==========
 type CalendarStatus = "active" | "completed" | "urgent";
 type FilterColor = "blue" | "yellow" | "green" | "red";
 type HexColor = "#ef4444" | "#3b82f6" | "#22c55e" | "#f59e0b";
@@ -90,7 +88,6 @@ interface ModalState {
   isNew: boolean;
 }
 
-// ========== Constants ==========
 const STORAGE_KEY = "calendar_events";
 
 const STATUS_COLOR_MAP: Record<CalendarStatus, string> = {
@@ -184,12 +181,10 @@ const mapApiColorToHex = (apiColor: EventColor): HexColor => {
   return colorMap[apiColor] || "#3b82f6";
 };
 
-// ========== Main Component ==========
 const Calendar = () => {
   const calendarRef = useRef<FullCalendar | null>(null);
   const { projects, currentProject } = useProject();
 
-  // State
   const [events, setEvents] = useState<CalendarEventItem[]>([]);
   const [tasks, setTasks] = useState<CalendarTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -204,7 +199,6 @@ const Calendar = () => {
   const [sortType, setSortType] = useState<SortType>("dueDate");
   const [isDetailVisible, setIsDetailVisible] = useState(false);
 
-  // Sort functions
   const priorityOrder: Record<TaskPriority, number> = { high: 1, medium: 2, low: 3 };
   const sortFunctions: Record<SortType, (a: CalendarTask, b: CalendarTask) => number> = {
     dueDate: (a: CalendarTask, b: CalendarTask) =>
@@ -213,7 +207,6 @@ const Calendar = () => {
       (priorityOrder[a.priority] || 2) - (priorityOrder[b.priority] || 2),
   };
 
-  // ========== Data Fetching ==========
   const fetchTasks = useCallback(async () => {
     if (!currentProject?.project_id) {
       setTasks([]);
@@ -263,7 +256,6 @@ const Calendar = () => {
     }
   }, [currentProject?.project_id]);
 
-  // ========== Effects ==========
   useEffect(() => {
     setTimeout(() => calendarRef.current?.getApi().updateSize(), CALENDAR_RESIZE_DELAY_MS);
   }, []);
@@ -284,7 +276,6 @@ const Calendar = () => {
     const userEvents = storedEvents.filter((e: CalendarEventItem) => e.source !== "task");
 
     const taskEvents: CalendarEventItem[] = tasks.map((task) => {
-      // FIX: Keep original ISO format dates from API, don't reformat
       const startDate = task.startDate || task.dueDate;
       const endDate = task.dueDate;
 
@@ -299,7 +290,7 @@ const Calendar = () => {
         color: STATUS_COLOR_MAP[task.status] || "#3b82f6",
         source: "task" as const,
         description: task.description,
-        dueDate: task.dueDate, // FIX: Keep dueDate for sidebar display
+        dueDate: task.dueDate,
         startDate: task.startDate, // Keep original startDate
       };
     });
@@ -307,7 +298,6 @@ const Calendar = () => {
     setEvents([...userEvents, ...taskEvents]);
   }, [tasks]);
 
-  // ========== Handlers ==========
   const addNotification = (text: string): void => {
     const id = Date.now();
     setNotifications((prev) => [...prev, { id, text }]);
@@ -335,7 +325,6 @@ const Calendar = () => {
       return;
     }
 
-    // FIX: Proper date comparison that allows same day with different times
     const startDateTime = new Date(modal.event.start);
     const endDateTime = new Date(modal.event.end);
 
@@ -344,7 +333,6 @@ const Calendar = () => {
       return;
     }
 
-    // FIX: Prevent editing task events
     if (modal.event.source === "task") {
       addNotification("タスクイベントは編集できません ⚠️");
       return;
@@ -404,14 +392,13 @@ const Calendar = () => {
 
         await updateEventApi(currentProject.project_id, evt.id, requestData);
 
-        // FIX: Simplified color handling
         const updatedEvent: CalendarEventItem = {
           id: evt.id,
           title: evt.title,
           start: evt.start ?? "",
           end: evt.end ?? "",
           allDay: evt.allDay,
-          color: evt.color, // Already in hex format
+          color: evt.color,
           status: evt.status,
           priority: evt.priority,
           comment: evt.comment,
@@ -441,7 +428,6 @@ const Calendar = () => {
       return;
     }
 
-    // FIX: Prevent deleting task events
     if (modal.event.source === "task") {
       addNotification("タスクイベントは削除できません ⚠️");
       return;
@@ -463,7 +449,6 @@ const Calendar = () => {
   };
 
   const openModal = (event: CalendarEventItem | null = null, isNew = false): void => {
-    // FIX: Convert task event to proper format for modal
     let modalEvent = event;
     if (event && event.source === "task") {
       modalEvent = {
@@ -477,11 +462,9 @@ const Calendar = () => {
     requestAnimationFrame(() => setIsModalReady(true));
   };
 
-  // FIX: Separate function for opening task details (read-only view)
   const openTaskDetail = (task: CalendarTask): void => {
     const taskEvent = events.find((e) => e.id === `task-${task.id}`);
     if (taskEvent) {
-      // Task dates are already in ISO format from API, no need to reformat
       openModal(taskEvent, false);
     }
   };
@@ -496,7 +479,6 @@ const Calendar = () => {
     setModal((p) => ({ ...p, event: p.event ? { ...p.event, [field]: value } : null }));
   };
 
-  // FIX: Handle event drag-and-drop with API persistence
   const handleEventDrop = async (info: EventDropInfo): Promise<void> => {
     const droppedEvent = events.find((e) => e.id === info.event.id);
 
@@ -542,7 +524,6 @@ const Calendar = () => {
     }
   };
 
-  // ========== Render ==========
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -597,7 +578,6 @@ const Calendar = () => {
         .MuiPopper-root { z-index: 3500 !important; }
       `}</style>
 
-      {/* Sidebar */}
       <div className="w-80 bg-white rounded-xl shadow-md p-4 flex-shrink-0">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">タスク一覧</h2>
@@ -683,7 +663,6 @@ const Calendar = () => {
         </div>
       </div>
 
-      {/* Calendar */}
       <div className="flex-1 bg-white rounded-xl shadow-md p-4">
         <FullCalendar
           ref={calendarRef}
@@ -746,7 +725,7 @@ const Calendar = () => {
                 allDay,
                 priority: "medium",
                 status: "active",
-                source: "user", // FIX: Explicitly set source
+                source: "user",
               },
               true,
             );
@@ -757,13 +736,12 @@ const Calendar = () => {
               openModal(event);
             }
           }}
-          eventDrop={handleEventDrop} // FIX: Use new handler
+          eventDrop={handleEventDrop}
           height="auto"
           contentHeight="auto"
         />
       </div>
 
-      {/* Notifications */}
       <div className="fixed top-5 right-5 space-y-2 z-[2000]">
         {notifications.map((n) => (
           <div
@@ -775,7 +753,6 @@ const Calendar = () => {
         ))}
       </div>
 
-      {/* Modal */}
       {modal.open && (
         <div
           className={`modal-overlay fixed inset-0 flex justify-center items-center z-[3000] ${
@@ -805,7 +782,6 @@ const Calendar = () => {
                   : "✏️ イベント編集"}
             </h3>
 
-            {/* FIX: Show task warning */}
             {modal.event?.source === "task" && (
               <div className="bg-blue-50 border border-blue-200 text-blue-800 px-3 py-2 rounded mb-3 text-sm">
                 ℹ️ タスク情報は参照のみです。編集するには、タスク管理画面をご利用ください。
@@ -839,7 +815,7 @@ const Calendar = () => {
                 className="w-full p-2 border rounded"
                 value={modal.event?.title ?? ""}
                 onChange={(e) => updateEvent("title", e.target.value)}
-                disabled={modal.event?.source === "task"} // FIX: Disable for tasks
+                disabled={modal.event?.source === "task"}
               />
             </div>
 
@@ -904,7 +880,7 @@ const Calendar = () => {
                 id="allDayCheckbox"
                 type="checkbox"
                 checked={modal.event?.allDay ?? false}
-                disabled={modal.event?.source === "task"} // FIX: Disable for tasks
+                disabled={modal.event?.source === "task"}
                 onChange={(e) => {
                   const isAllDay = e.target.checked;
                   setModal((p) => {

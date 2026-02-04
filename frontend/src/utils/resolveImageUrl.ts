@@ -16,6 +16,12 @@ const ALLOWED_IMAGE_DOMAINS = [
 export function resolveImageUrl(url: string | null | undefined): string | undefined {
   if (!url) return undefined;
 
+  // Block data: URLs to prevent XSS attacks
+  if (url.startsWith("data:")) {
+    console.warn("Blocked data: URL for security");
+    return undefined;
+  }
+
   // Handle blob URLs (local file previews - trusted)
   if (url.startsWith("blob:")) {
     return url;
@@ -23,7 +29,9 @@ export function resolveImageUrl(url: string | null | undefined): string | undefi
 
   // Handle relative URLs (trusted - from our API)
   if (!url.startsWith("http://") && !url.startsWith("https://")) {
-    return `${API_BASE_URL}${url}`;
+    // Ensure leading slash for proper URL concatenation
+    const normalizedUrl = url.startsWith("/") ? url : `/${url}`;
+    return `${API_BASE_URL}${normalizedUrl}`;
   }
 
   // Validate absolute URLs against whitelist
@@ -33,7 +41,7 @@ export function resolveImageUrl(url: string | null | undefined): string | undefi
 
     // Check if hostname matches any allowed domain
     const isAllowed = ALLOWED_IMAGE_DOMAINS.some(
-      (domain) => hostname === domain || hostname.endsWith(`.${domain}`)
+      (domain) => hostname === domain || hostname.endsWith(`.${domain}`),
     );
 
     if (isAllowed) {

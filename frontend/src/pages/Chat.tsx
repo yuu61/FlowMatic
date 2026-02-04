@@ -1,4 +1,3 @@
-// Chat.tsx
 import {
   faChevronUp,
   faClock,
@@ -25,14 +24,8 @@ import type { ChatMessage, Chatroom } from "../types";
 import { resolveImageUrl } from "../utils/resolveImageUrl";
 import { createAuthenticatedWebSocket } from "../utils/websocket";
 
-// ========================================
-// Constants
-// ========================================
 const MESSAGES_PER_PAGE = 50;
 
-// ========================================
-// Local Types
-// ========================================
 interface FormattedMessage {
   id: string;
   userId: number;
@@ -110,7 +103,6 @@ const Chat = () => {
     }
   }, [currentMessages]);
 
-  // チャットルーム一覧を読み込む
   useEffect(() => {
     const loadChatrooms = async () => {
       if (!currentProjectId) return;
@@ -129,7 +121,6 @@ const Chat = () => {
 
         setChats(formattedChats);
 
-        // 最初のチャットルームを自動選択
         if (formattedChats.length > 0 && formattedChats[0]) {
           setSelectedChat(formattedChats[0].chatroom_id);
         }
@@ -143,7 +134,6 @@ const Chat = () => {
     void loadChatrooms();
   }, [currentProjectId, currentProject?.title]);
 
-  // 選択されたチャットルームのメッセージを読み込む + ポーリング
   useEffect(() => {
     const loadInitialMessages = async () => {
       if (!currentProjectId || !selectedChat) return;
@@ -208,7 +198,6 @@ const Chat = () => {
 
       const msg = data.message;
 
-      // safety: ignore messages for other rooms
       if (msg.chatroom_id !== selectedChat) return;
 
       const formattedMessage = {
@@ -229,7 +218,6 @@ const Chat = () => {
       setAllMessages((prev: Record<string, FormattedMessage[]>) => {
         const existing = prev[selectedChat] || [];
 
-        // prevent duplicates
         if (existing.some((m: FormattedMessage) => m.id === formattedMessage.id)) {
           return prev;
         }
@@ -245,9 +233,7 @@ const Chat = () => {
       console.error("❌ WebSocket error", err);
     };
 
-    socket.onclose = () => {
-      // WebSocket disconnected
-    };
+    socket.onclose = () => {};
 
     return () => {
       if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
@@ -257,7 +243,6 @@ const Chat = () => {
     };
   }, [currentProjectId, selectedChat, userId]);
 
-  // メッセージ送信
   const handleSendMessage = () => {
     if (
       !messageInput.trim() ||
@@ -269,8 +254,8 @@ const Chat = () => {
 
     socketRef.current.send(
       JSON.stringify({
-        type: "message", // ✅ MUST be "message"
-        content: messageInput, // ✅ backend expects this
+        type: "message",
+        content: messageInput,
       }),
     );
 
@@ -278,7 +263,6 @@ const Chat = () => {
     setReplyTo(null);
   };
 
-  // 編集開始 / 保存
   const startEditing = (msg: FormattedMessage) => {
     setEditingId(msg.id);
     setEditingText(msg.text);
@@ -301,7 +285,6 @@ const Chat = () => {
     setEditingText("");
   };
 
-  // メッセージ削除(Undo対応)
   const deleteMessage = (id: string) => {
     if (!selectedChat) return;
     const msg = currentMessages.find((m: FormattedMessage) => m.id === id);
@@ -331,7 +314,6 @@ const Chat = () => {
     setLastDeleted(null);
   };
 
-  // リプライ
   const handleReply = (msg: FormattedMessage) => {
     setReplyTo(msg);
   };
@@ -342,7 +324,6 @@ const Chat = () => {
     setShowEmojiPicker(false);
   };
 
-  // 追加のメッセージを読み込む(ページネーション)
   const loadMoreMessages = async () => {
     if (!currentProjectId || !selectedChat || !hasMore || isLoading) return;
 
@@ -357,24 +338,22 @@ const Chat = () => {
         MESSAGES_PER_PAGE,
       );
 
-      const formattedMessages: FormattedMessage[] = response.messages.map(
-        (msg: ChatMessage) => ({
-          id: msg.message_id,
-          userId: msg.user_id,
-          userName: msg.name || `User ${msg.user_id}`,
-          profilePicture: msg.profile_picture,
-          text: msg.content,
-          time: new Date(msg.timestamp).toLocaleTimeString("ja-JP", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          date: new Date(msg.timestamp).toLocaleDateString("ja-JP"),
-          self: msg.user_id === userId,
-          replyTo: null as FormattedMessage | null,
-          reaction: null as string | null,
-          reactions: {} as Record<string, number[]>,
+      const formattedMessages: FormattedMessage[] = response.messages.map((msg: ChatMessage) => ({
+        id: msg.message_id,
+        userId: msg.user_id,
+        userName: msg.name || `User ${msg.user_id}`,
+        profilePicture: msg.profile_picture,
+        text: msg.content,
+        time: new Date(msg.timestamp).toLocaleTimeString("ja-JP", {
+          hour: "2-digit",
+          minute: "2-digit",
         }),
-      );
+        date: new Date(msg.timestamp).toLocaleDateString("ja-JP"),
+        self: msg.user_id === userId,
+        replyTo: null as FormattedMessage | null,
+        reaction: null as string | null,
+        reactions: {} as Record<string, number[]>,
+      }));
 
       setAllMessages((prev: Record<string, FormattedMessage[]>) => ({
         ...prev,
@@ -415,11 +394,9 @@ const Chat = () => {
       }}
       role="button"
       tabIndex={0}
-      style={{ height: "calc(100vh - 100px)" }} // 親コンテナの高さを設定
+      style={{ height: "calc(100vh - 100px)" }}
     >
-      {/* チャット画面 (Full Width) */}
       <div className="w-full h-full flex flex-col relative bg-gradient-to-b from-white to-gray-50">
-        {/* ヘッダー */}
         <div className="p-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -436,7 +413,6 @@ const Chat = () => {
           </div>
         </div>
 
-        {/* Undo通知 */}
         {lastDeleted && (
           <div className="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border-y border-yellow-100 flex justify-between items-center shadow-sm flex-shrink-0">
             <div className="flex items-center gap-3">
@@ -455,7 +431,6 @@ const Chat = () => {
           </div>
         )}
 
-        {/* メッセージ一覧 - スクロール可能エリア */}
         <div className="flex-grow overflow-y-auto p-6 space-y-8 bg-gradient-to-b from-white to-gray-50">
           {hasMore && (
             <div className="text-center sticky top-0 z-10">
@@ -485,13 +460,11 @@ const Chat = () => {
           ) : (
             <div className="space-y-8">
               {currentMessages.map((msg: FormattedMessage, index: number) => {
-                // 日付の変更をチェック
                 const prevMsg = currentMessages[index - 1];
                 const showDate = index === 0 || msg.date !== prevMsg?.date;
 
                 return (
                   <div key={msg.id} className="group">
-                    {/* 日付セパレーター */}
                     {showDate && (
                       <div className="flex items-center justify-center my-8">
                         <div className="px-4 py-1.5 bg-gradient-to-r from-gray-100 to-gray-50 border border-gray-200 rounded-full text-xs text-gray-600 shadow-sm">
@@ -501,9 +474,7 @@ const Chat = () => {
                       </div>
                     )}
 
-                    {/* メッセージ */}
                     <div className={`flex gap-4 ${msg.self ? "justify-end" : "justify-start"}`}>
-                      {/* User icon - show on left for others */}
                       {!msg.self && (
                         <div className="flex-shrink-0">
                           <div className="relative">
@@ -523,14 +494,12 @@ const Chat = () => {
                       )}
 
                       <div className={`relative max-w-xl ${msg.self ? "ml-auto" : ""}`}>
-                        {/* User name - show above message for others */}
                         {!msg.self && (
                           <div className="text-sm font-semibold text-gray-800 mb-1.5 px-1">
                             {msg.userName || `User ${msg.userId}`}
                           </div>
                         )}
 
-                        {/* Hover Action Icons */}
                         <div
                           className={`
                             absolute -top-10 flex gap-1 bg-white rounded-full shadow-lg px-2 py-1 border border-gray-200
@@ -565,7 +534,6 @@ const Chat = () => {
                           )}
                         </div>
 
-                        {/* Message Bubble */}
                         <div className="flex flex-col">
                           {msg.replyTo && (
                             <div className="mb-2 p-3 bg-gradient-to-r from-gray-50 to-gray-100 border-l-4 border-blue-400 rounded-lg text-sm text-gray-600 shadow-sm">
@@ -622,7 +590,6 @@ const Chat = () => {
                             </div>
                           )}
 
-                          {/* Time and edited indicator */}
                           <div
                             className={`text-xs text-gray-400 mt-1.5 flex items-center gap-2 ${
                               msg.self ? "justify-end" : "justify-start"
@@ -637,7 +604,6 @@ const Chat = () => {
                             )}
                           </div>
 
-                          {/* Reactions */}
                           {Object.keys(msg.reactions || {}).length > 0 && (
                             <div className="flex gap-2 mt-2 flex-wrap">
                               {Object.entries(msg.reactions || {}).map(([emoji, users]) => (
@@ -656,7 +622,6 @@ const Chat = () => {
                         </div>
                       </div>
 
-                      {/* User icon on right for self messages */}
                       {msg.self && (
                         <div className="flex-shrink-0">
                           <div className="relative">
@@ -683,7 +648,6 @@ const Chat = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* リアクションピッカー */}
         {showReactionPicker && reactionPickerMessageId && (
           <div
             className="absolute bottom-24 right-6 z-50 shadow-2xl rounded-2xl overflow-hidden"
@@ -718,7 +682,6 @@ const Chat = () => {
           </div>
         )}
 
-        {/* リプライプレビュー */}
         {replyTo && (
           <div className="mx-6 mb-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-xl shadow-sm flex items-center gap-3 flex-shrink-0">
             <div className="flex-1">
@@ -734,10 +697,8 @@ const Chat = () => {
           </div>
         )}
 
-        {/* メッセージ入力エリア */}
         <div className="p-4 border-t border-gray-200 bg-gradient-to-r from-white to-gray-50 flex-shrink-0">
           <div className="flex items-end gap-3 relative">
-            {/* 絵文字ピッカーボタン */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -766,7 +727,6 @@ const Chat = () => {
               </div>
             )}
 
-            {/* テキスト入力 */}
             <div className="flex-grow bg-white border border-gray-300 rounded-2xl p-1 shadow-inner">
               <textarea
                 rows={2}
@@ -786,7 +746,6 @@ const Chat = () => {
               />
             </div>
 
-            {/* 送信ボタン */}
             <button
               onClick={handleSendMessage}
               disabled={isLoading || !messageInput.trim()}

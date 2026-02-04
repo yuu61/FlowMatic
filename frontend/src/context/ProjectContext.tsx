@@ -5,9 +5,6 @@ import { getProjects } from "../services/ProjectService";
 import type { Project } from "../types";
 import { useAuth } from "./AuthContext";
 
-// ========================================
-// Context Types
-// ========================================
 interface ProjectContextValue {
   projects: Project[];
   setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
@@ -24,9 +21,6 @@ interface ProjectProviderProps {
   children: ReactNode;
 }
 
-// ========================================
-// Context
-// ========================================
 const ProjectContext = createContext<ProjectContextValue | null>(null);
 
 export const ProjectProvider = ({ children }: ProjectProviderProps) => {

@@ -1,6 +1,3 @@
-// ========================================
-// User Types
-// ========================================
 export interface User {
   id: number;
   username: string;
@@ -9,15 +6,11 @@ export interface User {
   date_joined: string;
 }
 
-// ========================================
-// Project Types
-// ========================================
-// バックエンド: planning, in_progress, completed
 export type ProjectStatus = "planning" | "in_progress" | "completed";
 
 export interface Project {
   project_id: string;
-  title: string; // バックエンドは title を使用
+  title: string;
   description: string;
   start_date: string;
   deadline: string;
@@ -28,18 +21,13 @@ export interface Project {
 
 export interface ProjectMember {
   user_id: number;
-  name: string; // バックエンドは name を使用
+  name: string;
   email: string;
   profile_picture?: string | null;
 }
 
-// ========================================
-// Task Types
-// ========================================
-// バックエンド: todo, pending, in_progress, in_review, testing, done
 export type TaskStatus = "todo" | "pending" | "in_progress" | "in_review" | "testing" | "done";
 
-// バックエンド: low, medium, high
 export type TaskPriority = "low" | "medium" | "high";
 
 export interface TaskUser {
@@ -68,13 +56,13 @@ export interface TaskComment {
 export interface Task {
   task_id: string;
   project_id: string;
-  name: string; // バックエンドは name を使用
+  name: string;
   description: string;
   start_date: string;
-  deadline: string; // バックエンドは deadline を使用
+  deadline: string;
   status: TaskStatus;
   priority: TaskPriority;
-  users: TaskUser[]; // 複数ユーザー割り当て
+  users: TaskUser[];
   parent_tasks: ParentTask[];
   comments: TaskComment[];
 }
@@ -90,17 +78,13 @@ export interface TaskFormData {
   parent_tasks?: { task_id: string; relation_type: string }[];
 }
 
-// ========================================
-// Event Types (Calendar)
-// ========================================
-// バックエンド: red, blue, green, orange
 export type EventColor = "red" | "blue" | "green" | "orange";
 
 export interface CalendarEvent {
   event_id: string;
   project_id: string;
   title: string;
-  is_all_day: boolean; // バックエンドは is_all_day を使用
+  is_all_day: boolean;
   start_date: string;
   end_date: string;
   color: EventColor;
@@ -114,9 +98,6 @@ export interface EventFormData {
   color?: EventColor;
 }
 
-// ========================================
-// Chat Types
-// ========================================
 export interface Chatroom {
   chatroom_id: string;
   project_id: string;
@@ -130,17 +111,14 @@ export interface ChatMessage {
   message_id: string;
   chatroom_id: string;
   user_id: number;
-  username?: string; // 一部のAPIレスポンスで username が返る場合がある
-  name: string; // バックエンドは name を使用
+  username?: string;
+  name: string;
   email: string;
   profile_picture?: string | null;
   content: string;
-  timestamp: string; // バックエンドは timestamp を使用
+  timestamp: string;
 }
 
-// ========================================
-// File Types
-// ========================================
 export interface FileUploader {
   id: number;
   username: string;
@@ -148,22 +126,19 @@ export interface FileUploader {
 }
 
 export interface ProjectFile {
-  id: string; // バックエンドは id を使用 (file_id)
+  id: string;
   name: string;
   uploader: FileUploader;
-  date: string; // バックエンドは date を使用 (uploaded_at から変換)
-  size: string; // バックエンドは文字列形式で返す
-  url: string; // ファイルURL
+  date: string;
+  size: string;
+  url: string;
 }
 
-// ========================================
-// Comment Types (タスクコメント用)
-// ========================================
 export interface Comment {
   comment_id: string;
   task_id: string;
   user_id: number;
-  name: string; // バックエンドは name を使用
+  name: string;
   email: string;
   profile_picture?: string | null;
   content: string;
@@ -175,10 +150,6 @@ export interface CommentFormData {
   user_id?: number;
 }
 
-// ========================================
-// Memo Types
-// ========================================
-// バックエンド: yellow, blue, green
 export type MemoColor = "yellow" | "blue" | "green";
 
 export interface MemoUser {
@@ -191,7 +162,7 @@ export interface MemoUser {
 export interface Memo {
   memo_id: string;
   project_id: string;
-  content: string; // バックエンドに title はない
+  content: string;
   color: MemoColor;
   is_pinned: boolean;
   user: MemoUser;
@@ -206,9 +177,6 @@ export interface MemoFormData {
   user_id?: number;
 }
 
-// ========================================
-// API Response Types
-// ========================================
 export interface ApiError {
   message: string;
   details?: Record<string, string[]>;
@@ -222,9 +190,6 @@ export interface PaginatedResponse<T> {
   total_count: number;
 }
 
-// ========================================
-// Auth Types
-// ========================================
 export interface JwtPayload {
   exp: number;
   iat: number;

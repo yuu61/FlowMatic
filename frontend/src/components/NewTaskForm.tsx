@@ -154,7 +154,6 @@ export default function NewTaskForm() {
 
   return (
     <div className="flex flex-col items-center max-w-full md:max-w-5xl mx-auto justify-center min-h-screen md:p-6 relative">
-      {/* Back Button */}
       <div className="w-full mb-6">
         <button
           type="button"
@@ -175,7 +174,6 @@ export default function NewTaskForm() {
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Task Name */}
           <div>
             <label htmlFor="taskName" className="block text-gray-700 text-lg font-semibold mb-2">
               タスク名
@@ -191,7 +189,6 @@ export default function NewTaskForm() {
             />
           </div>
 
-          {/* Description */}
           <div>
             <label htmlFor="description" className="block text-gray-700 text-lg font-semibold mb-2">
               説明
@@ -206,7 +203,6 @@ export default function NewTaskForm() {
             />
           </div>
 
-          {/* Due Date + Assignees */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <span id="startDateLabel" className="block text-gray-700 text-lg font-semibold mb-2">
@@ -267,7 +263,6 @@ export default function NewTaskForm() {
             </div>
           </div>
 
-          {/* Priority + Status */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <label htmlFor="priority" className="block text-gray-700 text-lg font-semibold mb-2">
@@ -304,7 +299,6 @@ export default function NewTaskForm() {
             </div>
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             className="w-full bg-blue-600 text-white font-extrabold text-lg py-3 rounded-lg
@@ -314,7 +308,6 @@ export default function NewTaskForm() {
           </button>
         </form>
 
-        {/* Message */}
         {message.text && (
           <div
             className={`mt-6 p-4 rounded-lg text-lg text-center ${

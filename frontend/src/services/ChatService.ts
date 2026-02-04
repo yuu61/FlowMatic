@@ -2,9 +2,6 @@ import api from "../api";
 import type { ChatMessage, Chatroom } from "../types";
 import { apiWrapper } from "../utils/apiWrapper";
 
-// ========================================
-// Chatroom Types
-// ========================================
 export interface ChatroomFormData {
   name: string;
   description?: string;
@@ -27,9 +24,6 @@ interface ChatroomsResponse {
   chatrooms: Chatroom[];
 }
 
-// ========================================
-// API Functions
-// ========================================
 export function createChatroom(
   projectId: string,
   chatroomData: ChatroomFormData,
@@ -66,9 +60,6 @@ export async function deleteChatroom(chatroomId: string): Promise<void> {
   await apiWrapper(() => api.delete(`/api/chatrooms/${chatroomId}/`), "Delete chatroom");
 }
 
-/**
- * Get messages from a chatroom with pagination
- */
 export function getMessages(
   projectId: string,
   chatroomId: string,
@@ -87,9 +78,6 @@ export function getMessages(
   );
 }
 
-/**
- * Post a message to a chatroom
- */
 export function postMessage(
   projectId: string,
   chatroomId: string,

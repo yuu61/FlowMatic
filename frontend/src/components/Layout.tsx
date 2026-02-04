@@ -13,7 +13,6 @@ function Layout() {
   const { projects, currentProject, handleProjectChange, loading } = useProject();
   const { logout } = useAuth();
 
-  // Close dropdown if clicked outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -82,7 +81,7 @@ function Layout() {
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.to === "/"} // ✅ only exact match for Dashboard
+              end={item.to === "/"}
               onClick={() => setSidebarOpen(false)}
               className={({ isActive }) =>
                 `flex items-center gap-6 p-3 rounded-lg text-xl font-bold transition-all duration-200 hover:bg-blue-500/50 hover:translate-x-1 ${

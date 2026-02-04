@@ -4,13 +4,10 @@ import { NavLink } from "react-router-dom";
 import NewTaskForm from "../components/NewTaskForm";
 
 function Home() {
-  // サイドバー開閉
-  // -------------------------------
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className="font-sans bg-gray-100 min-h-screen flex">
-      {/* サイドバー */}
       <aside
         className={`fixed top-0 left-0 h-full w-64 bg-gray-800 text-white flex flex-col transition-transform duration-300 z-40 ${
           sidebarOpen ? "" : "-translate-x-full md:translate-x-0"
@@ -52,12 +49,10 @@ function Home() {
         </ul>
       </aside>
 
-      {/* メインコンテンツ */}
       <main className="flex-1 ml-0 md:ml-64 p-8 overflow-y-auto">
         <NewTaskForm />
       </main>
 
-      {/* モバイルメニューボタン */}
       <button
         className="fixed top-4 left-4 md:hidden z-50 bg-white p-2 rounded-lg shadow"
         onClick={() => setSidebarOpen(!sidebarOpen)}

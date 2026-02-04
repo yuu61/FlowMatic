@@ -49,9 +49,7 @@ export function updateUserProfile(userData: UserProfileUpdate): Promise<User> {
 /**
  * Change current user's password
  */
-export function changeUserPassword(
-  passwordData: PasswordChangeData,
-): Promise<{ message: string }> {
+export function changeUserPassword(passwordData: PasswordChangeData): Promise<{ message: string }> {
   return apiWrapper(
     () =>
       api.put<{ message: string }>("/api/users/me/password/", {

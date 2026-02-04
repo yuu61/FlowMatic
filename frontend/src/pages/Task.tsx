@@ -24,9 +24,6 @@ import type { TaskComment, TaskPriority, TaskStatus, TaskUser } from "../types";
 import { isDeadlineNear } from "../utils/dateUtils";
 import { resolveImageUrl } from "../utils/resolveImageUrl";
 
-// ========================================
-// Local Types for Task Page
-// ========================================
 interface NormalizedTask {
   id: string;
   title: string;
@@ -54,7 +51,6 @@ const Task = () => {
   const { projects, currentProject, refreshProjects } = useProject();
   const currentProjectId = currentProject?.project_id;
 
-  // For testing
   const [tasks, setTasks] = useState<NormalizedTask[]>([]);
 
   const [loading, setLoading] = useState(true);
@@ -66,7 +62,6 @@ const Task = () => {
 
   const [openCommentsTaskId, setOpenCommentsTaskId] = useState<string | null>(null);
 
-  // loading state for updating tasks
   const [updatingTasks] = useState<Record<string, boolean>>({});
 
   const addComment = async (projectId: string, taskId: string): Promise<void> => {
@@ -86,10 +81,8 @@ const Task = () => {
         content: commentText,
       };
 
-      // Call API
       const savedComment = await createComment(projectId, taskId, body);
 
-      // Update UI
       setTasks((prev) =>
         prev.map((task) =>
           task.id === taskId
@@ -101,7 +94,6 @@ const Task = () => {
         ),
       );
 
-      // Clear only this task's comment
       setNewComments((prev) => ({
         ...prev,
         [taskId]: "",
@@ -120,7 +112,6 @@ const Task = () => {
 
   useEffect(() => {
     return () => {
-      // Clear the comment when the active task changes
       if (activeTaskId) {
         setNewComments((prev) => ({
           ...prev,
@@ -134,24 +125,23 @@ const Task = () => {
     const loadTasks = async () => {
       if (!currentProjectId) {
         setTasks([]);
-        setLoading(false); // ✅ IMPORTANT
+        setLoading(false);
         return;
       }
 
       try {
         const response = await getTasks(currentProjectId);
 
-        // Normalize API → UI format
         const normalized = response.map((task) => ({
-          id: task.task_id, // map to id field used in UI
-          title: task.name, // your UI uses title
+          id: task.task_id,
+          title: task.name,
           description: task.description,
           dueDate: task.deadline,
           priority: task.priority,
           status: task.status,
           users: task.users,
           parentTasks: task.parent_tasks,
-          comments: task.comments || [], // default empty array
+          comments: task.comments || [],
         }));
 
         setTasks(normalized);
@@ -165,7 +155,6 @@ const Task = () => {
     void loadTasks();
   }, [currentProjectId]);
 
-  // ✅ Check if task is assigned to current user
   const isMyTask = useCallback(
     (task: NormalizedTask): boolean => {
       if (!user || !user.id || !task.users) return false;
@@ -175,7 +164,6 @@ const Task = () => {
     [user],
   );
 
-  // ✅ Dynamic filter logic
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
       if (filter === "all") return true;
@@ -208,7 +196,6 @@ const Task = () => {
       const newStatus =
         currentTask.status === TASK_STATUS.DONE ? TASK_STATUS.IN_PROGRESS : TASK_STATUS.DONE;
 
-      // OPTIMISTIC UPDATE: Update UI immediately
       setTasks((tasks) =>
         tasks.map((task) =>
           task.id === taskId
@@ -220,7 +207,6 @@ const Task = () => {
         ),
       );
 
-      // Then update database
       const taskData = {
         status: newStatus,
       };
@@ -232,7 +218,6 @@ const Task = () => {
     } catch (error) {
       console.error("Failed to update task status:", error);
 
-      // REVERT ON ERROR: Only revert if currentTask was found
       const currentTask = tasks.find((task) => task.id === taskId);
       if (currentTask) {
         setTasks((tasks) =>
@@ -240,7 +225,7 @@ const Task = () => {
             task.id === taskId
               ? {
                   ...task,
-                  status: currentTask.status, // Revert to original status
+                  status: currentTask.status,
                 }
               : task,
           ),
@@ -304,7 +289,6 @@ const Task = () => {
 
   return (
     <div className="mx-auto md:p-6 space-y-10">
-      {/* Header */}
       <div className="flex justify-between items-center bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 text-white px-8 py-6 rounded-2xl shadow-lg">
         <h1 className="text-4xl font-bold tracking-wide">タスク管理</h1>
         <Link to="/task/new">
@@ -318,7 +302,6 @@ const Task = () => {
         </Link>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
         <StatCard
           title="マイタスク"
@@ -343,7 +326,6 @@ const Task = () => {
         />
       </div>
 
-      {/* Filter Buttons */}
       <div className="flex flex-wrap gap-4">
         {[
           {
@@ -412,7 +394,6 @@ const Task = () => {
         })}
       </div>
 
-      {/* Task List */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
         {filteredTasks.length === 0 ? (
           <div className="text-center py-16 font-bold">
@@ -427,7 +408,6 @@ const Task = () => {
                 className="p-6 hover:bg-gray-50 transition-all duration-200 flex items-start justify-between group"
               >
                 <div className="flex items-start gap-4 flex-1">
-                  {/* user.id is the ID of current user */}
                   {user && task.users.some((u: TaskUser) => u.user_id === user.id) && (
                     <button
                       onClick={() => toggleTaskStatus(task.id)}
@@ -544,7 +524,6 @@ const Task = () => {
                       </div>
                     )}
 
-                    {/* Comments Section */}
                     <div className="flex flex-wrap items-center gap-4">
                       {task.comments && task.comments.length > 0 && (
                         <button
@@ -586,7 +565,6 @@ const Task = () => {
                                 className="bg-white px-4 py-3 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
                               >
                                 <div className="flex items-start gap-3">
-                                  {/* Avatar with initials */}
                                   {comment.profile_picture ? (
                                     <img
                                       src={resolveImageUrl(comment.profile_picture)}
@@ -600,7 +578,6 @@ const Task = () => {
                                   )}
 
                                   <div className="flex-1 min-w-0">
-                                    {/* Author and timestamp */}
                                     <div className="flex items-baseline gap-4 mb-1">
                                       <span className="font-semibold text-gray-900 text-lg">
                                         {comment.name}
@@ -612,7 +589,6 @@ const Task = () => {
                                       )}
                                     </div>
 
-                                    {/* Comment content */}
                                     <p className="text-gray-700 text-lg leading-relaxed break-words">
                                       {comment.content}
                                     </p>
@@ -629,7 +605,6 @@ const Task = () => {
                       </div>
                     )}
 
-                    {/* Show input when active */}
                     {activeTaskId === task.id && (
                       <div className="flex items-center gap-2 mt-2">
                         <input

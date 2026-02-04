@@ -1,6 +1,3 @@
-// ========================================
-// Local Storage Keys
-// ========================================
 /**
  * @deprecated トークンはhttpOnly Cookieに保存されます。
  * この定数は後方互換性のために残されています。
@@ -21,9 +18,6 @@ export const CURRENT_USER = "user";
 
 export const CURRENT_PROJECT_ID = "currentProjectId";
 
-// ========================================
-// API Configuration
-// ========================================
 export const API_BASE_URL =
   (import.meta.env["VITE_API_URL"] as string | undefined) || "http://localhost:8000";
 // Security: Default to wss:// (encrypted) in production
@@ -32,9 +26,6 @@ export const WS_BASE_URL =
   (import.meta.env["VITE_WS_URL"] as string | undefined) ||
   (import.meta.env["PROD"] ? "wss://localhost:8000" : "ws://localhost:8000");
 
-// ========================================
-// Project Status
-// ========================================
 export const PROJECT_STATUS = {
   PLANNING: "planning",
   IN_PROGRESS: "in_progress",
@@ -43,9 +34,6 @@ export const PROJECT_STATUS = {
 
 export type ProjectStatusType = (typeof PROJECT_STATUS)[keyof typeof PROJECT_STATUS];
 
-// ========================================
-// Task Status
-// ========================================
 export const TASK_STATUS = {
   TODO: "todo",
   PENDING: "pending",
@@ -65,9 +53,6 @@ export const ACTIVE_TASK_STATUSES = [
   TASK_STATUS.TESTING,
 ] as const;
 
-// ========================================
-// Task Priority
-// ========================================
 export const TASK_PRIORITY = {
   HIGH: "high",
   MEDIUM: "medium",
@@ -76,26 +61,14 @@ export const TASK_PRIORITY = {
 
 export type TaskPriorityType = (typeof TASK_PRIORITY)[keyof typeof TASK_PRIORITY];
 
-// ========================================
-// UI Timeouts
-// ========================================
 export const NOTIFICATION_TIMEOUT_MS = 3000;
 export const DEBOUNCE_DELAY_MS = 300;
 export const UNDO_TIMEOUT_MS = 5000;
 
-// ========================================
-// Business Logic Constants
-// ========================================
 export const DEADLINE_NEAR_DAYS = 7;
 export const MIN_PASSWORD_LENGTH = 6;
-export const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+export const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 
-// ========================================
-// External URLs
-// ========================================
 export const FALLBACK_AVATAR_URL = "https://ui-avatars.com/api/";
 
-// ========================================
-// App Info
-// ========================================
 export const APP_NAME = "FlowMatic";

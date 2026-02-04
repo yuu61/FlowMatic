@@ -3,9 +3,6 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useS
 import api, { initializeCsrf } from "../api";
 import type { User } from "../types";
 
-// ========================================
-// Context Types
-// ========================================
 interface AuthContextValue {
   isAuthorized: boolean | null;
   setIsAuthorized: React.Dispatch<React.SetStateAction<boolean | null>>;
@@ -20,9 +17,6 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// ========================================
-// Context
-// ========================================
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
@@ -45,10 +39,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const auth = useCallback(async () => {
     try {
-      // CSRFトークンを初期化
       await initializeCsrf();
 
-      // 認証状態をサーバーに確認
       const res = await api.get("/api/auth/status/");
 
       if (res.status === 200 && res.data.authenticated) {
@@ -58,10 +50,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setIsAuthorized(false);
       }
     } catch {
-      // 401エラーの場合、トークンリフレッシュを試行
       try {
         await refreshToken();
-        // リフレッシュ成功後、再度認証状態を確認
         const res = await api.get("/api/auth/status/");
         if (res.status === 200 && res.data.authenticated) {
           setIsAuthorized(true);
@@ -79,7 +69,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       await api.post("/api/auth/logout/");
     } catch {
-      // ログアウトリクエストが失敗しても、ローカル状態はクリア
+      // continue even if logout request fails
     }
     setIsAuthorized(false);
     setUser(null);
@@ -106,7 +96,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   );
 };
 
-// Custom hook to use auth context
 // eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = (): AuthContextValue => {
   const context = useContext(AuthContext);

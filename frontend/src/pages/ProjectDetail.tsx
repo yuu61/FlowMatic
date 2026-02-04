@@ -116,10 +116,7 @@ const ProjectDetail = () => {
 
       const normalized = normalizeProject(updatedProject);
 
-      // ✅ update local page state
       setProjectData(normalized);
-
-      // ✅ update ProjectContext state
       updateProjectInContext(normalized as unknown as Project);
 
       alert("プロジェクトを更新しました！");
@@ -137,7 +134,7 @@ const ProjectDetail = () => {
     start_date: data.start_date || undefined,
     deadline: data.deadline || undefined,
     status: data.status,
-    members: data.members.map((m: ProjectMemberExtended) => m.user_id), // ✅ only IDs
+    members: data.members.map((m: ProjectMemberExtended) => m.user_id),
   });
 
   const openInvitationModal = () => {

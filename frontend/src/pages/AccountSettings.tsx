@@ -339,7 +339,7 @@ const AccountSettings = () => {
                         userData.profile_preview ||
                           (typeof userData.profile_picture === "string"
                             ? userData.profile_picture
-                            : undefined)
+                            : undefined),
                       )}
                       alt="プロフィール"
                       className="w-full h-full object-cover"
