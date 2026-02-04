@@ -11,10 +11,14 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 import os
+import sys
 from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
+
+# テスト実行中かどうかを判定
+TESTING = len(sys.argv) > 1 and sys.argv[1] == "test"
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -49,6 +53,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    "EXCEPTION_HANDLER": "common.exception_handler.custom_exception_handler",
 }
 
 SIMPLE_JWT = {
@@ -235,3 +240,19 @@ if not DEBUG:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# =============================================================================
+# テスト用設定（テスト実行時のパフォーマンス最適化）
+# =============================================================================
+if TESTING:
+    # 軽量なパスワードハッシャーを使用（テスト高速化）
+    PASSWORD_HASHERS = [
+        "django.contrib.auth.hashers.MD5PasswordHasher",
+    ]
+    # ロギングを抑制
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": True,
+        "handlers": {},
+        "loggers": {},
+    }
