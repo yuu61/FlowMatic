@@ -9,18 +9,25 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
 import FullCalendar from "@fullcalendar/react";
-import { MobileDateTimePicker } from "@mui/x-date-pickers";
+import { ja } from "date-fns/locale";
 import dayjs from "dayjs";
+import DatePicker, { registerLocale } from "react-datepicker";
+
+registerLocale("ja", ja);
 import utc from "dayjs/plugin/utc";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import ProjectRequired from "../components/ProjectRequired";
+import { NOTIFICATION_TIMEOUT_MS, TASK_STATUS } from "../constants";
 import { useProject } from "../context/ProjectContext";
 import { createEvent, getEvents, updateEvent as updateEventApi } from "../services/EventService";
 import { getTasks } from "../services/TaskService";
 import type { EventColor, Task, TaskPriority, TaskStatus } from "../types";
-import { formatDateJP, formatUTC } from "../utils/dateUtils";
+import { formatDateJP, formatUTC, isDeadlineNear } from "../utils/dateUtils";
 dayjs.extend(utc);
+
+// ========== Constants ==========
+const CALENDAR_RESIZE_DELAY_MS = 500;
 
 // ========== Type Definitions ==========
 type CalendarStatus = "active" | "completed" | "urgent";
@@ -117,12 +124,12 @@ const formatToISO = (dateStr: string, isAllDay: boolean): string => {
 
 const mapStatusToCalendar = (apiStatus: TaskStatus): CalendarStatus => {
   const statusMap: Record<TaskStatus, CalendarStatus> = {
-    done: "completed",
+    [TASK_STATUS.DONE]: "completed",
     testing: "completed",
     in_review: "active",
-    in_progress: "active",
+    [TASK_STATUS.IN_PROGRESS]: "active",
     pending: "active",
-    todo: "active",
+    [TASK_STATUS.TODO]: "active",
   };
   return statusMap[apiStatus] || "active";
 };
@@ -138,14 +145,6 @@ const mapTaskToCalendarFormat = (apiTask: Task): CalendarTask => ({
   assignedUsers: apiTask.users?.map((u) => u.user_id) || [],
   parentTasks: apiTask.parent_tasks || [],
 });
-
-const isDeadlineNear = (dueDate: string | null | undefined): boolean => {
-  if (!dueDate) return false;
-  const now = new Date();
-  const due = new Date(dueDate);
-  const diffDays = (due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-  return diffDays >= 0 && diffDays <= 7;
-};
 
 const getFilterColorClasses = (color: FilterColor, isActive: boolean): string => {
   const colorMap: Record<FilterColor, string> = {
@@ -199,11 +198,11 @@ const Calendar = () => {
     event: null,
     isNew: false,
   });
-  const [modalReady, setModalReady] = useState(false);
+  const [isModalReady, setIsModalReady] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [filter, setFilter] = useState<string>("all");
   const [sortType, setSortType] = useState<SortType>("dueDate");
-  const [showDetail, setShowDetail] = useState(false);
+  const [isDetailVisible, setIsDetailVisible] = useState(false);
 
   // Sort functions
   const priorityOrder: Record<TaskPriority, number> = { high: 1, medium: 2, low: 3 };
@@ -214,19 +213,74 @@ const Calendar = () => {
       (priorityOrder[a.priority] || 2) - (priorityOrder[b.priority] || 2),
   };
 
+  // ========== Data Fetching ==========
+  const fetchTasks = useCallback(async () => {
+    if (!currentProject?.project_id) {
+      setTasks([]);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const fetchedTasks = await getTasks(currentProject.project_id);
+      const mappedTasks = fetchedTasks.map(mapTaskToCalendarFormat);
+      setTasks(mappedTasks);
+    } catch (error) {
+      console.error("Failed to fetch tasks:", error);
+      addNotification("タスクの取得に失敗しました ⚠️");
+    } finally {
+      setLoading(false);
+    }
+  }, [currentProject?.project_id]);
+
+  const fetchEvents = useCallback(async () => {
+    if (!currentProject?.project_id) {
+      setEvents([]);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const apiEvents = await getEvents(currentProject.project_id);
+
+      const mappedEvents = apiEvents.map((evt) => ({
+        id: evt.event_id,
+        title: evt.title,
+        start: evt.start_date,
+        end: evt.end_date,
+        allDay: evt.is_all_day,
+        color: mapApiColorToHex(evt.color),
+        status: "active",
+        priority: "medium",
+        source: "user",
+      }));
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(mappedEvents));
+    } catch (error) {
+      console.error("Failed to fetch events:", error);
+      addNotification("イベントの取得に失敗しました ⚠️");
+    }
+  }, [currentProject?.project_id]);
+
   // ========== Effects ==========
   useEffect(() => {
-    setTimeout(() => calendarRef.current?.getApi().updateSize(), 500);
+    setTimeout(() => calendarRef.current?.getApi().updateSize(), CALENDAR_RESIZE_DELAY_MS);
   }, []);
 
   useEffect(() => {
     void fetchTasks();
     void fetchEvents();
-  }, [currentProject?.project_id]);
+  }, [currentProject?.project_id, fetchEvents, fetchTasks]);
 
   useEffect(() => {
-    const storedEvents: CalendarEventItem[] =
-      JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]") || [];
+    let storedEvents: CalendarEventItem[] = [];
+    try {
+      storedEvents = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]") || [];
+    } catch (error) {
+      console.error("Failed to parse calendar events from localStorage:", error);
+      storedEvents = [];
+    }
     const userEvents = storedEvents.filter((e: CalendarEventItem) => e.source !== "task");
 
     const taskEvents: CalendarEventItem[] = tasks.map((task) => {
@@ -254,59 +308,13 @@ const Calendar = () => {
   }, [tasks]);
 
   // ========== Handlers ==========
-  const fetchTasks = async () => {
-    if (!currentProject?.project_id) {
-      setTasks([]);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const fetchedTasks = await getTasks(currentProject.project_id);
-      const mappedTasks = fetchedTasks.map(mapTaskToCalendarFormat);
-      setTasks(mappedTasks);
-    } catch (error) {
-      console.error("Failed to fetch tasks:", error);
-      addNotification("タスクの取得に失敗しました ⚠️");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchEvents = async () => {
-    if (!currentProject?.project_id) {
-      setEvents([]);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const apiEvents = await getEvents(currentProject.project_id);
-
-      const mappedEvents = apiEvents.map((evt) => ({
-        id: evt.event_id,
-        title: evt.title,
-        start: evt.start_date,
-        end: evt.end_date,
-        allDay: evt.is_all_day,
-        color: mapApiColorToHex(evt.color),
-        status: "active",
-        priority: "medium",
-        source: "user",
-      }));
-
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(mappedEvents));
-    } catch (error) {
-      console.error("Failed to fetch events:", error);
-      addNotification("イベントの取得に失敗しました ⚠️");
-    }
-  };
-
   const addNotification = (text: string): void => {
     const id = Date.now();
     setNotifications((prev) => [...prev, { id, text }]);
-    setTimeout(() => setNotifications((prev) => prev.filter((n) => n.id !== id)), 3000);
+    setTimeout(
+      () => setNotifications((prev) => prev.filter((n) => n.id !== id)),
+      NOTIFICATION_TIMEOUT_MS,
+    );
   };
 
   const saveEvents = (newEvents: CalendarEventItem[], msg: string): void => {
@@ -466,7 +474,7 @@ const Calendar = () => {
       };
     }
     setModal({ open: true, event: modalEvent, isNew });
-    requestAnimationFrame(() => setModalReady(true));
+    requestAnimationFrame(() => setIsModalReady(true));
   };
 
   // FIX: Separate function for opening task details (read-only view)
@@ -479,9 +487,9 @@ const Calendar = () => {
   };
 
   const closeModal = () => {
-    setModalReady(false);
+    setIsModalReady(false);
     setModal((prev) => ({ ...prev, open: false }));
-    setTimeout(() => setShowDetail(false), 300);
+    setTimeout(() => setIsDetailVisible(false), 300);
   };
 
   const updateEvent = (field: keyof CalendarEventItem, value: string | boolean): void => {
@@ -771,7 +779,7 @@ const Calendar = () => {
       {modal.open && (
         <div
           className={`modal-overlay fixed inset-0 flex justify-center items-center z-[3000] ${
-            modalReady ? "show" : ""
+            isModalReady ? "show" : ""
           }`}
           onClick={closeModal}
           onKeyDown={(e) => {
@@ -783,7 +791,7 @@ const Calendar = () => {
           {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
           <div
             className={`modal-content bg-white rounded-xl p-6 w-[420px] shadow-lg max-h-[85vh] overflow-y-auto ${
-              modalReady ? "show" : ""
+              isModalReady ? "show" : ""
             }`}
             onClick={(e) => e.stopPropagation()}
             role="dialog"
@@ -804,7 +812,7 @@ const Calendar = () => {
               </div>
             )}
 
-            {modalReady && modal.event && (
+            {isModalReady && modal.event && (
               <div className="text-xs text-gray-500 mb-3">
                 {modal.event.source === "task" ? (
                   // For tasks, show start date and due date labels
@@ -840,24 +848,26 @@ const Calendar = () => {
                 <span id="startDateLabel" className="text-sm text-gray-600 block mb-1">
                   開始日
                 </span>
-                <MobileDateTimePicker
-                  value={modal.event?.start ? dayjs.utc(modal.event.start) : null}
-                  onChange={(newValue) =>
-                    newValue &&
+                <DatePicker
+                  selected={modal.event?.start ? new Date(modal.event.start) : null}
+                  onChange={(date: Date | null) =>
+                    date &&
                     updateEvent(
                       "start",
-                      newValue.format(modal.event?.allDay ? "YYYY-MM-DD" : "YYYY-MM-DDTHH:mm"),
+                      modal.event?.allDay
+                        ? dayjs(date).format("YYYY-MM-DD")
+                        : dayjs(date).format("YYYY-MM-DDTHH:mm"),
                     )
                   }
-                  maxDate={modal.event?.end ? dayjs.utc(modal.event.end) : undefined}
-                  disabled={modal.event?.source === "task"} // FIX: Disable for tasks
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      size: "small",
-                      "aria-labelledby": "startDateLabel",
-                    },
-                  }}
+                  maxDate={modal.event?.end ? new Date(modal.event.end) : undefined}
+                  disabled={modal.event?.source === "task"}
+                  showTimeSelect={!modal.event?.allDay}
+                  timeFormat="HH:mm"
+                  timeIntervals={15}
+                  dateFormat={modal.event?.allDay ? "yyyy/MM/dd" : "yyyy/MM/dd HH:mm"}
+                  locale="ja"
+                  className="w-full"
+                  aria-labelledby="startDateLabel"
                 />
               </div>
 
@@ -865,24 +875,26 @@ const Calendar = () => {
                 <span id="endDateLabel" className="text-sm text-gray-600 block mb-1">
                   終了日
                 </span>
-                <MobileDateTimePicker
-                  value={modal.event?.end ? dayjs.utc(modal.event.end) : null}
-                  onChange={(newValue) =>
-                    newValue &&
+                <DatePicker
+                  selected={modal.event?.end ? new Date(modal.event.end) : null}
+                  onChange={(date: Date | null) =>
+                    date &&
                     updateEvent(
                       "end",
-                      newValue.format(modal.event?.allDay ? "YYYY-MM-DD" : "YYYY-MM-DDTHH:mm"),
+                      modal.event?.allDay
+                        ? dayjs(date).format("YYYY-MM-DD")
+                        : dayjs(date).format("YYYY-MM-DDTHH:mm"),
                     )
                   }
-                  minDate={modal.event?.start ? dayjs(modal.event.start) : undefined}
-                  disabled={modal.event?.source === "task"} // FIX: Disable for tasks
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      size: "small",
-                      "aria-labelledby": "endDateLabel",
-                    },
-                  }}
+                  minDate={modal.event?.start ? new Date(modal.event.start) : undefined}
+                  disabled={modal.event?.source === "task"}
+                  showTimeSelect={!modal.event?.allDay}
+                  timeFormat="HH:mm"
+                  timeIntervals={15}
+                  dateFormat={modal.event?.allDay ? "yyyy/MM/dd" : "yyyy/MM/dd HH:mm"}
+                  locale="ja"
+                  className="w-full"
+                  aria-labelledby="endDateLabel"
                 />
               </div>
             </div>
@@ -939,12 +951,12 @@ const Calendar = () => {
             <div className="mb-4">
               <button
                 className="text-blue-600 font-medium underline"
-                onClick={() => setShowDetail((s) => !s)}
+                onClick={() => setIsDetailVisible((s) => !s)}
               >
-                {showDetail ? "▲ 詳細を隠す" : "▼ 詳細設定"}
+                {isDetailVisible ? "▲ 詳細を隠す" : "▼ 詳細設定"}
               </button>
 
-              {showDetail && (
+              {isDetailVisible && (
                 <div className="mt-3 space-y-3">
                   <div>
                     <label htmlFor="eventPriority" className="text-sm text-gray-600 block mb-1">

@@ -1,28 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 
-import { CURRENT_USER } from "../constants";
+import { APP_NAME } from "../constants";
 import { useAuth } from "../context/AuthContext";
 import { useProject } from "../context/ProjectContext";
 
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [_dropdownOpen, setDropdownOpen] = useState(false);
+  const [, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { user: _user, setIsAuthorized } = useAuth();
-  const [_username, setUsername] = useState("");
 
   const { projects, currentProject, handleProjectChange, loading } = useProject();
+  const { logout } = useAuth();
 
   // Close dropdown if clicked outside
   useEffect(() => {
-    const userString = localStorage.getItem(CURRENT_USER);
-
-    if (userString) {
-      const user = JSON.parse(userString);
-      setUsername(user.username);
-    }
-
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
@@ -34,15 +26,14 @@ function Layout() {
     };
   }, []);
 
-  if (loading) return <div className="p-6 text-gray-600">Loading projects...</div>;
-
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (!window.confirm("本当にログアウトしますか？")) return;
 
-    localStorage.clear();
-    setIsAuthorized(false);
+    await logout();
     window.location.href = "/login";
   };
+
+  if (loading) return <div className="p-6 text-gray-600">Loading projects...</div>;
 
   const menuItems = [
     { to: "/", icon: "fas fa-tachometer-alt", label: "ダッシュボード" },
@@ -83,7 +74,7 @@ function Layout() {
         }`}
       >
         <div className="p-5 hidden md:block text-3xl font-extrabold tracking-wide border-b border-blue-400">
-          FlowMatic
+          {APP_NAME}
         </div>
 
         <nav className="flex-1 overflow-y-auto p-4 space-y-4 md:space-y-3">
@@ -126,7 +117,7 @@ function Layout() {
             >
               <i className="fas fa-bars text-2xl"></i>
             </button>
-            <h1 className="text-2xl font-bold tracking-wide">FlowMatic</h1>
+            <h1 className="text-2xl font-bold tracking-wide">{APP_NAME}</h1>
           </div>
           <div>
             <i className="fa-solid fa-bell text-3xl mr-2"></i>

@@ -14,7 +14,7 @@ import {
   faUpload,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 import ProjectRequired from "../components/ProjectRequired";
 import { useAuth } from "../context/AuthContext";
@@ -42,31 +42,36 @@ const Files = () => {
   const { projects, currentProject } = useProject();
 
   const [files, setFiles] = useState<ProjectFile[]>([]);
-  const [_loading, _setLoading] = useState(true);
-  const [_uploading, _setUploading] = useState(false);
 
-  const loadFiles = async () => {
+  const loadFiles = useCallback(async () => {
     if (!currentProject) return;
-    const files = await getProjectFiles(currentProject.project_id);
-
-    console.log(files);
-    setFiles(files);
-  };
+    try {
+      const loadedFiles = await getProjectFiles(currentProject.project_id);
+      setFiles(loadedFiles);
+    } catch (error) {
+      console.error("Failed to load files:", error);
+      alert("ファイルの読み込みに失敗しました");
+    }
+  }, [currentProject]);
 
   useEffect(() => {
     if (!currentProject) return;
     void loadFiles();
-  }, [currentProject]);
+  }, [currentProject, loadFiles]);
 
   const handleUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (!currentProject) return;
-    await uploadProjectFile(currentProject.project_id, { file });
-
-    // then refresh file list
-    void loadFiles();
+    try {
+      await uploadProjectFile(currentProject.project_id, { file });
+      // then refresh file list
+      void loadFiles();
+    } catch (error) {
+      console.error("Upload failed:", error);
+      alert("ファイルのアップロードに失敗しました");
+    }
   };
 
   const handleDownload = async (file: ProjectFile) => {
@@ -128,23 +133,25 @@ const Files = () => {
   };
 
   // ✅ ソート済みファイルリスト
-  const sortedFiles = [...files].sort((a, b) => {
-    if (!sortKey) return 0;
+  const sortedFiles = useMemo(() => {
+    return [...files].sort((a, b) => {
+      if (!sortKey) return 0;
 
-    let aVal, bVal;
+      let aVal, bVal;
 
-    if (sortKey === "size") {
-      aVal = parseSize(a.size);
-      bVal = parseSize(b.size);
-    } else {
-      aVal = a[sortKey];
-      bVal = b[sortKey];
-    }
+      if (sortKey === "size") {
+        aVal = parseSize(a.size);
+        bVal = parseSize(b.size);
+      } else {
+        aVal = a[sortKey];
+        bVal = b[sortKey];
+      }
 
-    if (aVal < bVal) return sortOrder === "asc" ? -1 : 1;
-    if (aVal > bVal) return sortOrder === "asc" ? 1 : -1;
-    return 0;
-  });
+      if (aVal < bVal) return sortOrder === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [files, sortKey, sortOrder]);
 
   // プロジェクトが存在しない、または選択されていない場合
   if (!projects || projects.length === 0 || !currentProject) {

@@ -11,12 +11,16 @@ import {
   faUsers,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { MobileDateTimePicker } from "@mui/x-date-pickers";
+import { ja } from "date-fns/locale";
 import dayjs from "dayjs";
+import DatePicker, { registerLocale } from "react-datepicker";
+
+registerLocale("ja", ja);
 import utc from "dayjs/plugin/utc";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
+import { PROJECT_STATUS } from "../constants";
 import { useProject } from "../context/ProjectContext";
 import { updateProject } from "../services/ProjectService";
 import type { Project, ProjectMember, ProjectStatus, User } from "../types";
@@ -52,7 +56,7 @@ const ProjectDetail = () => {
     description: "",
     start_date: "",
     deadline: "",
-    status: "planning",
+    status: PROJECT_STATUS.PLANNING,
     members: [],
     project_id: "",
   });
@@ -74,8 +78,6 @@ const ProjectDetail = () => {
       const project = filteredProjects[0];
 
       if (project) {
-        console.log(project);
-
         // todo: update project context as well
         setProjectData(normalizeProject(project));
       }
@@ -85,14 +87,14 @@ const ProjectDetail = () => {
   const invitationModalRef = useRef<MemberInvitationModalRef | null>(null);
 
   const statusOptions = [
-    { value: "planning", label: "計画中", icon: faListUl, color: "amber" },
+    { value: PROJECT_STATUS.PLANNING, label: "計画中", icon: faListUl, color: "amber" },
     {
-      value: "in_progress",
+      value: PROJECT_STATUS.IN_PROGRESS,
       label: "進行中",
       icon: faPlayCircle,
       color: "blue",
     },
-    { value: "completed", label: "完了", icon: faCheckCircle, color: "green" },
+    { value: PROJECT_STATUS.COMPLETED, label: "完了", icon: faCheckCircle, color: "green" },
   ];
 
   const handleInputChange = (field: keyof ProjectData, value: string) => {
@@ -227,7 +229,7 @@ const ProjectDetail = () => {
             </label>
             <select
               id="project-status"
-              value={projectData.status || "planning"}
+              value={projectData.status || PROJECT_STATUS.PLANNING}
               onChange={(e) => handleInputChange("status", e.target.value)}
               className="w-full px-4 py-3 text-lg border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
             >
@@ -250,25 +252,24 @@ const ProjectDetail = () => {
                 <FontAwesomeIcon icon={faCalendar} className="text-gray-400" />
                 開始日
               </label>
-              <MobileDateTimePicker
-                label="開始日を設定してください"
-                value={projectData.start_date ? dayjs.utc(projectData.start_date) : null}
-                onChange={(newValue) => {
-                  if (newValue && newValue.isValid()) {
-                    handleInputChange("start_date", newValue.utc().toISOString());
+              <DatePicker
+                id="project-start-date"
+                selected={projectData.start_date ? new Date(projectData.start_date) : null}
+                onChange={(date: Date | null) => {
+                  if (date) {
+                    handleInputChange("start_date", date.toISOString());
                   } else {
                     handleInputChange("start_date", "");
                   }
                 }}
-                slotProps={{
-                  textField: {
-                    id: "project-start-date",
-                    fullWidth: true,
-                    required: true,
-                    className:
-                      "w-full px-3 py-2 border border-gray-300 text-xl rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-                  },
-                }}
+                showTimeSelect
+                timeFormat="HH:mm"
+                timeIntervals={15}
+                dateFormat="yyyy/MM/dd HH:mm"
+                locale="ja"
+                placeholderText="開始日を設定してください"
+                className="w-full"
+                required
               />
             </div>
 
@@ -281,25 +282,25 @@ const ProjectDetail = () => {
                 <FontAwesomeIcon icon={faCalendar} className="text-gray-400" />
                 期限
               </label>
-              <MobileDateTimePicker
-                label="締切日を設定してください"
-                value={projectData.deadline ? dayjs.utc(projectData.deadline) : null}
-                onChange={(newValue) => {
-                  if (newValue && newValue.isValid()) {
-                    handleInputChange("deadline", newValue.utc().toISOString());
+              <DatePicker
+                id="project-deadline"
+                selected={projectData.deadline ? new Date(projectData.deadline) : null}
+                onChange={(date: Date | null) => {
+                  if (date) {
+                    handleInputChange("deadline", date.toISOString());
                   } else {
                     handleInputChange("deadline", "");
                   }
                 }}
-                slotProps={{
-                  textField: {
-                    id: "project-deadline",
-                    fullWidth: true,
-                    required: true,
-                    className:
-                      "w-full px-3 py-2 border border-gray-300 text-xl rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-                  },
-                }}
+                showTimeSelect
+                timeFormat="HH:mm"
+                timeIntervals={15}
+                dateFormat="yyyy/MM/dd HH:mm"
+                locale="ja"
+                placeholderText="締切日を設定してください"
+                minDate={projectData.start_date ? new Date(projectData.start_date) : undefined}
+                className="w-full"
+                required
               />
             </div>
           </div>

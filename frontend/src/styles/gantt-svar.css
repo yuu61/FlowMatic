@@ -1,0 +1,119 @@
+/* SVAR Gantt Custom Styles */
+
+.gantt-container {
+  --wx-gantt-bar-fill: #4285f4;
+  --wx-gantt-bar-progress-fill: #0f4a9d;
+  --wx-gantt-bar-height: 24px;
+  --wx-gantt-header-bg: #f8f9fa;
+  --wx-gantt-border-color: #e0e0e0;
+}
+
+/* Task bar styling */
+.wx-gantt-bar {
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Progress bar inside tasks */
+.wx-gantt-bar-progress {
+  opacity: 0.8;
+}
+
+/* Grid header styling */
+.wx-gantt-header {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Scale header (timeline) */
+.wx-gantt-scale {
+  background-color: #f8f9fa;
+}
+
+.wx-gantt-scale-cell {
+  font-size: 12px;
+  color: #666;
+}
+
+/* Grid row styling */
+.wx-gantt-row {
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.wx-gantt-row:hover {
+  background-color: #f5f5f5;
+}
+
+/* Task name column */
+.wx-gantt-cell {
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+/* Today marker */
+.wx-gantt-today {
+  background-color: rgba(66, 133, 244, 0.1);
+  border-left: 2px solid #4285f4;
+}
+
+/* Resize handles */
+.wx-gantt-bar-resize {
+  cursor: ew-resize;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.wx-gantt-bar:hover .wx-gantt-bar-resize {
+  opacity: 1;
+}
+
+/* Drag cursor */
+.wx-gantt-bar {
+  cursor: grab;
+}
+
+.wx-gantt-bar:active {
+  cursor: grabbing;
+}
+
+/* Scrollbar styling */
+.wx-gantt-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.wx-gantt-scroll::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.wx-gantt-scroll::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.wx-gantt-scroll::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Task text inside bars */
+.wx-gantt-bar-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  padding: 0 8px;
+}
+
+/* Weekend columns */
+.wx-gantt-weekend {
+  background-color: #f9f9f9;
+}
+
+/* Selected task highlight */
+.wx-gantt-row-selected {
+  background-color: rgba(66, 133, 244, 0.1);
+}
+
+.wx-gantt-bar-selected {
+  box-shadow: 0 0 0 2px #4285f4;
+}

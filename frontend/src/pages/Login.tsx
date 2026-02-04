@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import api from "../api";
-import { ACCESS_TOKEN, CURRENT_USER, REFRESH_TOKEN } from "../constants";
+import { APP_NAME } from "../constants";
 import { useAuth } from "../context/AuthContext";
 
 function Login() {
@@ -16,14 +16,10 @@ function Login() {
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
-  const route = "/api/token/";
-
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.focus();
     }
-
-    localStorage.clear();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -31,11 +27,7 @@ function Login() {
     setLoading(true);
 
     try {
-      const res = await api.post(route, { email, password });
-
-      localStorage.setItem(ACCESS_TOKEN, res.data.access);
-      localStorage.setItem(REFRESH_TOKEN, res.data.refresh);
-      localStorage.setItem(CURRENT_USER, JSON.stringify(res.data.user));
+      const res = await api.post("/api/auth/login/", { email, password });
 
       setIsAuthorized(true);
       setUser(res.data.user);
@@ -60,7 +52,7 @@ function Login() {
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="max-w-md w-full bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="bg-blue-600 py-6 text-white">
-            <h1 className="text-4xl font-bold mb-3 text-center">FlowMatic</h1>
+            <h1 className="text-4xl font-bold mb-3 text-center">{APP_NAME}</h1>
             <p className="text-lg text-center font-semibold">
               プロジェクトを管理するにはログインしてください
             </p>

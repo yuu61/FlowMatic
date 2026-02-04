@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import api from "../api";
+import { APP_NAME, MAX_FILE_SIZE_BYTES } from "../constants";
 
 function Register() {
   const [username, setUsername] = useState("");
@@ -46,8 +47,7 @@ function Register() {
         return;
       }
 
-      if (file.size > 5 * 1024 * 1024) {
-        // 5MB limit
+      if (file.size > MAX_FILE_SIZE_BYTES) {
         alert("ファイルサイズは5MB以下にしてください");
         return;
       }
@@ -90,13 +90,12 @@ function Register() {
         formData.append("profile_picture", profilePicture);
       }
 
-      const res = await api.post(route, formData, {
+      await api.post(route, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
 
-      console.log(res.data);
       setShowSuccess(true);
     } catch (error: unknown) {
       const axiosError = error as { response?: { data?: unknown } };
@@ -120,7 +119,7 @@ function Register() {
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="max-w-md w-full bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="bg-blue-600 py-5 text-white">
-            <h1 className="text-4xl font-bold mb-4 text-center">FlowMatic</h1>
+            <h1 className="text-4xl font-bold mb-4 text-center">{APP_NAME}</h1>
             <p className="text-lg text-center font-semibold">アカウントを作成してください</p>
           </div>
 

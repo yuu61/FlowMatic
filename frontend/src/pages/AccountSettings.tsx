@@ -1,13 +1,14 @@
+import { isAxiosError } from "axios";
 import { useEffect, useRef, useState } from "react";
 
-import { CURRENT_USER } from "../constants";
+import { CURRENT_USER, NOTIFICATION_TIMEOUT_MS } from "../constants";
 import { useAuth } from "../context/AuthContext";
 import { changeUserPassword, updateUserProfile } from "../services/UserService";
 
 const AccountSettings = () => {
   const { user, setUser } = useAuth();
 
-  const [edit, setEdit] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [userData, setUserData] = useState<{
     id: number | null;
@@ -101,7 +102,7 @@ const AccountSettings = () => {
       localStorage.setItem(CURRENT_USER, JSON.stringify(updatedUser));
 
       showNotification("ユーザー名が正常に更新されました！", "success");
-      setEdit(false);
+      setIsEditing(false);
     } catch (_error) {
       console.error(_error);
       showNotification("ユーザー名の更新に失敗しました", "error");
@@ -155,16 +156,20 @@ const AccountSettings = () => {
       });
     } catch (_error) {
       console.error(_error);
-      const data = (_error as any).response?.data;
+      if (isAxiosError(_error)) {
+        const data = _error.response?.data;
 
-      if (data?.current_password) {
-        showNotification(data.current_password.join(", "), "error");
-      } else if (data?.new_password) {
-        showNotification(data.new_password.join(", "), "error");
-      } else if (data?.confirm_password) {
-        showNotification(data.confirm_password.join(", "), "error");
-      } else if (typeof data === "string") {
-        showNotification(data, "error");
+        if (data?.current_password) {
+          showNotification(data.current_password.join(", "), "error");
+        } else if (data?.new_password) {
+          showNotification(data.new_password.join(", "), "error");
+        } else if (data?.confirm_password) {
+          showNotification(data.confirm_password.join(", "), "error");
+        } else if (typeof data === "string") {
+          showNotification(data, "error");
+        } else {
+          showNotification("パスワード更新に失敗しました", "error");
+        }
       } else {
         showNotification("パスワード更新に失敗しました", "error");
       }
@@ -249,7 +254,7 @@ const AccountSettings = () => {
         message: "",
         type: "",
       });
-    }, 3000);
+    }, NOTIFICATION_TIMEOUT_MS);
   };
 
   const handleImageClick = (): void => {
@@ -284,9 +289,9 @@ const AccountSettings = () => {
           <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-semibold text-gray-800">プロフィール</h2>
-              {!edit ? (
+              {!isEditing ? (
                 <button
-                  onClick={() => setEdit(true)}
+                  onClick={() => setIsEditing(true)}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer text-lg font-bold"
                 >
                   編集
@@ -304,7 +309,7 @@ const AccountSettings = () => {
                         profile_preview: null,
                         date_joined: user.date_joined,
                       });
-                      setEdit(false);
+                      setIsEditing(false);
                     }}
                     className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer font-bold flex items-center gap-2"
                   >
@@ -388,7 +393,7 @@ const AccountSettings = () => {
                   <i className="fas fa-user"></i>
                   ユーザー名
                 </label>
-                {edit ? (
+                {isEditing ? (
                   <input
                     type="text"
                     id="username"

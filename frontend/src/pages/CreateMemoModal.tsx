@@ -74,6 +74,9 @@ const CreateMemoModal = ({
       });
 
       onClose();
+    } catch (error) {
+      console.error("Failed to submit memo:", error);
+      alert("メモの保存に失敗しました");
     } finally {
       setLoading(false);
     }

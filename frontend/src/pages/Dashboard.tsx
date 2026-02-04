@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import ProjectRequired from "../components/ProjectRequired";
+import { DEADLINE_NEAR_DAYS, TASK_STATUS } from "../constants";
 import { useAuth } from "../context/AuthContext";
 import { useProject } from "../context/ProjectContext";
 import { getEvents } from "../services/EventService";
@@ -10,6 +11,12 @@ import type { CalendarEvent, Memo, MemoColor, Task, TaskUser } from "../types";
 import { formatDateJP, formatUTC } from "../utils/dateUtils";
 import { resolveImageUrl } from "../utils/resolveImageUrl";
 import CreateMemoModal from "./CreateMemoModal";
+
+const memoColors: Record<MemoColor, string> = {
+  yellow: "bg-yellow-100 border-yellow-300",
+  blue: "bg-blue-100 border-blue-300",
+  green: "bg-green-100 border-green-300",
+};
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -30,12 +37,6 @@ const Dashboard = () => {
 
   const userId = user?.id;
 
-  const memoColors: Record<MemoColor, string> = {
-    yellow: "bg-yellow-100 border-yellow-300",
-    blue: "bg-blue-100 border-blue-300",
-    green: "bg-green-100 border-green-300",
-  };
-
   const toDate = (iso: string): Date => new Date(iso);
 
   const fetchTasks = async () => {
@@ -45,7 +46,6 @@ const Dashboard = () => {
       const fetchedTasks = await getTasks(currentProject.project_id);
 
       setTasks(fetchedTasks);
-      console.log(fetchedTasks);
     } catch (error) {
       console.error("Failed to fetch tasks:", error);
     } finally {
@@ -59,7 +59,9 @@ const Dashboard = () => {
       setLoading(true);
 
       const myActiveTasks = tasks.filter(
-        (task) => task.status !== "done" && task.users.some((u: TaskUser) => u.user_id === userId),
+        (task) =>
+          task.status !== TASK_STATUS.DONE &&
+          task.users.some((u: TaskUser) => u.user_id === userId),
       ).length;
 
       setSummary((prev) => ({
@@ -75,7 +77,7 @@ const Dashboard = () => {
     try {
       setLoading(true);
 
-      const clearedTasks = tasks.filter((task) => task.status === "done").length;
+      const clearedTasks = tasks.filter((task) => task.status === TASK_STATUS.DONE).length;
 
       setSummary((prev) => ({
         ...prev,
@@ -111,8 +113,6 @@ const Dashboard = () => {
     try {
       const fetchedEvents = await getEvents(currentProject.project_id);
 
-      console.log(fetchedEvents);
-
       setEvents(fetchedEvents);
     } catch (error) {
       console.error("Failed to fetch events:", error);
@@ -124,7 +124,7 @@ const Dashboard = () => {
     now.setHours(0, 0, 0, 0); // start of today
 
     const end = new Date(now);
-    end.setDate(end.getDate() + 7); // 7 days from today
+    end.setDate(end.getDate() + DEADLINE_NEAR_DAYS);
 
     return events
       .filter((event) => {
@@ -139,7 +139,6 @@ const Dashboard = () => {
 
     try {
       const memos = await getMemos(currentProject.project_id);
-      console.log(memos);
       setProjectMemos(memos ?? []);
     } catch (error) {
       console.error("Failed to fetch memos:", error);
@@ -497,10 +496,6 @@ const Dashboard = () => {
                       )}
                     </div>
                   </div>
-
-                  {/* <button className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
-                    詳細を見る
-                  </button> */}
                 </div>
               ))}
             </div>

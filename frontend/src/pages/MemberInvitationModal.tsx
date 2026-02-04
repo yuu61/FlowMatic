@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 
+import { DEBOUNCE_DELAY_MS, NOTIFICATION_TIMEOUT_MS } from "../constants";
 import { getUsers } from "../services/UserService";
 import type { ProjectMember, User } from "../types";
 
@@ -15,7 +16,7 @@ export interface MemberInvitationModalRef {
 }
 
 const MemberInvitationModal = forwardRef<MemberInvitationModalRef, MemberInvitationModalProps>(
-  ({ projectId, existingMembers = [], onInvitationSuccess }, ref) => {
+  ({ projectId: _projectId, existingMembers = [], onInvitationSuccess }, ref) => {
     // 状態管理
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [users, setUsers] = useState<User[]>([]);
@@ -97,7 +98,7 @@ const MemberInvitationModal = forwardRef<MemberInvitationModalRef, MemberInvitat
           .filter((user) => !existingMembers.some((member) => member.user_id === user.id));
 
         setSearchResults(filteredUsers);
-      }, 300);
+      }, DEBOUNCE_DELAY_MS);
 
       return () => {
         if (debounceRef.current) {
@@ -126,13 +127,12 @@ const MemberInvitationModal = forwardRef<MemberInvitationModalRef, MemberInvitat
 
       try {
         // API呼び出し - プロジェクトにメンバーを招待
-        const invitationData = {
-          project_id: projectId,
-          user_ids: selectedUsers.map((u) => u.id),
-          role: role,
-        };
-
-        console.log("招待を送信:", invitationData);
+        // invitationData は将来のAPI実装時に使用予定
+        // const invitationData = {
+        //   project_id: projectId,
+        //   user_ids: selectedUsers.map((u) => u.id),
+        //   role: role,
+        // };
 
         // 実際のAPI呼び出し例:
         // const response = await api.post('/api/projects/invite/', invitationData);
@@ -143,7 +143,7 @@ const MemberInvitationModal = forwardRef<MemberInvitationModalRef, MemberInvitat
         // 3秒後にトーストを非表示
         setTimeout(() => {
           setShowSuccessToast(false);
-        }, 3000);
+        }, NOTIFICATION_TIMEOUT_MS);
 
         // 親コンポーネントに成功を通知
         if (onInvitationSuccess) {

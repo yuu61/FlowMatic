@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 
 import { useAuth } from "../context/AuthContext";
@@ -6,11 +6,15 @@ import { useAuth } from "../context/AuthContext";
 function ProtectedRoutes() {
   const { isAuthorized, setIsAuthorized, auth } = useAuth();
 
-  useEffect(() => {
+  const checkAuth = useCallback(() => {
     auth().catch(() => setIsAuthorized(false));
-  }, []);
+  }, [auth, setIsAuthorized]);
 
-  if (isAuthorized == null) {
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  if (isAuthorized === null) {
     return <div>Loading...</div>;
   }
 

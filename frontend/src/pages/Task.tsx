@@ -11,15 +11,17 @@ import {
   faUserCheck,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import ProjectRequired from "../components/ProjectRequired";
+import { ACTIVE_TASK_STATUSES, TASK_PRIORITY, TASK_STATUS } from "../constants";
 import { useAuth } from "../context/AuthContext";
 import { useProject } from "../context/ProjectContext";
 import { createComment } from "../services/CommentService";
 import { getTasks, updateTask } from "../services/TaskService";
 import type { TaskComment, TaskPriority, TaskStatus, TaskUser } from "../types";
+import { isDeadlineNear } from "../utils/dateUtils";
 import { resolveImageUrl } from "../utils/resolveImageUrl";
 
 // ========================================
@@ -65,7 +67,7 @@ const Task = () => {
   const [openCommentsTaskId, setOpenCommentsTaskId] = useState<string | null>(null);
 
   // loading state for updating tasks
-  const [updatingTasks, _setUpdatingTasks] = useState<Record<string, boolean>>({});
+  const [updatingTasks] = useState<Record<string, boolean>>({});
 
   const addComment = async (projectId: string, taskId: string): Promise<void> => {
     const commentText = newComments[taskId] || "";
@@ -77,10 +79,10 @@ const Task = () => {
 
     try {
       if (!user) return;
-      const user_id = user.id;
+      const userId = user.id;
 
       const body = {
-        user_id,
+        user_id: userId,
         content: commentText,
       };
 
@@ -114,7 +116,7 @@ const Task = () => {
   };
 
   const isActiveStatus = (status: TaskStatus): boolean =>
-    ["todo", "pending", "in_progress", "in_review", "testing"].includes(status);
+    (ACTIVE_TASK_STATUSES as readonly string[]).includes(status);
 
   useEffect(() => {
     return () => {
@@ -138,8 +140,6 @@ const Task = () => {
 
       try {
         const response = await getTasks(currentProjectId);
-
-        console.log("Response: ", response);
 
         // Normalize API → UI format
         const normalized = response.map((task) => ({
@@ -165,52 +165,48 @@ const Task = () => {
     void loadTasks();
   }, [currentProjectId]);
 
-  const isDeadlineNear = (dueDate: string): boolean => {
-    if (!dueDate) return false;
-
-    const now = new Date();
-    const due = new Date(dueDate);
-
-    const diffDays = (due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-    return diffDays >= 0 && diffDays <= 7; // ⬅ consistent rule
-  };
-
   // ✅ Check if task is assigned to current user
-  const isMyTask = (task: NormalizedTask): boolean => {
-    if (!user || !user.id || !task.users) return false;
+  const isMyTask = useCallback(
+    (task: NormalizedTask): boolean => {
+      if (!user || !user.id || !task.users) return false;
 
-    return task.users.some((assignedUser: TaskUser) => assignedUser.user_id === user.id);
-  };
+      return task.users.some((assignedUser: TaskUser) => assignedUser.user_id === user.id);
+    },
+    [user],
+  );
 
   // ✅ Dynamic filter logic
-  const filteredTasks = tasks.filter((task) => {
-    if (filter === "all") return true;
+  const filteredTasks = useMemo(() => {
+    return tasks.filter((task) => {
+      if (filter === "all") return true;
 
-    if (filter === "high") {
-      return isDeadlineNear(task.dueDate);
-    }
+      if (filter === "high") {
+        return isDeadlineNear(task.dueDate);
+      }
 
-    if (filter === "active") {
-      return ["todo", "pending", "in_progress", "in_review", "testing"].includes(task.status);
-    }
+      if (filter === "active") {
+        return (ACTIVE_TASK_STATUSES as readonly string[]).includes(task.status);
+      }
 
-    if (filter === "done") {
-      return task.status === "done";
-    }
+      if (filter === "done") {
+        return task.status === TASK_STATUS.DONE;
+      }
 
-    if (filter === "my_tasks") {
-      return isMyTask(task);
-    }
+      if (filter === "my_tasks") {
+        return isMyTask(task);
+      }
 
-    return false;
-  });
+      return false;
+    });
+  }, [tasks, filter, isMyTask]);
 
   const toggleTaskStatus = async (taskId: string): Promise<void> => {
     try {
       const currentTask = tasks.find((task) => task.id === taskId);
       if (!currentTask) return;
 
-      const newStatus = currentTask.status === "done" ? "in_progress" : "done";
+      const newStatus =
+        currentTask.status === TASK_STATUS.DONE ? TASK_STATUS.IN_PROGRESS : TASK_STATUS.DONE;
 
       // OPTIMISTIC UPDATE: Update UI immediately
       setTasks((tasks) =>
@@ -263,11 +259,11 @@ const Task = () => {
 
   const getPriorityColor = (priority: TaskPriority): string => {
     switch (priority) {
-      case "high":
+      case TASK_PRIORITY.HIGH:
         return "bg-red-100 text-red-700 border-red-300";
-      case "medium":
+      case TASK_PRIORITY.MEDIUM:
         return "bg-yellow-100 text-yellow-700 border-yellow-300";
-      case "low":
+      case TASK_PRIORITY.LOW:
         return "bg-green-100 text-green-700 border-green-300";
       default:
         return "bg-gray-100 text-gray-700 border-gray-300";
@@ -337,7 +333,7 @@ const Task = () => {
         />
         <StatCard
           title="完了"
-          value={tasks.filter((t) => t.status === "done").length}
+          value={tasks.filter((t) => t.status === TASK_STATUS.DONE).length}
           color="green"
         />
         <StatCard
@@ -437,14 +433,14 @@ const Task = () => {
                       onClick={() => toggleTaskStatus(task.id)}
                       disabled={updatingTasks[task.id]}
                       className={`mt-1 w-6 h-6 rounded-full border-2 border-gray-400 flex items-center justify-center hover:cursor-pointer transition-all ${
-                        task.status === "done"
+                        task.status === TASK_STATUS.DONE
                           ? "bg-green-500 border-green-500"
                           : "border-gray-300 hover:border-green-500"
                       } ${updatingTasks[task.id] ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
                       {updatingTasks[task.id] ? (
                         <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      ) : task.status === "done" ? (
+                      ) : task.status === TASK_STATUS.DONE ? (
                         <svg
                           className="w-3 h-3 text-white"
                           fill="none"
@@ -466,7 +462,9 @@ const Task = () => {
                     <div className="flex items-center gap-3">
                       <h3
                         className={`text-2xl font-bold ${
-                          task.status === "done" ? "text-gray-400 line-through" : "text-gray-800"
+                          task.status === TASK_STATUS.DONE
+                            ? "text-gray-400 line-through"
+                            : "text-gray-800"
                         }`}
                       >
                         {task.title}
@@ -476,7 +474,11 @@ const Task = () => {
                           task.priority,
                         )}`}
                       >
-                        {task.priority === "high" ? "高" : task.priority === "medium" ? "中" : "低"}
+                        {task.priority === TASK_PRIORITY.HIGH
+                          ? "高"
+                          : task.priority === TASK_PRIORITY.MEDIUM
+                            ? "中"
+                            : "低"}
                       </span>
                     </div>
 
@@ -489,9 +491,9 @@ const Task = () => {
 
                       <span
                         className={`px-2 py-1 rounded-full ${
-                          task.status === "done"
+                          task.status === TASK_STATUS.DONE
                             ? "bg-green-100 text-green-700 border border-green-300"
-                            : task.status === "in_progress"
+                            : task.status === TASK_STATUS.IN_PROGRESS
                               ? "bg-blue-100 text-blue-700 border border-blue-300"
                               : task.status === "in_review"
                                 ? "bg-purple-100 text-purple-700 border border-purple-300"
@@ -500,9 +502,9 @@ const Task = () => {
                                   : "bg-gray-100 text-gray-700 border border-gray-300"
                         }`}
                       >
-                        {task.status === "done"
+                        {task.status === TASK_STATUS.DONE
                           ? "完了"
-                          : task.status === "in_progress"
+                          : task.status === TASK_STATUS.IN_PROGRESS
                             ? "進行中"
                             : task.status === "in_review"
                               ? "レビュー待ち"

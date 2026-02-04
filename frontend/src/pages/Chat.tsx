@@ -14,16 +14,21 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import EmojiPicker from "emoji-picker-react";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
-import api from "../api";
 import ProjectRequired from "../components/ProjectRequired";
-import { ACCESS_TOKEN } from "../constants";
+import { FALLBACK_AVATAR_URL, UNDO_TIMEOUT_MS } from "../constants";
 import { useAuth } from "../context/AuthContext";
 import { useProject } from "../context/ProjectContext";
-import { Chatroom as ChatroomResponse, getChatrooms, getMessages } from "../services/ChatService";
-import type { ChatMessage } from "../types";
+import { getChatrooms, getMessages } from "../services/ChatService";
+import type { ChatMessage, Chatroom } from "../types";
 import { resolveImageUrl } from "../utils/resolveImageUrl";
+import { createAuthenticatedWebSocket } from "../utils/websocket";
+
+// ========================================
+// Constants
+// ========================================
+const MESSAGES_PER_PAGE = 50;
 
 // ========================================
 // Local Types
@@ -43,7 +48,7 @@ interface FormattedMessage {
   reactions: Record<string, number[]>;
 }
 
-interface FormattedChat extends ChatroomResponse {
+interface FormattedChat extends Chatroom {
   id: string;
   name: string;
   lastMessage: string;
@@ -76,7 +81,6 @@ const Chat = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
   const [replyTo, setReplyTo] = useState<FormattedMessage | null>(null);
-  const [_openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [lastDeleted, setLastDeleted] = useState<DeletedMessage | null>(null);
   const [isComposing, setIsComposing] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -87,7 +91,10 @@ const Chat = () => {
   const [hasMore, setHasMore] = useState(true);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const currentMessages = selectedChat ? allMessages[selectedChat] || [] : [];
+  const currentMessages = useMemo(
+    () => (selectedChat ? allMessages[selectedChat] || [] : []),
+    [selectedChat, allMessages],
+  );
   const currentChat = chats.find((c) => c.chatroom_id === selectedChat);
 
   useEffect(() => {
@@ -112,9 +119,7 @@ const Chat = () => {
         setIsLoading(true);
         const chatrooms = await getChatrooms(currentProjectId);
 
-        console.log(chatrooms);
-
-        const formattedChats: FormattedChat[] = chatrooms.map((room: ChatroomResponse) => ({
+        const formattedChats: FormattedChat[] = chatrooms.map((room: Chatroom) => ({
           ...room,
           id: room.chatroom_id,
           name: currentProject?.title ?? "",
@@ -136,7 +141,7 @@ const Chat = () => {
     };
 
     void loadChatrooms();
-  }, [currentProjectId]);
+  }, [currentProjectId, currentProject?.title]);
 
   // 選択されたチャットルームのメッセージを読み込む + ポーリング
   useEffect(() => {
@@ -144,7 +149,7 @@ const Chat = () => {
       if (!currentProjectId || !selectedChat) return;
 
       try {
-        const res = await getMessages(currentProjectId, selectedChat, 1, 50);
+        const res = await getMessages(currentProjectId, selectedChat, 1, MESSAGES_PER_PAGE);
 
         const formatted: FormattedMessage[] = res.messages.map((msg: ChatMessage) => ({
           id: msg.message_id,
@@ -176,15 +181,13 @@ const Chat = () => {
   useEffect(() => {
     if (!currentProjectId || !selectedChat) return;
 
-    const token = localStorage.getItem(ACCESS_TOKEN);
-    const wsUrl = `ws://localhost:8000/ws/chat/${currentProjectId}/${selectedChat}/?token=${token}`;
-
-    const socket = new WebSocket(wsUrl);
+    // Security: Use subprotocol-based authentication instead of URL query parameter
+    // Token is sent via Sec-WebSocket-Protocol header, not visible in URLs/logs
+    const wsPath = `/ws/chat/${currentProjectId}/${selectedChat}/`;
+    const socket = createAuthenticatedWebSocket(wsPath);
     socketRef.current = socket;
 
     socket.onopen = () => {
-      console.log("✅ WebSocket connected");
-
       socket.send(
         JSON.stringify({
           type: "join_room",
@@ -193,7 +196,13 @@ const Chat = () => {
     };
 
     socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
+      let data;
+      try {
+        data = JSON.parse(event.data);
+      } catch (error) {
+        console.error("Failed to parse WebSocket message:", error);
+        return;
+      }
 
       if (data.type !== "message") return;
 
@@ -237,11 +246,14 @@ const Chat = () => {
     };
 
     socket.onclose = () => {
-      console.log("🔌 WebSocket disconnected");
+      // WebSocket disconnected
     };
 
     return () => {
-      socket.close();
+      if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+        socket.close();
+      }
+      socketRef.current = null;
     };
   }, [currentProjectId, selectedChat, userId]);
 
@@ -270,7 +282,6 @@ const Chat = () => {
   const startEditing = (msg: FormattedMessage) => {
     setEditingId(msg.id);
     setEditingText(msg.text);
-    setOpenMenuId(null);
   };
 
   const saveEdit = () => {
@@ -303,8 +314,7 @@ const Chat = () => {
       [selectedChat]: (prev[selectedChat] ?? []).filter((m: FormattedMessage) => m.id !== id),
     }));
 
-    setOpenMenuId(null);
-    setTimeout(() => setLastDeleted(null), 5000);
+    setTimeout(() => setLastDeleted(null), UNDO_TIMEOUT_MS);
   };
 
   const undoDelete = () => {
@@ -324,11 +334,9 @@ const Chat = () => {
   // リプライ
   const handleReply = (msg: FormattedMessage) => {
     setReplyTo(msg);
-    setOpenMenuId(null);
   };
 
   const closeMenu = () => {
-    setOpenMenuId(null);
     setShowReactionPicker(false);
     setReactionPickerMessageId(null);
     setShowEmojiPicker(false);
@@ -342,17 +350,14 @@ const Chat = () => {
       setIsLoading(true);
       const nextPage = currentPage + 1;
 
-      const response = await api.get(
-        `/api/projects/${currentProjectId}/chatrooms/${selectedChat}/messages/`,
-        {
-          params: {
-            page: nextPage,
-            per_page: 50,
-          },
-        },
+      const response = await getMessages(
+        currentProjectId,
+        selectedChat,
+        nextPage,
+        MESSAGES_PER_PAGE,
       );
 
-      const formattedMessages: FormattedMessage[] = response.data.messages.map(
+      const formattedMessages: FormattedMessage[] = response.messages.map(
         (msg: ChatMessage) => ({
           id: msg.message_id,
           userId: msg.user_id,
@@ -377,7 +382,7 @@ const Chat = () => {
       }));
 
       setCurrentPage(nextPage);
-      setHasMore(response.data.messages.length === 50);
+      setHasMore(response.messages.length === MESSAGES_PER_PAGE);
     } catch (error) {
       console.error("メッセージの読み込みに失敗しました:", error);
     } finally {
@@ -428,9 +433,6 @@ const Chat = () => {
                 </p>
               </div>
             </div>
-            {/* <button className="p-2 hover:bg-white/10 rounded-full transition">
-              <FontAwesomeIcon icon={faEllipsisVertical} className="text-lg" />
-            </button> */}
           </div>
         </div>
 
@@ -508,7 +510,7 @@ const Chat = () => {
                             <img
                               src={
                                 resolveImageUrl(msg.profilePicture) ??
-                                `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                `${FALLBACK_AVATAR_URL}?name=${encodeURIComponent(
                                   msg.userName || "User",
                                 )}&background=random`
                               }
@@ -661,7 +663,7 @@ const Chat = () => {
                             <img
                               src={
                                 resolveImageUrl(msg.profilePicture) ??
-                                `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                `${FALLBACK_AVATAR_URL}?name=${encodeURIComponent(
                                   msg.userName || "User",
                                 )}&background=random`
                               }

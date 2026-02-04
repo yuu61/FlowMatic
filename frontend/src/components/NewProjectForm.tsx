@@ -1,19 +1,20 @@
 // NewProjectForm.tsx
 import { faCircleXmark, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { MobileDateTimePicker } from "@mui/x-date-pickers";
-import { Dayjs } from "dayjs";
-import dayjs from "dayjs";
+import { ja } from "date-fns/locale";
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import DatePicker, { registerLocale } from "react-datepicker";
 import { useNavigate } from "react-router-dom";
 
-import { CURRENT_PROJECT_ID } from "../constants";
+import { CURRENT_PROJECT_ID, PROJECT_STATUS } from "../constants";
 import { useAuth } from "../context/AuthContext";
 import { useProject } from "../context/ProjectContext";
-import { createChatroom } from "../services/ChatService"; // Add this import
+import { createChatroom } from "../services/ChatService";
 import { createProject } from "../services/ProjectService";
 import { getUsers } from "../services/UserService";
 import { ProjectStatus, User } from "../types";
+
+registerLocale("ja", ja);
 
 export default function NewProjectForm() {
   const navigate = useNavigate();
@@ -29,23 +30,23 @@ export default function NewProjectForm() {
   const [formData, setFormData] = useState<{
     title: string;
     description: string;
-    startDate: string;
-    deadline: string;
+    startDate: Date | null;
+    deadline: Date | null;
     status: ProjectStatus;
     members: number[];
   }>({
     title: "",
     description: "",
-    startDate: dayjs().toISOString(),
-    deadline: "",
-    status: "planning",
+    startDate: new Date(),
+    deadline: null,
+    status: PROJECT_STATUS.PLANNING,
     members: [],
   });
 
   const statusOptions = [
-    { value: "planning", label: "計画中" },
-    { value: "in_progress", label: "進行中" },
-    { value: "completed", label: "完了" },
+    { value: PROJECT_STATUS.PLANNING, label: "計画中" },
+    { value: PROJECT_STATUS.IN_PROGRESS, label: "進行中" },
+    { value: PROJECT_STATUS.COMPLETED, label: "完了" },
   ];
 
   const filteredMembers = useMemo(() => {
@@ -68,7 +69,6 @@ export default function NewProjectForm() {
     const fetchUsers = async () => {
       try {
         const users = await getUsers();
-        console.log(users);
         setAvailableMembers(users ?? []);
       } catch (error) {
         console.error("Error fetching users:", error);
@@ -96,9 +96,9 @@ export default function NewProjectForm() {
     const submitData = {
       title: formData.title,
       description: formData.description,
-      start_date: formData.startDate,
+      start_date: formData.startDate?.toISOString() ?? "",
       progress: 0,
-      deadline: formData.deadline,
+      deadline: formData.deadline?.toISOString() ?? "",
       status: formData.status,
       members: newMembers,
     };
@@ -106,7 +106,6 @@ export default function NewProjectForm() {
     try {
       // Create the project
       const newProject = await createProject(submitData);
-      console.log("new project : ", newProject);
 
       // Create a chatroom for the new project
       try {
@@ -115,9 +114,7 @@ export default function NewProjectForm() {
           members: newMembers,
         };
 
-        console.log("Creating chatroom with data:", chatroomData);
-        const newChatroom = await createChatroom(newProject.project_id, chatroomData);
-        console.log("new chatroom : ", newChatroom);
+        await createChatroom(newProject.project_id, chatroomData);
       } catch (chatroomError: unknown) {
         console.error("Error creating chatroom:", chatroomError);
         const axiosError = chatroomError as { response?: { data?: unknown } };
@@ -140,13 +137,6 @@ export default function NewProjectForm() {
       console.error("Error creating project:", error);
       alert("プロジェクトの作成に失敗しました");
     }
-  };
-
-  const handleDateChange = (name: "startDate" | "deadline", newValue: Dayjs | null) => {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: newValue ? newValue.toISOString() : "",
-    }));
   };
 
   return (
@@ -208,18 +198,18 @@ export default function NewProjectForm() {
             <label htmlFor="startDate" className="block text-xl font-bold mb-3">
               開始日
             </label>
-            <MobileDateTimePicker
-              label="開始日を設定してください"
-              value={formData.startDate ? dayjs(formData.startDate) : null}
-              onChange={(newValue) => handleDateChange("startDate", newValue)}
-              slotProps={{
-                textField: {
-                  fullWidth: true,
-                  required: true,
-                  className:
-                    "w-full px-3 py-2 border border-gray-300 text-xl rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-                },
-              }}
+            <DatePicker
+              id="startDate"
+              selected={formData.startDate}
+              onChange={(date: Date | null) => setFormData((prev) => ({ ...prev, startDate: date }))}
+              showTimeSelect
+              timeFormat="HH:mm"
+              timeIntervals={15}
+              dateFormat="yyyy/MM/dd HH:mm"
+              locale="ja"
+              placeholderText="開始日を設定してください"
+              className="w-full"
+              required
             />
           </div>
 
@@ -228,18 +218,19 @@ export default function NewProjectForm() {
             <label htmlFor="deadline" className="block text-xl font-bold mb-3">
               締切日
             </label>
-            <MobileDateTimePicker
-              label="締切日を設定してください"
-              value={formData.deadline ? dayjs(formData.deadline) : null}
-              onChange={(newValue) => handleDateChange("deadline", newValue)}
-              slotProps={{
-                textField: {
-                  fullWidth: true,
-                  required: true,
-                  className:
-                    "w-full px-3 py-2 border border-gray-300 text-xl rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-                },
-              }}
+            <DatePicker
+              id="deadline"
+              selected={formData.deadline}
+              onChange={(date: Date | null) => setFormData((prev) => ({ ...prev, deadline: date }))}
+              showTimeSelect
+              timeFormat="HH:mm"
+              timeIntervals={15}
+              dateFormat="yyyy/MM/dd HH:mm"
+              locale="ja"
+              placeholderText="締切日を設定してください"
+              minDate={formData.startDate ?? undefined}
+              className="w-full"
+              required
             />
           </div>
 

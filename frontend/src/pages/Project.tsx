@@ -18,14 +18,13 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Link } from "react-router-dom";
 
+import { PROJECT_STATUS } from "../constants";
 import { useProject } from "../context/ProjectContext";
 import type { ProjectStatus } from "../types";
 import { formatUTC } from "../utils/dateUtils";
 
 const Project = () => {
   const { projects } = useProject();
-
-  console.log(projects);
 
   // Status mapping from English to Japanese
   const statusMap: Record<ProjectStatus, string> = {
@@ -129,7 +128,7 @@ const Project = () => {
               <div>
                 <p className="text-gray-500 font-bold text-2xl mb-1">進行中</p>
                 <h2 className="text-5xl font-bold text-blue-700 mt-2">
-                  {projects.filter((p) => p.status === "in_progress").length}
+                  {projects.filter((p) => p.status === PROJECT_STATUS.IN_PROGRESS).length}
                 </h2>
               </div>
               <div className="bg-blue-50 p-4 rounded-xl group-hover:bg-blue-100 transition-colors">
@@ -143,7 +142,7 @@ const Project = () => {
               <div>
                 <p className="text-gray-500 font-bold text-2xl mb-1">完了済み</p>
                 <h2 className="text-5xl font-bold text-green-600 mt-2">
-                  {projects.filter((p) => p.status === "completed").length}
+                  {projects.filter((p) => p.status === PROJECT_STATUS.COMPLETED).length}
                 </h2>
               </div>
               <div className="bg-green-50 p-4 rounded-xl group-hover:bg-green-100 transition-colors">
@@ -240,9 +239,6 @@ const Project = () => {
 
                     <td className="p-4">
                       <div className="flex justify-center gap-2">
-                        {/* <button className="p-2 text-blue-600 hover:bg-blue-50 cursor-pointer rounded-lg transition-colors">
-                          <FontAwesomeIcon icon={faEye} />
-                        </button> */}
                         <Link to={`/project/${project.project_id}/edit`}>
                           <button className="p-2 text-amber-600 hover:bg-amber-50 cursor-pointer rounded-lg transition-colors">
                             <FontAwesomeIcon icon={faPenToSquare} />
@@ -322,10 +318,6 @@ const Project = () => {
 
                 {/* Actions */}
                 <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
-                  {/* <button className="px-4 py-2 text-blue-600 cursor-pointer hover:bg-blue-50 rounded-lg transition-colors text-sm font-bold flex items-center gap-2">
-                    <FontAwesomeIcon icon={faEye} />
-                    表示
-                  </button> */}
                   <Link to={`/project/${project.project_id}/edit`}>
                     <button className="px-4 py-2 text-amber-600 cursor-pointer hover:bg-amber-50 rounded-lg transition-colors text-sm font-bold flex items-center gap-2">
                       <FontAwesomeIcon icon={faPenToSquare} />

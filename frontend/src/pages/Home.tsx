@@ -1,22 +1,12 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { NavLink } from "react-router-dom";
 
 import NewTaskForm from "../components/NewTaskForm";
-import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
-import { useAuth } from "../context/AuthContext";
 
 function Home() {
-  const { user } = useAuth();
-
   // サイドバー開閉
   // -------------------------------
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  useEffect(() => {
-    console.log(user);
-    console.log(localStorage.getItem(ACCESS_TOKEN));
-    console.log(localStorage.getItem(REFRESH_TOKEN));
-  }, [user]);
 
   return (
     <div className="font-sans bg-gray-100 min-h-screen flex">

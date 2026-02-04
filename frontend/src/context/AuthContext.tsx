@@ -1,9 +1,7 @@
-import { jwtDecode } from "jwt-decode";
-import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from "react";
 
-import api from "../api";
-import { ACCESS_TOKEN, CURRENT_USER, REFRESH_TOKEN } from "../constants";
-import type { JwtPayload, User } from "../types";
+import api, { initializeCsrf } from "../api";
+import type { User } from "../types";
 
 // ========================================
 // Context Types
@@ -15,6 +13,7 @@ interface AuthContextValue {
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
   auth: () => Promise<void>;
   refreshToken: () => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 interface AuthProviderProps {
@@ -30,56 +29,65 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
-  useEffect(() => {
-    void auth().catch(() => setIsAuthorized(false));
+  const refreshToken = useCallback(async () => {
+    try {
+      const res = await api.post("/api/auth/refresh/");
 
-    const storedUser = localStorage.getItem(CURRENT_USER);
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      if (res.status === 200) {
+        setIsAuthorized(true);
+      } else {
+        setIsAuthorized(false);
+      }
+    } catch {
+      setIsAuthorized(false);
     }
   }, []);
 
-  const refreshToken = async () => {
-    const storedRefreshToken = localStorage.getItem(REFRESH_TOKEN);
-
+  const auth = useCallback(async () => {
     try {
-      const res = await api.post("/api/token/refresh/", {
-        refresh: storedRefreshToken,
-      });
+      // CSRFトークンを初期化
+      await initializeCsrf();
 
-      if (res.status === 200) {
-        localStorage.setItem(ACCESS_TOKEN, res.data.access);
+      // 認証状態をサーバーに確認
+      const res = await api.get("/api/auth/status/");
+
+      if (res.status === 200 && res.data.authenticated) {
         setIsAuthorized(true);
-      }
-      // If the refresh token is expired
-      else {
+        setUser(res.data.user);
+      } else {
         setIsAuthorized(false);
       }
-    } catch (error) {
-      console.log(error);
-      setIsAuthorized(false);
+    } catch {
+      // 401エラーの場合、トークンリフレッシュを試行
+      try {
+        await refreshToken();
+        // リフレッシュ成功後、再度認証状態を確認
+        const res = await api.get("/api/auth/status/");
+        if (res.status === 200 && res.data.authenticated) {
+          setIsAuthorized(true);
+          setUser(res.data.user);
+        } else {
+          setIsAuthorized(false);
+        }
+      } catch {
+        setIsAuthorized(false);
+      }
     }
-  };
+  }, [refreshToken]);
 
-  const auth = async () => {
-    const token = localStorage.getItem(ACCESS_TOKEN);
-
-    // If the user has not logged in yet
-    if (!token) {
-      setIsAuthorized(false);
-      return;
+  const logout = useCallback(async () => {
+    try {
+      await api.post("/api/auth/logout/");
+    } catch {
+      // ログアウトリクエストが失敗しても、ローカル状態はクリア
     }
+    setIsAuthorized(false);
+    setUser(null);
+  }, []);
 
-    const decoded = jwtDecode<JwtPayload>(token);
-    const now = Date.now() / 1000;
-
-    // If the access token expired
-    if (decoded.exp < now) {
-      await refreshToken();
-    } else {
-      setIsAuthorized(true);
-    }
-  };
+  useEffect(() => {
+    void auth().catch(() => setIsAuthorized(false));
+  }, [auth]);
 
   return (
     <AuthContext.Provider
@@ -90,6 +98,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setUser,
         auth,
         refreshToken,
+        logout,
       }}
     >
       {children}

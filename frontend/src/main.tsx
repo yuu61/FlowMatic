@@ -1,19 +1,17 @@
 import "dayjs/locale/ja";
+import "react-datepicker/dist/react-datepicker.css";
+import "./styles/datepicker.css";
 
-import { LocalizationProvider } from "@mui/x-date-pickers";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import { createRoot } from "react-dom/client";
 
-import App from "./App.jsx";
-import { AuthProvider } from "./context/AuthContext.jsx";
+import App from "./App";
+import { AuthProvider } from "./context/AuthContext";
 
 dayjs.locale("ja");
 
 createRoot(document.getElementById("root")!).render(
   <AuthProvider>
-    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ja">
-      <App />
-    </LocalizationProvider>
+    <App />
   </AuthProvider>,
 );
