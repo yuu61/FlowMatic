@@ -189,11 +189,22 @@ class ChatWebSocketTests(TestCase):
         await communicator.send_json_to({"type": "join_room"})
         await communicator.receive_json_from()
 
+        # 空メッセージ送信前のメッセージ数を記録
+        message_count_before = await Message.objects.filter(
+            chatroom=self.chatroom
+        ).acount()
+
         await communicator.send_json_to({
             "type": "message",
             "content": "",
             "user_id": self.user.id,
         })
+
+        # 空メッセージがDBに保存されていないことを検証
+        message_count_after = await Message.objects.filter(
+            chatroom=self.chatroom
+        ).acount()
+        self.assertEqual(message_count_before, message_count_after)
 
         await communicator.disconnect()
 
@@ -210,16 +221,27 @@ class ChatWebSocketTests(TestCase):
         await communicator.send_json_to({"type": "join_room"})
         await communicator.receive_json_from()
 
+        # 空白メッセージ送信前のメッセージ数を記録
+        message_count_before = await Message.objects.filter(
+            chatroom=self.chatroom
+        ).acount()
+
         await communicator.send_json_to({
             "type": "message",
             "content": "   ",
             "user_id": self.user.id,
         })
 
+        # 空白のみのメッセージがDBに保存されていないことを検証
+        message_count_after = await Message.objects.filter(
+            chatroom=self.chatroom
+        ).acount()
+        self.assertEqual(message_count_before, message_count_after)
+
         await communicator.disconnect()
 
-    async def test_invalid_chatroom_id_message_fails(self):
-        """無効なチャットルームIDでのメッセージ送信失敗テスト"""
+    async def test_message_flow_after_join(self):
+        """ルーム参加後のメッセージフローテスト"""
 
         token = AccessToken.for_user(self.user)
         communicator = WebsocketCommunicator(
@@ -242,8 +264,8 @@ class ChatWebSocketTests(TestCase):
 
         await communicator.disconnect()
 
-    async def test_non_member_can_connect_but_message_fails(self):
-        """メンバー以外のユーザーは接続できるが、メッセージ送信が失敗するテスト"""
+    async def test_non_member_can_connect_and_join(self):
+        """メンバー以外のユーザーが接続してルームに参加できるテスト"""
         token = AccessToken.for_user(self.user3)
         communicator = WebsocketCommunicator(
             application,

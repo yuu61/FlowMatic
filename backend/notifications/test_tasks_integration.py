@@ -20,6 +20,9 @@ class TasksNotificationIntegrationTest(APITestCase):
     """
 
     def setUp(self):
+        # 前のテストからの通知をクリア（テスト分離）
+        Notification.objects.all().delete()
+
         # テストユーザー作成
         self.user1 = User.objects.create_user(
             username="user1", email="user1@example.com", password="testpass123"
@@ -122,9 +125,6 @@ class TasksNotificationIntegrationTest(APITestCase):
 
     def test_task_status_change_to_done_sends_completion_notifications(self):
         """タスクが完了状態に変更された場合、完了通知が送られること"""
-        # タスクを作成前に通知をクリア
-        Notification.objects.all().delete()
-
         # タスクを作成
         task = Task.objects.create(
             name="未完了タスク",
@@ -156,9 +156,6 @@ class TasksNotificationIntegrationTest(APITestCase):
 
     def test_task_status_change_to_other_status_sends_change_notifications(self):
         """タスクが完了以外の状態に変更された場合、変更通知が送られること"""
-        # タスクを作成前に通知をクリア
-        Notification.objects.all().delete()
-
         # タスクを作成
         task = Task.objects.create(
             name="進行中タスク",
@@ -309,9 +306,6 @@ class TasksNotificationIntegrationTest(APITestCase):
 
     def test_multiple_actions_create_separate_notifications(self):
         """複数のアクションが別々の通知として作成されること"""
-        # タスクを作成前に通知をクリア
-        Notification.objects.all().delete()
-
         headers = get_auth_headers(self.user1)
 
         # タスクを作成

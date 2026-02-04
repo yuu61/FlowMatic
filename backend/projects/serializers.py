@@ -1,4 +1,3 @@
-# projects/serializers.py
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
@@ -118,7 +117,6 @@ class ProjectCreateSerializer(serializers.Serializer):
         if start_date and deadline and deadline < start_date:
             self.fail("invalid_date_range")
 
-        # progress is calculated from tasks, not manually set
         attrs.pop("progress", None)
 
         status = attrs.get("status")
@@ -138,9 +136,7 @@ class ProjectCreateSerializer(serializers.Serializer):
 
     def update(self, instance, validated_data):
         members = validated_data.pop("members", None)
-        validated_data.pop(
-            "progress", None
-        )  # progress is calculated from tasks, not manually set
+        validated_data.pop("progress", None)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
