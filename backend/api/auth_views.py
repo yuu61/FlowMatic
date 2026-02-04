@@ -133,9 +133,9 @@ class CookieRefreshView(APIView):
             # Rotate refresh token for security
             refresh.set_jti()
             refresh.set_exp()
-        except (InvalidToken, TokenError) as e:
+        except (InvalidToken, TokenError):
             return Response(
-                {"detail": str(e)},
+                {"detail": "Invalid or expired token"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { CURRENT_USER, NOTIFICATION_TIMEOUT_MS } from "../constants";
 import { useAuth } from "../context/AuthContext";
 import { changeUserPassword, updateUserProfile } from "../services/UserService";
+import { resolveImageUrl } from "../utils/resolveImageUrl";
 
 const AccountSettings = () => {
   const { user, setUser } = useAuth();
@@ -334,12 +335,12 @@ const AccountSettings = () => {
                 <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
                   {userData.profile_picture || userData.profile_preview ? (
                     <img
-                      src={
+                      src={resolveImageUrl(
                         userData.profile_preview ||
-                        (typeof userData.profile_picture === "string"
-                          ? userData.profile_picture
-                          : undefined)
-                      }
+                          (typeof userData.profile_picture === "string"
+                            ? userData.profile_picture
+                            : undefined)
+                      )}
                       alt="プロフィール"
                       className="w-full h-full object-cover"
                     />

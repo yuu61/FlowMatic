@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import api from "../api";
 import { APP_NAME, MAX_FILE_SIZE_BYTES } from "../constants";
+import { resolveImageUrl } from "../utils/resolveImageUrl";
 
 function Register() {
   const [username, setUsername] = useState("");
@@ -149,7 +150,7 @@ function Register() {
                     >
                       {previewUrl ? (
                         <img
-                          src={previewUrl}
+                          src={resolveImageUrl(previewUrl)}
                           alt="Profile preview"
                           className="w-full h-full object-cover"
                         />

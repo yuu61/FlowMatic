@@ -16,6 +16,11 @@ const ALLOWED_IMAGE_DOMAINS = [
 export function resolveImageUrl(url: string | null | undefined): string | undefined {
   if (!url) return undefined;
 
+  // Handle blob URLs (local file previews - trusted)
+  if (url.startsWith("blob:")) {
+    return url;
+  }
+
   // Handle relative URLs (trusted - from our API)
   if (!url.startsWith("http://") && !url.startsWith("https://")) {
     return `${API_BASE_URL}${url}`;
