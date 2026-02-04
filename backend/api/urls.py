@@ -8,7 +8,6 @@ from .views import (
 )
 
 urlpatterns = [
-    # App-level routes
     path("", include("projects.urls")),
     path("", include("tasks.urls")),
     path("", include("chat.urls")),

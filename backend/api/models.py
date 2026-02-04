@@ -2,7 +2,6 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
-# Create your models here.
 class User(AbstractUser):
     # make username not unique
     username = models.CharField(max_length=150, unique=False, blank=True, null=True)

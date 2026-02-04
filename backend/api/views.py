@@ -15,7 +15,6 @@ from .serializers import (
 )
 
 
-# Create your views here.
 class CreateUserView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -64,13 +63,11 @@ class UserUpdateView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_object(self):
-        # Return the currently authenticated user
         return self.request.user
 
     def get_serializer_class(self):
         return UserUpdateSerializer
 
-    # Optional: return updated user data with read serializer
     def patch(self, request, *args, **kwargs):
         super().patch(request, *args, **kwargs)
         user_data = UserReadSerializer(request.user, context={"request": request}).data
